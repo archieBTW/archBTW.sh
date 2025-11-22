@@ -21,7 +21,6 @@ class AboutPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // const SizedBox(height: 12),
               Text(
                 """
  __________________
@@ -34,7 +33,7 @@ class AboutPage extends StatelessWidget {
               ||     ||
 
 
-I started this project at the beginning of 2024 as a sort of musical diary. I've played guitar since I was a kid and started writing music in 5th grade. This continued into my later years, writing acoustic songs since I didn't have a band or know how to use music software. For several years, I was even a soundcloud rapper 🤮. As cringe as that was, it did teach me a lot about writing and using software so archBTW wouldn't exist without that experience.
+I started this project at the beginning of 2024 as a sort of musical diary. I've played guitar since I was a kid and started writing music in 5th grade. This continued into my later years, writing acoustic songs since I didn't have a band or know how to use music software. For several years, I was even a soundcloud rapper. As cringe as that was, it did teach me a lot about writing and using software so archBTW wouldn't exist without that experience.
 
 archBTW has been my way of combining the emo confessionals I grew up with and the stream-of-consciousness hip hop that I fell in love with in my 20's. All wrapped in a bedroom-indie package. 
 
