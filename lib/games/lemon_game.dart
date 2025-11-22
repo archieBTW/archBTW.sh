@@ -14,7 +14,7 @@ class LemonsGame extends StatefulWidget {
 }
 
 class _LemonsGameState extends State<LemonsGame> with SingleTickerProviderStateMixin {
-  static const List<String> songList = [
+  static const List<String> _playlist = [
     'ai.wav',
     'crosstops.wav',
     'cunt.wav',
@@ -29,6 +29,9 @@ class _LemonsGameState extends State<LemonsGame> with SingleTickerProviderStateM
     'thats_how.wav',
     'third_time.wav',
   ];
+
+List<String> _musicQueue = [];
+  StreamSubscription? _playerCompleteSubscription;
 
   static const double playerYOffset = 100.0; 
   static const double playerWidth = 70.0; // Adjusted for Basket Emoji width
@@ -58,7 +61,7 @@ class _LemonsGameState extends State<LemonsGame> with SingleTickerProviderStateM
   void initState() {
     super.initState();
     _ticker = createTicker(_onTick);
-    _playRandomSong();
+      _setupAudioPlayer();
     
     // Force focus immediately so keyboard works without clicking first
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -69,23 +72,59 @@ class _LemonsGameState extends State<LemonsGame> with SingleTickerProviderStateM
   @override
   void dispose() {
     _ticker.dispose();
+    _playerCompleteSubscription?.cancel();
     _audioPlayer.stop();
     _audioPlayer.dispose();
     _focusNode.dispose();
     super.dispose();
   }
 
-  Future<void> _playRandomSong() async {
-    if (songList.isEmpty) return;
+void _setupAudioPlayer() {
+    // 1. Don't loop a single song; stop when it finishes so we can trigger the next one
+    _audioPlayer.setReleaseMode(ReleaseMode.release);
+
+    // 2. Listen for the song ending
+    _playerCompleteSubscription = _audioPlayer.onPlayerComplete.listen((event) {
+      _playNextTrack();
+    });
+
+    // 3. Start the queue
+    _playNextTrack();
+  }
+
+  Future<void> _playNextTrack() async {
+    if (_playlist.isEmpty) return;
+
+    // A. If queue is empty, refill and shuffle
+    if (_musicQueue.isEmpty) {
+      _musicQueue = List.of(_playlist)..shuffle();
+    }
+
+    // B. Get the next song
+    final nextSong = _musicQueue.removeAt(0);
+
     try {
-      final filename = songList[_rng.nextInt(songList.length)];
-      final path = 'music/lemons/$filename'; 
-      await _audioPlayer.setReleaseMode(ReleaseMode.loop);
-      await _audioPlayer.play(AssetSource(path));
+      // Note: Using the specific folder for this game
+      final fullPath = 'music/lemons/$nextSong';
+      await _audioPlayer.setSource(AssetSource(fullPath));
+      await _audioPlayer.setVolume(0.5);
+      await _audioPlayer.resume();
     } catch (e) {
-      debugPrint("Error playing audio: $e");
+      debugPrint("Audio Error: $e");
     }
   }
+
+  // Future<void> _playRandomSong() async {
+  //   if (songList.isEmpty) return;
+  //   try {
+  //     final filename = songList[_rng.nextInt(songList.length)];
+  //     final path = 'music/lemons/$filename'; 
+  //     await _audioPlayer.setReleaseMode(ReleaseMode.loop);
+  //     await _audioPlayer.play(AssetSource(path));
+  //   } catch (e) {
+  //     debugPrint("Error playing audio: $e");
+  //   }
+  // }
 
   void _startGame() {
     setState(() {

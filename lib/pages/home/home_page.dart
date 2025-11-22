@@ -55,7 +55,6 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
-
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;

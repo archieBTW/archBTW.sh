@@ -24,6 +24,9 @@ class _WhaleGameState extends State<WhaleGame> {
     'the_fish_was_this_big.wav'
   ];
 
+  List<String> _musicQueue = [];
+  StreamSubscription? _playerCompleteSubscription;
+
   // --- Physics Variables ---
   static double birdYaxis = 0;
   double time = 0;
@@ -44,40 +47,96 @@ class _WhaleGameState extends State<WhaleGame> {
   final FocusNode _gameFocusNode = FocusNode();
   Timer? _timer;
 
-  @override
+@override
   void initState() {
     super.initState();
     
-    _playRandomMusic();
+    // Initialize the smart playlist player
+    _setupAudioPlayer();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       FocusScope.of(context).requestFocus(_gameFocusNode);
     });
   }
 
-  Future<void> _playRandomMusic() async {
-    if (_playlist.isEmpty) return;
-
-    try {
-      final randomTrack = _playlist[Random().nextInt(_playlist.length)];
-      
-      await _audioPlayer.setVolume(0.5);
-      
-      await _audioPlayer.setReleaseMode(ReleaseMode.loop);
-      
-      await _audioPlayer.play(AssetSource('music/blubber/$randomTrack'));
-    } catch (e) {
-      debugPrint("Error playing audio: $e");
-    }
-  }
-
   @override
   void dispose() {
     _timer?.cancel();
+    _playerCompleteSubscription?.cancel(); // Cancel listener to prevent memory leaks
     _gameFocusNode.dispose();
     _audioPlayer.dispose();
     super.dispose();
   }
+
+void _setupAudioPlayer() {
+    // 1. Don't loop a single song; stop when it finishes so we can trigger the next one
+    _audioPlayer.setReleaseMode(ReleaseMode.release);
+
+    // 2. Listen for the song ending
+    _playerCompleteSubscription = _audioPlayer.onPlayerComplete.listen((event) {
+      _playNextTrack();
+    });
+
+    // 3. Start the queue
+    _playNextTrack();
+  }
+
+  Future<void> _playNextTrack() async {
+    if (_playlist.isEmpty) return;
+
+    // A. If queue is empty, refill and shuffle
+    if (_musicQueue.isEmpty) {
+      _musicQueue = List.of(_playlist)..shuffle();
+    }
+
+    // B. Get the next song
+    final nextSong = _musicQueue.removeAt(0);
+
+    try {
+      // Note: Using the specific folder for this game
+      final fullPath = 'music/blubber/$nextSong';
+      await _audioPlayer.setSource(AssetSource(fullPath));
+      await _audioPlayer.setVolume(0.5);
+      await _audioPlayer.resume();
+    } catch (e) {
+      debugPrint("Audio Error: $e");
+    }
+  }
+
+  // @override
+  // void initState() {
+  //   super.initState();
+    
+  //   _playRandomMusic();
+
+  //   WidgetsBinding.instance.addPostFrameCallback((_) {
+  //     FocusScope.of(context).requestFocus(_gameFocusNode);
+  //   });
+  // }
+
+  // Future<void> _playRandomMusic() async {
+  //   if (_playlist.isEmpty) return;
+
+  //   try {
+  //     final randomTrack = _playlist[Random().nextInt(_playlist.length)];
+      
+  //     await _audioPlayer.setVolume(0.5);
+      
+  //     await _audioPlayer.setReleaseMode(ReleaseMode.loop);
+      
+  //     await _audioPlayer.play(AssetSource('music/blubber/$randomTrack'));
+  //   } catch (e) {
+  //     debugPrint("Error playing audio: $e");
+  //   }
+  // }
+
+  // @override
+  // void dispose() {
+  //   _timer?.cancel();
+  //   _gameFocusNode.dispose();
+  //   _audioPlayer.dispose();
+  //   super.dispose();
+  // }
 
   void jump() {
     if (gameOver) {

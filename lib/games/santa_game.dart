@@ -44,6 +44,11 @@ class _SantasInvadersGameState extends State<SantasInvadersGame> with SingleTick
   double _time = 0; 
   final double _playerMoveSpeed = 0.03;
 
+final List<String> _playlist = ['rudolph.wav', 'whos_a_ho.wav', 'xmas_tree.wav', 'workshop.wav'];
+
+  List<String> _musicQueue = [];
+  StreamSubscription? _playerCompleteSubscription;
+
   @override
   void initState() {
     super.initState();
@@ -53,28 +58,65 @@ class _SantasInvadersGameState extends State<SantasInvadersGame> with SingleTick
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _focusNode.requestFocus();
     });
-    _playRandomBackgroundMusic();
+    // _playRandomBackgroundMusic();
+    _setupAudioPlayer();
   }
 
   @override
   void dispose() {
     _ticker.dispose();
     _focusNode.dispose();
+    _playerCompleteSubscription?.cancel();
     _audioPlayer.dispose(); 
     super.dispose();
   }
 
-  Future<void> _playRandomBackgroundMusic() async {
+void _setupAudioPlayer() {
+    // 1. Don't loop a single song; stop when it finishes so we can trigger the next one
+    _audioPlayer.setReleaseMode(ReleaseMode.release);
+
+    // 2. Listen for the song ending
+    _playerCompleteSubscription = _audioPlayer.onPlayerComplete.listen((event) {
+      _playNextTrack();
+    });
+
+    // 3. Start the queue
+    _playNextTrack();
+  }
+
+  Future<void> _playNextTrack() async {
+    if (_playlist.isEmpty) return;
+
+    // A. If queue is empty, refill and shuffle
+    if (_musicQueue.isEmpty) {
+      _musicQueue = List.of(_playlist)..shuffle();
+    }
+
+    // B. Get the next song
+    final nextSong = _musicQueue.removeAt(0);
+
     try {
-      final List<String> tracks = ['rudolph.wav', 'whos_a_ho.wav', 'xmas_tree.wav', 'workshop.wav'];
-      final randomFileName = tracks[Random().nextInt(tracks.length)];
-      await _audioPlayer.setReleaseMode(ReleaseMode.loop); 
-      await _audioPlayer.setVolume(0.5); 
-      await _audioPlayer.play(AssetSource('music/santas_cookies/$randomFileName'));
+      // Note: Using the specific folder for this game
+      final fullPath = 'music/santas_cookies/$nextSong';
+      await _audioPlayer.setSource(AssetSource(fullPath));
+      await _audioPlayer.setVolume(0.5);
+      await _audioPlayer.resume();
     } catch (e) {
-      debugPrint("Error playing music: $e");
+      debugPrint("Audio Error: $e");
     }
   }
+
+  // Future<void> _playRandomBackgroundMusic() async {
+  //   try {
+      
+  //     final randomFileName = tracks[Random().nextInt(tracks.length)];
+  //     await _audioPlayer.setReleaseMode(ReleaseMode.loop); 
+  //     await _audioPlayer.setVolume(0.5); 
+  //     await _audioPlayer.play(AssetSource('music/santas_cookies/$randomFileName'));
+  //   } catch (e) {
+  //     debugPrint("Error playing music: $e");
+  //   }
+  // }
 
   void _resetGame() {
     setState(() {
