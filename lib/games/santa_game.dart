@@ -58,7 +58,6 @@ final List<String> _playlist = ['rudolph.wav', 'whos_a_ho.wav', 'xmas_tree.wav',
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _focusNode.requestFocus();
     });
-    // _playRandomBackgroundMusic();
     _setupAudioPlayer();
   }
 
@@ -72,31 +71,25 @@ final List<String> _playlist = ['rudolph.wav', 'whos_a_ho.wav', 'xmas_tree.wav',
   }
 
 void _setupAudioPlayer() {
-    // 1. Don't loop a single song; stop when it finishes so we can trigger the next one
     _audioPlayer.setReleaseMode(ReleaseMode.release);
 
-    // 2. Listen for the song ending
     _playerCompleteSubscription = _audioPlayer.onPlayerComplete.listen((event) {
       _playNextTrack();
     });
 
-    // 3. Start the queue
     _playNextTrack();
   }
 
   Future<void> _playNextTrack() async {
     if (_playlist.isEmpty) return;
 
-    // A. If queue is empty, refill and shuffle
     if (_musicQueue.isEmpty) {
       _musicQueue = List.of(_playlist)..shuffle();
     }
 
-    // B. Get the next song
     final nextSong = _musicQueue.removeAt(0);
 
     try {
-      // Note: Using the specific folder for this game
       final fullPath = 'music/santas_cookies/$nextSong';
       await _audioPlayer.setSource(AssetSource(fullPath));
       await _audioPlayer.setVolume(0.5);
@@ -105,18 +98,6 @@ void _setupAudioPlayer() {
       debugPrint("Audio Error: $e");
     }
   }
-
-  // Future<void> _playRandomBackgroundMusic() async {
-  //   try {
-      
-  //     final randomFileName = tracks[Random().nextInt(tracks.length)];
-  //     await _audioPlayer.setReleaseMode(ReleaseMode.loop); 
-  //     await _audioPlayer.setVolume(0.5); 
-  //     await _audioPlayer.play(AssetSource('music/santas_cookies/$randomFileName'));
-  //   } catch (e) {
-  //     debugPrint("Error playing music: $e");
-  //   }
-  // }
 
   void _resetGame() {
     setState(() {

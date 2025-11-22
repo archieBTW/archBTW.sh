@@ -1,8 +1,8 @@
 import 'package:archbtw_sh/global/colors.dart';
 import 'package:flutter/material.dart';
 
-class BioPage extends StatelessWidget {
-  const BioPage({super.key});
+class AboutPage extends StatelessWidget {
+  const AboutPage({super.key});
 
   
 

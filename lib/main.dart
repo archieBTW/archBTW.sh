@@ -1,5 +1,5 @@
 import 'package:archbtw_sh/global/colors.dart';
-import 'package:archbtw_sh/pages/about/bio.dart';
+import 'package:archbtw_sh/pages/about/about.dart';
 import 'package:archbtw_sh/pages/home/home_page.dart';
 import 'package:archbtw_sh/pages/merch/merch__page.dart';
 import 'package:archbtw_sh/pages/music/music_page.dart';
@@ -43,7 +43,7 @@ class _MainScreenState extends State<MainScreen> {
 
   final List<Widget> _screens = [
     const HomePage(),
-    const BioPage(),
+    const AboutPage(),
     const MusicPage(),
     const MerchPage(),
   ];

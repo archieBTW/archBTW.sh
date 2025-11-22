@@ -114,17 +114,6 @@ void _setupAudioPlayer() {
     }
   }
 
-  // Future<void> _playRandomSong() async {
-  //   if (songList.isEmpty) return;
-  //   try {
-  //     final filename = songList[_rng.nextInt(songList.length)];
-  //     final path = 'music/lemons/$filename'; 
-  //     await _audioPlayer.setReleaseMode(ReleaseMode.loop);
-  //     await _audioPlayer.play(AssetSource(path));
-  //   } catch (e) {
-  //     debugPrint("Error playing audio: $e");
-  //   }
-  // }
 
   void _startGame() {
     setState(() {
