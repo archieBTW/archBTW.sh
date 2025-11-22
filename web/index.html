@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base href="/">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="description" content="archBTW. Website">
+
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="archBTW.">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>archBTW.</title>
+  <link rel="manifest" href="manifest.json">
+
+  <style>
+    /* Set the background to black immediately */
+    body {
+      background-color: #000000;
+      font-family: 'JetBrains Mono';
+    }
+
+    /* This container centers the loader */
+    .loader-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    /* This is the waveform loader */
+    .waveform {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 50px;
+    }
+    
+    .waveform > div {
+      width: 4px;
+      height: 50px;
+      margin: 0 3px;
+      background-color: #FFFFFF; /* Your kAccentColor */
+      animation: waveform-animation 1.2s infinite ease-in-out;
+      transform: scaleY(0.1);
+      
+      /* --- CHANGE #1: Add border-radius for rounded edges --- */
+      border-radius: 99px; 
+    }
+
+    /* Add delays to each bar to create the wave effect */
+    .waveform .bar2 { animation-delay: 0.1s; }
+    .waveform .bar3 { animation-delay: 0.2s; }
+    .waveform .bar4 { animation-delay: 0.3s; }
+    .waveform .bar5 { animation-delay: 0.4s; }
+
+    /* The animation keyframes */
+    @keyframes waveform-animation {
+      0% {
+        transform: scaleY(0.1);
+      }
+      50% {
+        transform: scaleY(1.0);
+      }
+      100% {
+        transform: scaleY(0.1);
+      }
+    }
+  </style>
+</head>
+
+<body style="background-color: #000000;">
+
+  <div class="loader-container" id="splash">
+    <div class="waveform">
+      <div class="bar1"></div>
+      <div class="bar2"></div>
+      <div class="bar3"></div>
+      <div class="bar4"></div>
+      <div class="bar5"></div>
+    </div>
+  </div>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('flutter_service_worker.js');
+      });
+    }
+  </script>
+  <script src="main.dart.js" type="application/javascript"></script>
+</body>
+</html>

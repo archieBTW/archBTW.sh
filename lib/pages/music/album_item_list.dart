@@ -1,0 +1,55 @@
+import 'package:archbtw_sh/pages/music/album_item.dart';
+import 'package:archbtw_sh/pages/music/lyrics.dart';
+
+final List<AlbumItem> albumItems = [
+  const AlbumItem(
+    title: 'life\'s lemons',
+    coverUrl: 'assets/images/lemons.jpg',
+    spotifyUrl: 'https://open.spotify.com/artist/54LLXYgKGZTqH9tZzsmDtS',
+    appleMusicUrl: 'https://music.apple.com/us/artist/archbtw/1734630826',
+    soundCloudUrl: 'https://soundcloud.com/archbtw',
+    youtubeUrl: 'https://www.youtube.com/channel/UCEkivs08T2wb9m6NSuryc8A',
+    soundCloudOnly: false,
+    lyrics: lifesLemonsLyrics,
+  ),
+  const AlbumItem(
+    title: 'santa\'s cookies',
+    coverUrl: 'assets/images/cookies.png',
+    spotifyUrl: 'https://open.spotify.com/artist/54LLXYgKGZTqH9tZzsmDtS',
+    appleMusicUrl: 'https://music.apple.com/us/artist/archbtw/1734630826',
+    soundCloudUrl: 'https://soundcloud.com/archbtw',
+    youtubeUrl: 'https://www.youtube.com/channel/UCEkivs08T2wb9m6NSuryc8A',
+    soundCloudOnly: false,
+    lyrics: santasCookiesLyrics,
+  ),
+  const AlbumItem(
+    title: 'blubber',
+    coverUrl: 'assets/images/whale.png',
+    spotifyUrl: 'https://open.spotify.com/artist/54LLXYgKGZTqH9tZzsmDtS',
+    appleMusicUrl: 'https://music.apple.com/us/artist/archbtw/1734630826',
+    soundCloudUrl: 'https://soundcloud.com/archbtw',
+    youtubeUrl: 'https://www.youtube.com/channel/UCEkivs08T2wb9m6NSuryc8A',
+    soundCloudOnly: false,
+    lyrics: blubberLyrics,
+  ),
+  const AlbumItem(
+    title: 'i\'d just like to interject for a moment',
+    coverUrl: 'assets/images/shadow.png',
+    spotifyUrl: 'https://open.spotify.com/artist/54LLXYgKGZTqH9tZzsmDtS',
+    appleMusicUrl: 'https://music.apple.com/us/artist/archbtw/1734630826',
+    soundCloudUrl: 'https://soundcloud.com/archbtw',
+    youtubeUrl: 'https://www.youtube.com/channel/UCEkivs08T2wb9m6NSuryc8A',
+    soundCloudOnly: false,
+    lyrics: idJustLikeToInterjectLyrics,
+  ),
+  const AlbumItem(
+    title: 'this is the name of a demo tape by archBTW.',
+    coverUrl: 'assets/images/demo_tape.png',
+    spotifyUrl: 'https://open.spotify.com/artist/54LLXYgKGZTqH9tZzsmDtS',
+    appleMusicUrl: 'https://music.apple.com/us/artist/archbtw/1734630826',
+    soundCloudUrl: 'https://soundcloud.com/archbtw',
+    youtubeUrl: 'https://www.youtube.com/channel/UCEkivs08T2wb9m6NSuryc8A',
+    soundCloudOnly: true,
+    lyrics: demoLyrics,
+  ),
+];
