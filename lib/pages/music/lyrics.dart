@@ -34,7 +34,6 @@ Made of rubber that's drenched in glue.
 
 
 
-
 [i'll have the ribs please]
 He made me out of dust pulled from the ground
 It was eerily quiet. The birds were the only sound. 
@@ -308,7 +307,6 @@ I know You've got a plan. We're waiting for a boat at the dock.
 
 How long will You make us wait? This is getting harder by the second.
 I know that I'm impatient but I also know that You're omnipotent. 
-
 
 """;
 

@@ -8,13 +8,13 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage();
+  const HomePage({super.key});
 
   @override
-  State<HomePage> createState() =>  _HomePageState();
+  State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin {
   static const String _fullText = "hi. i'm archBTW.";
   String _currentText = '';
   int _currentIndex = 0;
@@ -22,6 +22,9 @@ class _HomePageState extends State<HomePage> {
   
   late final Timer _typingTimer;
   late final Timer _cursorTimer;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -57,6 +60,8 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); 
+
     final screenWidth = MediaQuery.of(context).size.width;
     final bool isDesktop = screenWidth >= 768.0;
 
@@ -136,6 +141,4 @@ class _HomePageState extends State<HomePage> {
       ],
     );
   }
-
 }
-

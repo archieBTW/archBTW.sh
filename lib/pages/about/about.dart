@@ -26,8 +26,8 @@ class AboutPage extends StatelessWidget {
  __________________
 < hi. i'm archBTW. >
  ------------------
-        \   ^__^
-         \  (oo)\_______
+         \   ^__^
+          \  (oo)\_______
             (__)\       )\/\
               ||----w |
               ||     ||

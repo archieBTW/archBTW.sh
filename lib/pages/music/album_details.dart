@@ -188,9 +188,46 @@ String _getTooltipForAlbum(String title) {
   return "launch_protocol: citrus"; // lemons
 }
 
+// List<TextSpan> _buildLyricSpans(String lyrics, {required bool isDesktop}) {
+//   final double defaultFontSize = isDesktop ? 16 : 14;
+//   final double specialFontSize = isDesktop ? 22 : 18;
+
+//   final defaultStyle = TextStyle(
+//     color: kTextColor,
+//     fontSize: defaultFontSize,
+//     height: 1.5,
+//     fontFamily: 'JetBrainsMono',
+//   );
+//   final specialStyle = TextStyle(
+//     color: kAccentColor,
+//     fontSize: specialFontSize,
+//     fontWeight: FontWeight.bold,
+//     height: 1.5,
+//     fontFamily: 'JetBrainsMono',
+//   );
+
+//   final List<TextSpan> spans = [];
+//   final lines = lyrics.split('\n');
+
+//   for (final line in lines) {
+//     final trimmedLine = line.trim();
+
+//     if (trimmedLine.startsWith('[') && trimmedLine.endsWith(']')) {
+//       final content = trimmedLine.substring(1, trimmedLine.length - 1);
+//       spans.add(TextSpan(text: '// $content\n', style: specialStyle));
+//     } else {
+//       spans.add(TextSpan(text: '$line\n', style: defaultStyle));
+//     }
+//   }
+//   return spans;
+// }
 List<TextSpan> _buildLyricSpans(String lyrics, {required bool isDesktop}) {
+  // 1. Adjusted sizes
   final double defaultFontSize = isDesktop ? 16 : 14;
-  final double specialFontSize = isDesktop ? 22 : 18;
+  // Decreased title size slightly (was 22/18)
+  final double titleFontSize = isDesktop ? 20 : 16; 
+  // New size for descriptions
+  final double descriptionFontSize = isDesktop ? 14 : 12; 
 
   final defaultStyle = TextStyle(
     color: kTextColor,
@@ -198,24 +235,48 @@ List<TextSpan> _buildLyricSpans(String lyrics, {required bool isDesktop}) {
     height: 1.5,
     fontFamily: 'JetBrainsMono',
   );
-  final specialStyle = TextStyle(
-    color: kAccentColor,
-    fontSize: specialFontSize,
-    fontWeight: FontWeight.bold,
+
+  final titleStyle = TextStyle(
+    color: Colors.white70,
+    fontSize: titleFontSize,
+    fontWeight: FontWeight.bold, // Kept bold
+    height: 1.5,
+    fontFamily: 'JetBrainsMono',
+  );
+
+  // New style for the "behind the songs" text
+  final descriptionStyle = TextStyle(
+    color: kTextColor, // You might want to use .withOpacity(0.8) for a softer look
+    fontSize: descriptionFontSize,
+    fontStyle: FontStyle.italic,
     height: 1.5,
     fontFamily: 'JetBrainsMono',
   );
 
   final List<TextSpan> spans = [];
   final lines = lyrics.split('\n');
+  
+  // State to track if we are currently inside the ** block
+  bool inDescriptionBlock = false;
 
   for (final line in lines) {
     final trimmedLine = line.trim();
 
-    if (trimmedLine.startsWith('[') && trimmedLine.endsWith(']')) {
+    // Toggle state when we hit the asterisks and skip rendering that specific line
+    if (trimmedLine == '**') {
+      inDescriptionBlock = !inDescriptionBlock;
+      continue;
+    }
+
+    if (inDescriptionBlock) {
+      // Render description text
+      spans.add(TextSpan(text: '$line\n', style: descriptionStyle));
+    } else if (trimmedLine.startsWith('[') && trimmedLine.endsWith(']')) {
+      // Render Title
       final content = trimmedLine.substring(1, trimmedLine.length - 1);
-      spans.add(TextSpan(text: '// $content\n', style: specialStyle));
+      spans.add(TextSpan(text: '// $content\n', style: titleStyle));
     } else {
+      // Render standard lyrics
       spans.add(TextSpan(text: '$line\n', style: defaultStyle));
     }
   }
