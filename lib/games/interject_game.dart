@@ -21,20 +21,28 @@ class InterjectGame extends StatefulWidget {
 class _InterjectGameState extends State<InterjectGame> {
   final AudioPlayer _audioPlayer = AudioPlayer();
   final List<String> _playlist = [
-    'oakwood.m4a',
-    'parseltongue.m4a',
-    'badluck.wav',
-    'so_its.wav',
-    'lunch.wav'
+    'almost_intelligent.wav',
+    'crosstops.wav',
+    'c_u_next_tuesday.wav',
+    'drinking_outta_cups.wav',
+    'elixir.wav',
+    'florence.wav',
+    'it_seemed_like_a_good_idea_at_the_time.wav',
+    'you_call_this_mercy.wav',
+    'midnight_oil.wav',
+    'i_may_not_be_a_smart_man_but_i_know_what_love_is.wav',
+    'lets_take_it_apart_and_put_it_back_together.wav',
+    'and_thats_how_it_happened.wav',
+    'third_times_a_charm.wav',
   ];
 
   List<String> _musicQueue = [];
-  
+
   StreamSubscription? _playerCompleteSubscription;
 
   final int _rows = 8;
   final int _cols = 5;
-  
+
   final List<Color> _pillColors = [
     const Color(0xFFE53935), // Red
     const Color(0xFF1E88E5), // Blue
@@ -46,7 +54,7 @@ class _InterjectGameState extends State<InterjectGame> {
 
   late List<List<Pill?>> _grid;
   Point<int>? _selectedPoint;
-  
+
   int _score = 0;
   bool _isWon = false;
   bool _isGameOver = false;
@@ -59,7 +67,7 @@ class _InterjectGameState extends State<InterjectGame> {
   void initState() {
     super.initState();
     _initGrid(resetScore: true);
-    
+
     _setupAudioPlayer();
   }
 
@@ -71,7 +79,7 @@ class _InterjectGameState extends State<InterjectGame> {
     super.dispose();
   }
 
-void _setupAudioPlayer() {
+  void _setupAudioPlayer() {
     _audioPlayer.setReleaseMode(ReleaseMode.release);
 
     _playerCompleteSubscription = _audioPlayer.onPlayerComplete.listen((event) {
@@ -91,7 +99,7 @@ void _setupAudioPlayer() {
     final nextSong = _musicQueue.removeAt(0);
 
     try {
-      final fullPath = 'music/interject/$nextSong';
+      final fullPath = 'music/lemons/$nextSong';
       await _audioPlayer.setSource(AssetSource(fullPath));
       await _audioPlayer.setVolume(0.5);
       await _audioPlayer.resume();
@@ -126,7 +134,7 @@ void _setupAudioPlayer() {
           final pill = _grid[y][x];
           if (pill != null && doomedColors.contains(pill.color)) {
             _grid[y][x] = null;
-            _score += 5; 
+            _score += 5;
             changed = true;
           }
         }
@@ -136,7 +144,7 @@ void _setupAudioPlayer() {
     if (changed) {
       await Future.delayed(const Duration(milliseconds: 200));
       await _applyGravity();
-      await _resolveMatches(); 
+      await _resolveMatches();
     }
   }
 
@@ -158,19 +166,13 @@ void _setupAudioPlayer() {
 
   void _initGrid({bool resetScore = true}) {
     // Initialize empty grid
-    _grid = List.generate(
-      _rows,
-      (_) => List<Pill?>.filled(_cols, null),
-    );
+    _grid = List.generate(_rows, (_) => List<Pill?>.filled(_cols, null));
 
     for (int y = 0; y < _rows; y++) {
-      
       for (int x = 0; x < _cols; x++) {
         Color proposedColor;
         do {
-          
           proposedColor = _pillColors[Random().nextInt(_pillColors.length)];
-          
         } while (!_isMatchSafe(_grid, x, y, proposedColor, isTopDown: true));
 
         _grid[y][x] = Pill(proposedColor);
@@ -178,8 +180,8 @@ void _setupAudioPlayer() {
     }
 
     setState(() {
-      if (resetScore) _score = 0; 
-      
+      if (resetScore) _score = 0;
+
       _isWon = false;
       _isGameOver = false;
       _isProcessing = false;
@@ -210,15 +212,21 @@ void _setupAudioPlayer() {
     );
 
     int pillIndex = 0;
-    
+
     for (int y = _rows - 1; y >= 0; y--) {
       for (int x = 0; x < _cols; x++) {
         if (pillIndex >= availablePills.length) break;
 
         int foundIndex = -1;
-        
+
         for (int k = pillIndex; k < availablePills.length; k++) {
-          if (_isMatchSafe(newGrid, x, y, availablePills[k].color, isTopDown: false)) {
+          if (_isMatchSafe(
+            newGrid,
+            x,
+            y,
+            availablePills[k].color,
+            isTopDown: false,
+          )) {
             foundIndex = k;
             break;
           }
@@ -228,7 +236,7 @@ void _setupAudioPlayer() {
           final temp = availablePills[pillIndex];
           availablePills[pillIndex] = availablePills[foundIndex];
           availablePills[foundIndex] = temp;
-        } 
+        }
 
         newGrid[y][x] = availablePills[pillIndex];
         pillIndex++;
@@ -237,7 +245,7 @@ void _setupAudioPlayer() {
 
     setState(() {
       _grid = newGrid;
-      _selectedPoint = null; 
+      _selectedPoint = null;
     });
 
     await Future.delayed(const Duration(milliseconds: 500));
@@ -250,36 +258,54 @@ void _setupAudioPlayer() {
     }
   }
 
-  bool _isMatchSafe(List<List<Pill?>> tempGrid, int x, int y, Color color, {required bool isTopDown}) {
+  bool _isMatchSafe(
+    List<List<Pill?>> tempGrid,
+    int x,
+    int y,
+    Color color, {
+    required bool isTopDown,
+  }) {
     if (x >= 2) {
-      if (tempGrid[y][x - 1]?.color == color && tempGrid[y][x - 2]?.color == color) {
+      if (tempGrid[y][x - 1]?.color == color &&
+          tempGrid[y][x - 2]?.color == color) {
         return false;
       }
     }
 
     if (isTopDown) {
       if (y >= 2) {
-        if (tempGrid[y - 1][x]?.color == color && tempGrid[y - 2][x]?.color == color) return false;
+        if (tempGrid[y - 1][x]?.color == color &&
+            tempGrid[y - 2][x]?.color == color)
+          return false;
       }
 
       if (x >= 2 && y >= 2) {
-        if (tempGrid[y - 1][x - 1]?.color == color && tempGrid[y - 2][x - 2]?.color == color) return false;
+        if (tempGrid[y - 1][x - 1]?.color == color &&
+            tempGrid[y - 2][x - 2]?.color == color)
+          return false;
       }
       if (x <= _cols - 3 && y >= 2) {
-        if (tempGrid[y - 1][x + 1]?.color == color && tempGrid[y - 2][x + 2]?.color == color) return false;
+        if (tempGrid[y - 1][x + 1]?.color == color &&
+            tempGrid[y - 2][x + 2]?.color == color)
+          return false;
       }
-
     } else {
       if (y <= _rows - 3) {
-        if (tempGrid[y + 1][x]?.color == color && tempGrid[y + 2][x]?.color == color) return false;
+        if (tempGrid[y + 1][x]?.color == color &&
+            tempGrid[y + 2][x]?.color == color)
+          return false;
       }
-      
+
       if (x >= 2 && y <= _rows - 3) {
-        if (tempGrid[y + 1][x - 1]?.color == color && tempGrid[y + 2][x - 2]?.color == color) return false;
+        if (tempGrid[y + 1][x - 1]?.color == color &&
+            tempGrid[y + 2][x - 2]?.color == color)
+          return false;
       }
-      
+
       if (x <= _cols - 3 && y <= _rows - 3) {
-        if (tempGrid[y + 1][x + 1]?.color == color && tempGrid[y + 2][x + 2]?.color == color) return false;
+        if (tempGrid[y + 1][x + 1]?.color == color &&
+            tempGrid[y + 2][x + 2]?.color == color)
+          return false;
       }
     }
 
@@ -374,9 +400,15 @@ void _setupAudioPlayer() {
         final c = getColor(x, y);
         if (c == null) continue;
         if (getColor(x + 1, y + 1) == c && getColor(x + 2, y + 2) == c) {
-          matchedPoints.addAll([Point(x, y), Point(x + 1, y + 1), Point(x + 2, y + 2)]);
+          matchedPoints.addAll([
+            Point(x, y),
+            Point(x + 1, y + 1),
+            Point(x + 2, y + 2),
+          ]);
           int k = 3;
-          while (y + k < _rows && x + k < _cols && getColor(x + k, y + k) == c) {
+          while (y + k < _rows &&
+              x + k < _cols &&
+              getColor(x + k, y + k) == c) {
             matchedPoints.add(Point(x + k, y + k));
             k++;
           }
@@ -389,7 +421,11 @@ void _setupAudioPlayer() {
         final c = getColor(x, y);
         if (c == null) continue;
         if (getColor(x - 1, y + 1) == c && getColor(x - 2, y + 2) == c) {
-          matchedPoints.addAll([Point(x, y), Point(x - 1, y + 1), Point(x - 2, y + 2)]);
+          matchedPoints.addAll([
+            Point(x, y),
+            Point(x - 1, y + 1),
+            Point(x - 2, y + 2),
+          ]);
           int k = 3;
           while (y + k < _rows && x - k >= 0 && getColor(x - k, y + k) == c) {
             matchedPoints.add(Point(x - k, y + k));
@@ -436,19 +472,19 @@ void _setupAudioPlayer() {
 
   void _checkWinCondition() {
     bool isEmpty = true;
-    for(var row in _grid) {
-      for(var pill in row) {
-        if(pill != null) {
+    for (var row in _grid) {
+      for (var pill in row) {
+        if (pill != null) {
           isEmpty = false;
           break;
         }
       }
     }
-    if(isEmpty && !_isWon) {
-       setState(() {
-         _isWon = true;
-         _gameTimer?.cancel();
-       });
+    if (isEmpty && !_isWon) {
+      setState(() {
+        _isWon = true;
+        _gameTimer?.cancel();
+      });
     }
   }
 
@@ -494,7 +530,9 @@ void _setupAudioPlayer() {
           _isWon ? "SYSTEM CLEAN" : (_isGameOver ? "TIMEOUT" : _timerString),
           style: TextStyle(
             fontFamily: 'JetBrainsMono',
-            color: _isWon ? Colors.green : (_isGameOver ? Colors.red : kAccentColor),
+            color: _isWon
+                ? Colors.green
+                : (_isGameOver ? Colors.red : kAccentColor),
             fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
@@ -512,11 +550,10 @@ void _setupAudioPlayer() {
                 ),
               ),
             ),
-          )
+          ),
         ],
-        
       ),
-      floatingActionButton: (!_isWon && !_isGameOver) 
+      floatingActionButton: (!_isWon && !_isGameOver)
           ? FloatingActionButton(
               onPressed: _shuffleGrid,
               backgroundColor: kAccentColor,
@@ -558,8 +595,11 @@ void _setupAudioPlayer() {
               foregroundColor: Colors.black,
             ),
             onPressed: () => _initGrid(resetScore: false),
-            child: const Text("sudo reboot", style: TextStyle(fontFamily: 'JetBrainsMono', fontSize: 18)),
-          )
+            child: const Text(
+              "sudo reboot",
+              style: TextStyle(fontFamily: 'JetBrainsMono', fontSize: 18),
+            ),
+          ),
         ],
       ),
     );
@@ -590,8 +630,11 @@ void _setupAudioPlayer() {
               foregroundColor: Colors.black,
             ),
             onPressed: () => _initGrid(resetScore: true),
-            child: const Text("retry", style: TextStyle(fontFamily: 'JetBrainsMono', fontSize: 18)),
-          )
+            child: const Text(
+              "retry",
+              style: TextStyle(fontFamily: 'JetBrainsMono', fontSize: 18),
+            ),
+          ),
         ],
       ),
     );
@@ -608,7 +651,7 @@ void _setupAudioPlayer() {
         if (cellSize * _rows > maxHeight) {
           cellSize = maxHeight / _rows;
         }
-        
+
         // Center the grid horizontally/vertically
         final double xOffset = (constraints.maxWidth - (cellSize * _cols)) / 2;
         final double yOffset = (constraints.maxHeight - (cellSize * _rows)) / 2;
@@ -635,7 +678,7 @@ void _setupAudioPlayer() {
                     onTap: () => _handleTap(x, y),
                   ),
                 ),
-              )
+              ),
             );
           }
         }
@@ -648,7 +691,7 @@ void _setupAudioPlayer() {
 
             pillWidgets.add(
               AnimatedPositioned(
-                key: Key(pill.id), 
+                key: Key(pill.id),
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeInOutBack,
                 left: xOffset + (x * cellSize),
@@ -663,15 +706,16 @@ void _setupAudioPlayer() {
           }
         }
 
-        return Stack(
-          children: pillWidgets,
-        );
+        return Stack(children: pillWidgets);
       },
     );
   }
 
   Widget _buildPillCell(int x, int y, double size, Pill pill) {
-    final isSelected = _selectedPoint != null && _selectedPoint!.x == x && _selectedPoint!.y == y;
+    final isSelected =
+        _selectedPoint != null &&
+        _selectedPoint!.x == x &&
+        _selectedPoint!.y == y;
 
     return Center(
       child: SizedBox(
@@ -685,7 +729,7 @@ void _setupAudioPlayer() {
                 color: pill.color,
                 borderRadius: BorderRadius.circular(size * 0.3),
                 boxShadow: [
-                   BoxShadow(
+                  BoxShadow(
                     color: Colors.black.withOpacity(0.3),
                     offset: const Offset(2, 2),
                     blurRadius: 3,
@@ -696,7 +740,7 @@ void _setupAudioPlayer() {
                     blurRadius: 2,
                     // inset: true
                   ),
-                ]
+                ],
               ),
               child: Center(
                 child: Text(
@@ -718,8 +762,8 @@ void _setupAudioPlayer() {
                     BoxShadow(
                       color: pill.color.withOpacity(0.8),
                       blurRadius: 15,
-                      spreadRadius: 2
-                    )
+                      spreadRadius: 2,
+                    ),
                   ],
                 ),
               ),

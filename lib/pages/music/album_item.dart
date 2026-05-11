@@ -7,6 +7,8 @@ class AlbumItem {
   final String youtubeUrl;
   final bool soundCloudOnly;    
   final String lyrics;        
+  final List<String> tracks;
+  final String audioPath;
 
   const AlbumItem({
     required this.title,
@@ -16,6 +18,8 @@ class AlbumItem {
     required this.soundCloudUrl,
     required this.youtubeUrl,
     required this.lyrics,
-    required this.soundCloudOnly
+    required this.soundCloudOnly,
+    required this.tracks,
+    required this.audioPath,
   });
 }

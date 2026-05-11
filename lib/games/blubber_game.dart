@@ -14,14 +14,14 @@ class WhaleGame extends StatefulWidget {
 
 class _WhaleGameState extends State<WhaleGame> {
   final AudioPlayer _audioPlayer = AudioPlayer();
-  
+
   final List<String> _playlist = [
-    'all_aboard_full.wav',
-    'beluga_full.wav',
-    'dear_carpenter_full.wav',
-    'limbofull.wav',
-    'sos_full.wav',
-    'the_fish_was_this_big.wav'
+    'all_aboard_thats_going_aboard.wav',
+    'spouted.wav',
+    'whale_mail.wav',
+    'beached.wav',
+    'sos.wav',
+    'i_swear_the_fish_was_this_big.wav',
   ];
 
   List<String> _musicQueue = [];
@@ -34,23 +34,23 @@ class _WhaleGameState extends State<WhaleGame> {
   double initialHeight = birdYaxis;
   bool gameHasStarted = false;
   bool gameOver = false;
-  
+
   int score = 0;
   int highScore = 0;
 
   // --- Barrier Variables ---
   static double barrierXone = 2.5;
-  double barrierXtwo = 2.5 + 1.8; 
-  double barrierYone = 0; 
+  double barrierXtwo = 2.5 + 1.8;
+  double barrierYone = 0;
   double barrierYtwo = -0.5;
 
   final FocusNode _gameFocusNode = FocusNode();
   Timer? _timer;
 
-@override
+  @override
   void initState() {
     super.initState();
-    
+
     // Initialize the smart playlist player
     _setupAudioPlayer();
 
@@ -62,13 +62,14 @@ class _WhaleGameState extends State<WhaleGame> {
   @override
   void dispose() {
     _timer?.cancel();
-    _playerCompleteSubscription?.cancel(); // Cancel listener to prevent memory leaks
+    _playerCompleteSubscription
+        ?.cancel(); // Cancel listener to prevent memory leaks
     _gameFocusNode.dispose();
     _audioPlayer.dispose();
     super.dispose();
   }
 
-void _setupAudioPlayer() {
+  void _setupAudioPlayer() {
     _audioPlayer.setReleaseMode(ReleaseMode.release);
 
     _playerCompleteSubscription = _audioPlayer.onPlayerComplete.listen((event) {
@@ -121,16 +122,15 @@ void _setupAudioPlayer() {
     initialHeight = birdYaxis;
     barrierXone = 2.5;
     barrierXtwo = 2.5 + 1.8;
-    barrierYone = 0; 
+    barrierYone = 0;
     barrierYtwo = -0.5;
     time = 0;
 
     _timer = Timer.periodic(const Duration(milliseconds: 30), (timer) {
-      
       // Physics
       time += 0.025;
-      height = -4.5 * time * time + 2.1 * time; 
-      
+      height = -4.5 * time * time + 2.1 * time;
+
       setState(() {
         birdYaxis = initialHeight - height;
 
@@ -153,7 +153,7 @@ void _setupAudioPlayer() {
         _timer?.cancel();
         setState(() {
           gameOver = true;
-          gameHasStarted = false; 
+          gameHasStarted = false;
           if (score > highScore) highScore = score;
         });
       }
@@ -175,18 +175,18 @@ void _setupAudioPlayer() {
     return (Random().nextDouble() * 1.2) - 0.6;
   }
 
-bool _checkCollision() {
+  bool _checkCollision() {
     // 1. Floor/Ceiling
     if (birdYaxis > 1.2 || birdYaxis < -1.1) return true;
 
     bool checkSingleBarrier(double bX, double bY) {
       // Define the Gap Size in Alignment Units (Same as visuals below)
-      const double gapHeight = 0.7; 
-      
+      const double gapHeight = 0.7;
+
       // Whale Size Compensation
-      // The whale isn't a single point; it has height (approx 0.1). 
+      // The whale isn't a single point; it has height (approx 0.1).
       // We shrink the safe zone by half the whale's height so the *edges* of the whale collide.
-      const double whaleHalfHeight = 0.05; 
+      const double whaleHalfHeight = 0.05;
 
       // Horizontal Check
       // Check if the whale (width ~0.4) overlaps the pipe (width ~0.5)
@@ -215,11 +215,11 @@ bool _checkCollision() {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: kBackgroundColor, 
+      backgroundColor: kBackgroundColor,
       body: Center(
         child: KeyboardListener(
           focusNode: _gameFocusNode,
-          autofocus: true, 
+          autofocus: true,
           onKeyEvent: (event) {
             if (event is KeyDownEvent) {
               if (event.logicalKey == LogicalKeyboardKey.space ||
@@ -246,10 +246,16 @@ bool _checkCollision() {
                           children: [
                             // Background Grid
                             const _TerminalGrid(),
-                            
+
                             // Barriers
-                            _AsciiBarrier(barrierX: barrierXone, barrierY: barrierYone),
-                            _AsciiBarrier(barrierX: barrierXtwo, barrierY: barrierYtwo),
+                            _AsciiBarrier(
+                              barrierX: barrierXone,
+                              barrierY: barrierYone,
+                            ),
+                            _AsciiBarrier(
+                              barrierX: barrierXtwo,
+                              barrierY: barrierYtwo,
+                            ),
 
                             // The Whale
                             AnimatedContainer(
@@ -260,14 +266,21 @@ bool _checkCollision() {
 
                             // Messages
                             if (!gameHasStarted && !gameOver)
-                               const _OverlayMessage(title: "FloppyWhale", subtitle: "The belly of this fish is cold and damp."),
-                            
+                              const _OverlayMessage(
+                                title: "FloppyWhale",
+                                subtitle:
+                                    "The belly of this fish is cold and damp.",
+                              ),
+
                             if (gameOver)
-                               _OverlayMessage(title: "Should've listened in the first place", subtitle: "SCORE: $score // RETRY?"),
+                              _OverlayMessage(
+                                title: "Should've listened in the first place",
+                                subtitle: "SCORE: $score // RETRY?",
+                              ),
                           ],
                         ),
                       ),
-                      
+
                       // 2. Status Bar
                       Container(
                         height: 60,
@@ -276,15 +289,35 @@ bool _checkCollision() {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                             Column(
-                               mainAxisAlignment: MainAxisAlignment.center,
-                               crossAxisAlignment: CrossAxisAlignment.start,
-                               children: [
-                                 Text("PID: $score", style: const TextStyle(color: kTerminalGreen, fontFamily: 'JetBrainsMono', fontWeight: FontWeight.bold)),
-                                 Text("MAX: $highScore", style: TextStyle(color: kTerminalGreen.withOpacity(0.6), fontFamily: 'JetBrainsMono', fontSize: 12)),
-                               ],
-                             ),
-                             const Text("root@archBTW:~/floppy_whale.sh", style: TextStyle(color: Colors.white, fontFamily: 'JetBrainsMono')),
+                            Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "PID: $score",
+                                  style: const TextStyle(
+                                    color: kTerminalGreen,
+                                    fontFamily: 'JetBrainsMono',
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Text(
+                                  "MAX: $highScore",
+                                  style: TextStyle(
+                                    color: kTerminalGreen.withOpacity(0.6),
+                                    fontFamily: 'JetBrainsMono',
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const Text(
+                              "root@archBTW:~/floppy_whale.sh",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontFamily: 'JetBrainsMono',
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -304,7 +337,7 @@ bool _checkCollision() {
                             Colors.white.withOpacity(0.02),
                             Colors.transparent,
                           ],
-                          tileMode: TileMode.repeated
+                          tileMode: TileMode.repeated,
                         ),
                       ),
                       child: CustomPaint(painter: _ScanlinePainter()),
@@ -319,7 +352,7 @@ bool _checkCollision() {
                       icon: const Icon(Icons.close, color: Colors.white),
                       onPressed: () => Navigator.pop(context),
                     ),
-                  )
+                  ),
                 ],
               ),
             ),
@@ -344,14 +377,30 @@ class _OverlayMessage extends StatelessWidget {
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
             border: Border.all(color: kAccentColor),
-            color: Colors.black
+            color: Colors.black,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(title, style: const TextStyle(color: kTerminalGreen, fontSize: 24, fontFamily: 'JetBrainsMono', fontWeight: FontWeight.bold)),
+              Text(
+                title,
+                style: const TextStyle(
+                  color: kTerminalGreen,
+                  fontSize: 24,
+                  fontFamily: 'JetBrainsMono',
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               const SizedBox(height: 12),
-              Text(subtitle, style: const TextStyle(color: kTextColor, fontSize: 14, fontFamily: 'JetBrainsMono', letterSpacing: 1.2)),
+              Text(
+                subtitle,
+                style: const TextStyle(
+                  color: kTextColor,
+                  fontSize: 14,
+                  fontFamily: 'JetBrainsMono',
+                  letterSpacing: 1.2,
+                ),
+              ),
             ],
           ),
         ),
@@ -380,8 +429,8 @@ class _AsciiWhale extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 120, 
-      height: 80, 
+      width: 120,
+      height: 80,
       child: FittedBox(
         fit: BoxFit.contain,
         child: Text(
@@ -390,7 +439,7 @@ class _AsciiWhale extends StatelessWidget {
             color: kTextColor,
             fontFamily: 'JetBrainsMono',
             fontWeight: FontWeight.bold,
-            height: 1.0, 
+            height: 1.0,
           ),
         ),
       ),
@@ -398,16 +447,15 @@ class _AsciiWhale extends StatelessWidget {
   }
 }
 
-
 class _AsciiBarrier extends StatelessWidget {
   final double barrierX;
-  final double barrierY; 
+  final double barrierY;
   const _AsciiBarrier({required this.barrierX, required this.barrierY});
 
   @override
   Widget build(BuildContext context) {
     // Must match gapHeight in _checkCollision exactly
-    const double gapSize = 0.7; 
+    const double gapSize = 0.7;
 
     return Container(
       alignment: Alignment(barrierX, 0),
@@ -417,24 +465,30 @@ class _AsciiBarrier extends StatelessWidget {
           Expanded(
             // Calculate the flex based on how much space is ABOVE the gap
             // Formula: Total Space (2.0) - Bottom Space - Gap
-            flex: ((1 + barrierY - (gapSize / 2)) * 1000).toInt().clamp(1, 2000),
+            flex: ((1 + barrierY - (gapSize / 2)) * 1000).toInt().clamp(
+              1,
+              2000,
+            ),
             child: Container(
-              width: 80, 
+              width: 80,
               alignment: Alignment.bottomCenter,
               // Clip to prevent the text from spilling into the gap
               child: ClipRect(child: const _GlitchBlock(isTop: true)),
             ),
           ),
-          
+
           // THE GAP
           // We use Spacer with flex to ensure the gap is exactly proportional
           // to the alignment coordinates used in physics.
-          Spacer(flex: (gapSize * 1000).toInt()), 
-          
+          Spacer(flex: (gapSize * 1000).toInt()),
+
           // BOTTOM PIPE
           Expanded(
-             // Calculate the flex based on how much space is BELOW the gap
-            flex: ((1 - barrierY - (gapSize / 2)) * 1000).toInt().clamp(1, 2000),
+            // Calculate the flex based on how much space is BELOW the gap
+            flex: ((1 - barrierY - (gapSize / 2)) * 1000).toInt().clamp(
+              1,
+              2000,
+            ),
             child: Container(
               width: 80,
               alignment: Alignment.topCenter,
@@ -455,25 +509,27 @@ class _GlitchBlock extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        int lines = (constraints.maxHeight / 14).floor(); 
+        int lines = (constraints.maxHeight / 14).floor();
         return ClipRect(
           child: Column(
-            mainAxisAlignment: isTop ? MainAxisAlignment.end : MainAxisAlignment.start,
+            mainAxisAlignment: isTop
+                ? MainAxisAlignment.end
+                : MainAxisAlignment.start,
             children: List.generate(lines, (index) {
               return Text(
                 index % 2 == 0 ? "██████████" : "▓▓▓▓▓▓▓▓▓▓",
                 style: const TextStyle(
-                  color: kTerminalGreen, 
-                  fontFamily: 'JetBrainsMono', 
-                  fontSize: 14, 
+                  color: kTerminalGreen,
+                  fontFamily: 'JetBrainsMono',
+                  fontSize: 14,
                   height: 1.0,
-                  letterSpacing: -2
+                  letterSpacing: -2,
                 ),
               );
             }),
           ),
         );
-      }
+      },
     );
   }
 }
@@ -485,12 +541,12 @@ class _TerminalGrid extends StatelessWidget {
     return Opacity(
       opacity: 0.15,
       child: Image.network(
-        "https://upload.wikimedia.org/wikipedia/commons/1/1a/Blank_Go_board.png", 
+        "https://upload.wikimedia.org/wikipedia/commons/1/1a/Blank_Go_board.png",
         repeat: ImageRepeat.repeat,
         color: kTerminalGreen,
         colorBlendMode: BlendMode.srcIn,
         fit: BoxFit.cover,
-        errorBuilder: (c,e,s) => Container(), 
+        errorBuilder: (c, e, s) => Container(),
       ),
     );
   }
@@ -506,7 +562,7 @@ class _ScanlinePainter extends CustomPainter {
       canvas.drawLine(Offset(0, i), Offset(size.width, i), paint);
     }
   }
+
   @override
   bool shouldRepaint(old) => false;
 }
-

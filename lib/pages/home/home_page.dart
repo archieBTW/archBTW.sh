@@ -1,5 +1,3 @@
-
-
 import 'dart:async';
 
 import 'package:archbtw_sh/global/colors.dart';
@@ -14,12 +12,13 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin {
+class _HomePageState extends State<HomePage>
+    with AutomaticKeepAliveClientMixin {
   static const String _fullText = "hi. i'm archBTW.";
   String _currentText = '';
   int _currentIndex = 0;
   bool _showCursor = true;
-  
+
   late final Timer _typingTimer;
   late final Timer _cursorTimer;
 
@@ -60,7 +59,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
 
   @override
   Widget build(BuildContext context) {
-    super.build(context); 
+    super.build(context);
 
     final screenWidth = MediaQuery.of(context).size.width;
     final bool isDesktop = screenWidth >= 768.0;
@@ -106,15 +105,15 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              SocialIcon(
-                icon: FontAwesomeIcons.spotify,
-                url: 'https://open.spotify.com/artist/54LLXYgKGZTqH9tZzsmDtS',
-                iconSize: iconSize,
-              ),
-              SizedBox(width: socialSpacing),
+              // SocialIcon(
+              //   icon: FontAwesomeIcons.spotify,
+              //   url: 'https://open.spotify.com/artist/54LLXYgKGZTqH9tZzsmDtS',
+              //   iconSize: iconSize,
+              // ),
+              // SizedBox(width: socialSpacing),
               SocialIcon(
                 icon: FontAwesomeIcons.tiktok,
-                url: 'https://www.tiktok.com/@archbtw.music',
+                url: 'https://www.tiktok.com/@fyr.archbtw',
                 iconSize: iconSize,
               ),
               SizedBox(width: socialSpacing),
@@ -123,12 +122,12 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
                 url: 'https://soundcloud.com/archbtw',
                 iconSize: iconSize,
               ),
-              SizedBox(width: socialSpacing),
-              SocialIcon(
-                icon: FontAwesomeIcons.youtube,
-                url: 'https://www.youtube.com/channel/UCEkivs08T2wb9m6NSuryc8A',
-                iconSize: iconSize,
-              ),
+              // SizedBox(width: socialSpacing),
+              // SocialIcon(
+              //   icon: FontAwesomeIcons.youtube,
+              //   url: 'https://www.youtube.com/channel/UCEkivs08T2wb9m6NSuryc8A',
+              //   iconSize: iconSize,
+              // ),
               SizedBox(width: socialSpacing),
               SocialIcon(
                 icon: FontAwesomeIcons.github,

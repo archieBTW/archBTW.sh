@@ -1,19 +1,19 @@
 import 'dart:async';
 import 'dart:math';
-import 'package:audioplayers/audioplayers.dart'; 
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 
-const String kPlayerEmoji = '💸'; 
-const String kBulletEmoji = '🎁'; 
-const Color kMoneyGreen = Color(0xFF00FF00); 
+const String kPlayerEmoji = '💸';
+const String kBulletEmoji = '🎁';
+const Color kMoneyGreen = Color(0xFF00FF00);
 
 enum EnemyType {
-  santa,    // Big Boss
-  baby,     // Fast & erratic
-  snowman,  // Zig Zag
-  cookie    // Slow fodder
+  santa, // Big Boss
+  baby, // Fast & erratic
+  snowman, // Zig Zag
+  cookie, // Slow fodder
 }
 
 class SantasInvadersGame extends StatefulWidget {
@@ -23,9 +23,10 @@ class SantasInvadersGame extends StatefulWidget {
   State<SantasInvadersGame> createState() => _SantasInvadersGameState();
 }
 
-class _SantasInvadersGameState extends State<SantasInvadersGame> with SingleTickerProviderStateMixin {
+class _SantasInvadersGameState extends State<SantasInvadersGame>
+    with SingleTickerProviderStateMixin {
   final FocusNode _focusNode = FocusNode();
-  final AudioPlayer _audioPlayer = AudioPlayer(); 
+  final AudioPlayer _audioPlayer = AudioPlayer();
 
   // Game State
   double playerX = 0.0;
@@ -41,10 +42,15 @@ class _SantasInvadersGameState extends State<SantasInvadersGame> with SingleTick
 
   // Loop Logic
   late Ticker _ticker;
-  double _time = 0; 
+  double _time = 0;
   final double _playerMoveSpeed = 0.03;
 
-final List<String> _playlist = ['rudolph.wav', 'whos_a_ho.wav', 'xmas_tree.wav', 'workshop.wav'];
+  final List<String> _playlist = [
+    'rudolph_spoke_in_class_today.wav',
+    'who_you_calling_a_ho_ho.wav',
+    'oh_christmas_tree.wav',
+    'must_be_a_south_pole_elf.wav',
+  ];
 
   List<String> _musicQueue = [];
   StreamSubscription? _playerCompleteSubscription;
@@ -54,7 +60,7 @@ final List<String> _playlist = ['rudolph.wav', 'whos_a_ho.wav', 'xmas_tree.wav',
     super.initState();
     _ticker = createTicker(_onTick);
     _resetGame();
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _focusNode.requestFocus();
     });
@@ -66,11 +72,11 @@ final List<String> _playlist = ['rudolph.wav', 'whos_a_ho.wav', 'xmas_tree.wav',
     _ticker.dispose();
     _focusNode.dispose();
     _playerCompleteSubscription?.cancel();
-    _audioPlayer.dispose(); 
+    _audioPlayer.dispose();
     super.dispose();
   }
 
-void _setupAudioPlayer() {
+  void _setupAudioPlayer() {
     _audioPlayer.setReleaseMode(ReleaseMode.release);
 
     _playerCompleteSubscription = _audioPlayer.onPlayerComplete.listen((event) {
@@ -110,7 +116,7 @@ void _setupAudioPlayer() {
       _movingLeft = false;
       _movingRight = false;
       _time = 0;
-      
+
       _spawnWave();
     });
     if (!_ticker.isActive) _ticker.start();
@@ -120,18 +126,22 @@ void _setupAudioPlayer() {
     // We now spawn fewer enemies with specific counts
     // 2 Santas (Bosses) at the top
     _spawnSpecificEnemies(EnemyType.santa, count: 2, y: -0.9);
-    
+
     // 3 Snowmen (Zig Zaggers) below them
     _spawnSpecificEnemies(EnemyType.snowman, count: 3, y: -0.6);
-    
-    // 3 Babies (Fast jittery ones) 
+
+    // 3 Babies (Fast jittery ones)
     _spawnSpecificEnemies(EnemyType.baby, count: 3, y: -0.3);
-    
+
     // 4 Cookies (Slow fodder) at the front
     _spawnSpecificEnemies(EnemyType.cookie, count: 4, y: 0.0);
   }
 
-  void _spawnSpecificEnemies(EnemyType type, {required int count, required double y}) {
+  void _spawnSpecificEnemies(
+    EnemyType type, {
+    required int count,
+    required double y,
+  }) {
     if (count <= 0) return;
     // Calculate spacing to center them
     // available width is roughly 1.6 (-0.8 to 0.8)
@@ -142,19 +152,15 @@ void _setupAudioPlayer() {
     for (int i = 0; i < count; i++) {
       // If only 1 enemy, center it. Otherwise, spread them.
       double xPos = count == 1 ? 0.0 : startX + (gap * i);
-      
-      enemies.add(_Enemy(
-        x: xPos, 
-        y: y, 
-        type: type,
-        initialX: xPos 
-      ));
+
+      enemies.add(_Enemy(x: xPos, y: y, type: type, initialX: xPos));
     }
   }
 
   void _handleKeyEvent(KeyEvent event) {
     if (!isPlaying || isGameOver) {
-      if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.space) {
+      if (event is KeyDownEvent &&
+          event.logicalKey == LogicalKeyboardKey.space) {
         _resetGame();
       }
       return;
@@ -162,11 +168,13 @@ void _setupAudioPlayer() {
 
     if (event is KeyDownEvent) {
       if (event.logicalKey == LogicalKeyboardKey.arrowLeft) _movingLeft = true;
-      if (event.logicalKey == LogicalKeyboardKey.arrowRight) _movingRight = true;
+      if (event.logicalKey == LogicalKeyboardKey.arrowRight)
+        _movingRight = true;
       if (event.logicalKey == LogicalKeyboardKey.space) _shoot();
     } else if (event is KeyUpEvent) {
       if (event.logicalKey == LogicalKeyboardKey.arrowLeft) _movingLeft = false;
-      if (event.logicalKey == LogicalKeyboardKey.arrowRight) _movingRight = false;
+      if (event.logicalKey == LogicalKeyboardKey.arrowRight)
+        _movingRight = false;
     }
   }
 
@@ -191,7 +199,7 @@ void _setupAudioPlayer() {
 
         // Wrap around Logic
         if (e.y > 1.2) {
-          e.y = -1.3; 
+          e.y = -1.3;
           // Randomize X slightly on respawn
           e.initialX = (Random().nextDouble() * 1.4) - 0.7;
           e.x = e.initialX;
@@ -213,7 +221,7 @@ void _setupAudioPlayer() {
           }
         }
       }
-      
+
       // 5. Collision: Player vs Enemy
       for (var e in enemies) {
         double dx = playerX - e.x;
@@ -236,10 +244,10 @@ void _setupAudioPlayer() {
   void _updateEnemyPosition(_Enemy e) {
     switch (e.type) {
       case EnemyType.santa:
-        e.y += 0.0015; 
+        e.y += 0.0015;
         e.x = e.initialX + sin(_time * 0.3 + e.offset) * 0.3;
         break;
-        
+
       case EnemyType.baby:
         // "Jittery" - Medium fall, fast shake
         e.y += 0.0035;
@@ -271,8 +279,8 @@ void _setupAudioPlayer() {
 
   void _shoot() {
     if (!isPlaying || isGameOver) return;
-    if (bullets.length >= 3) return; 
-    
+    if (bullets.length >= 3) return;
+
     setState(() {
       bullets.add(_Bullet(x: playerX, y: 0.8));
     });
@@ -295,7 +303,14 @@ void _setupAudioPlayer() {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: const BackButton(color: Colors.white),
-        title: const Text("holiday_consumerism.sh", style: TextStyle(color: Colors.white, fontFamily: 'JetBrainsMono', fontSize: 16)),
+        title: const Text(
+          "holiday_consumerism.sh",
+          style: TextStyle(
+            color: Colors.white,
+            fontFamily: 'JetBrainsMono',
+            fontSize: 16,
+          ),
+        ),
         centerTitle: true,
       ),
       body: KeyboardListener(
@@ -306,7 +321,8 @@ void _setupAudioPlayer() {
           builder: (context, constraints) {
             return GestureDetector(
               behavior: HitTestBehavior.opaque,
-              onHorizontalDragUpdate: (d) => _movePlayerTouch(d, constraints.maxWidth),
+              onHorizontalDragUpdate: (d) =>
+                  _movePlayerTouch(d, constraints.maxWidth),
               onTap: _shoot,
               child: Stack(
                 children: [
@@ -343,7 +359,12 @@ void _setupAudioPlayer() {
                           color: Colors.black.withOpacity(0.9),
                           border: Border.all(color: kMoneyGreen),
                           borderRadius: BorderRadius.circular(4),
-                          boxShadow: [BoxShadow(color: kMoneyGreen.withOpacity(0.4), blurRadius: 10)]
+                          boxShadow: [
+                            BoxShadow(
+                              color: kMoneyGreen.withOpacity(0.4),
+                              blurRadius: 10,
+                            ),
+                          ],
                         ),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
@@ -359,8 +380,8 @@ void _setupAudioPlayer() {
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              isGameOver 
-                                  ? "TOTAL SPENT: \$$score" 
+                              isGameOver
+                                  ? "TOTAL SPENT: \$$score"
                                   : "DON'T TOUCH THE MERCH\n(ARROWS/DRAG TO MOVE)",
                               textAlign: TextAlign.center,
                               style: const TextStyle(
@@ -378,9 +399,11 @@ void _setupAudioPlayer() {
                               ),
                               child: Text(
                                 isGameOver ? "RE-MORTGAGE (SPACE)" : "SHOP NOW",
-                                style: const TextStyle(fontFamily: 'JetBrainsMono'),
+                                style: const TextStyle(
+                                  fontFamily: 'JetBrainsMono',
+                                ),
                               ),
-                            )
+                            ),
                           ],
                         ),
                       ),
@@ -395,23 +418,23 @@ void _setupAudioPlayer() {
   }
 }
 
-class _Bullet { 
-  double x; 
-  double y; 
-  _Bullet({required this.x, required this.y}); 
+class _Bullet {
+  double x;
+  double y;
+  _Bullet({required this.x, required this.y});
 }
 
-class _Enemy { 
-  double x; 
-  double y; 
-  double initialX; 
+class _Enemy {
+  double x;
+  double y;
+  double initialX;
   EnemyType type;
-  double offset; 
-  double dx; 
+  double offset;
+  double dx;
 
   _Enemy({
-    required this.x, 
-    required this.y, 
+    required this.x,
+    required this.y,
     required this.type,
     this.initialX = 0.0,
   }) : offset = Random().nextDouble() * 10,
@@ -419,10 +442,14 @@ class _Enemy {
 
   String get emoji {
     switch (type) {
-      case EnemyType.baby: return '👶';
-      case EnemyType.santa: return '🎅';
-      case EnemyType.snowman: return '⛄';
-      case EnemyType.cookie: return '🍪';
+      case EnemyType.baby:
+        return '👶';
+      case EnemyType.santa:
+        return '🎅';
+      case EnemyType.snowman:
+        return '⛄';
+      case EnemyType.cookie:
+        return '🍪';
     }
   }
 }
@@ -432,19 +459,35 @@ class _SpacePainter extends CustomPainter {
   final List<_Bullet> bullets;
   final List<_Enemy> enemies;
 
-  _SpacePainter({required this.playerX, required this.bullets, required this.enemies});
+  _SpacePainter({
+    required this.playerX,
+    required this.bullets,
+    required this.enemies,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = size.center(Offset.zero);
-    
+
     void drawEmoji(String text, double normX, double normY, double fontSize) {
-      final textSpan = TextSpan(text: text, style: TextStyle(fontSize: fontSize));
-      final textPainter = TextPainter(text: textSpan, textDirection: TextDirection.ltr);
+      final textSpan = TextSpan(
+        text: text,
+        style: TextStyle(fontSize: fontSize),
+      );
+      final textPainter = TextPainter(
+        text: textSpan,
+        textDirection: TextDirection.ltr,
+      );
       textPainter.layout();
       final screenX = center.dx + (normX * (size.width / 2));
       final screenY = center.dy + (normY * (size.height / 2));
-      textPainter.paint(canvas, Offset(screenX - textPainter.width / 2, screenY - textPainter.height / 2));
+      textPainter.paint(
+        canvas,
+        Offset(
+          screenX - textPainter.width / 2,
+          screenY - textPainter.height / 2,
+        ),
+      );
     }
 
     drawEmoji(kPlayerEmoji, playerX, 0.9, 45);

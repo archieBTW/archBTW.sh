@@ -1,7 +1,9 @@
 import 'package:archbtw_sh/games/blubber_game.dart';
+import 'package:archbtw_sh/pages/music/music_player.dart';
 import 'package:archbtw_sh/games/interject_game.dart';
 import 'package:archbtw_sh/games/lemon_game.dart';
 import 'package:archbtw_sh/games/santa_game.dart';
+import 'package:archbtw_sh/global/helpers.dart';
 import 'package:archbtw_sh/global/colors.dart';
 import 'package:archbtw_sh/pages/music/album_item.dart';
 import 'package:archbtw_sh/pages/music/album_social_icon.dart';
@@ -20,15 +22,33 @@ class AlbumDetails extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Padding(
+        //   padding: const EdgeInsets.fromLTRB(
+        //     16,
+        //     16,
+        //     16,
+        //     0,
+        //   ), // Match art padding
+        //   child: Column(
+        //     crossAxisAlignment: CrossAxisAlignment.start,
+        //     children: [
+        //       Text(
+        //         item.title,
+        //         style: TextStyle(
+        //           color: kTextColor,
+        //           fontWeight: FontWeight.bold,
+        //           fontSize: 24,
+        //           fontFamily: 'JetBrainsMono',
+        //         ),
+        //       ),
+        //       const SizedBox(height: 4),
+        //     ],
+        //   ),
+        // ),
         Padding(
-          padding: const EdgeInsets.fromLTRB(
-            16,
-            16,
-            16,
-            0,
-          ), // Match art padding
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
               Text(
                 item.title,
@@ -39,45 +59,10 @@ class AlbumDetails extends StatelessWidget {
                   fontFamily: 'JetBrainsMono',
                 ),
               ),
-              const SizedBox(height: 4),
-            ],
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              if (!item.soundCloudOnly)
-                AlbumSocialIcon(
-                  icon: FontAwesomeIcons.spotify,
-                  url: item.spotifyUrl,
-                  size: iconSize,
-                ),
-              const SizedBox(width: 8),
-              if (!item.soundCloudOnly)
-                AlbumSocialIcon(
-                  icon: FontAwesomeIcons.apple,
-                  url: item.appleMusicUrl,
-                  size: iconSize,
-                ),
-              const SizedBox(width: 8),
-              AlbumSocialIcon(
-                icon: FontAwesomeIcons.soundcloud,
-                url: item.soundCloudUrl,
-                size: iconSize,
-              ),
-              const SizedBox(width: 8),
-              if (!item.soundCloudOnly)
-                AlbumSocialIcon(
-                  icon: FontAwesomeIcons.youtube,
-                  url: item.youtubeUrl,
-                  size: iconSize,
-                ),
+              Expanded(child: const SizedBox()),
               if (item.title.toLowerCase() == 'blubber' ||
                   item.title.toLowerCase() == 'santa\'s cookies' ||
-                  item.title.toLowerCase() == 'life\'s lemons' ||
-                  item.title.toLowerCase().contains('interject')) ...[
+                  item.title.toLowerCase() == 'life\'s lemons') ...[
                 // New Check
                 const SizedBox(width: 16),
                 Container(
@@ -102,10 +87,8 @@ class AlbumDetails extends StatelessWidget {
                       gamePage = WhaleGame();
                     } else if (title == 'santa\'s cookies') {
                       gamePage = const SantasInvadersGame();
-                    } else if (title == 'life\'s lemons') {
-                      gamePage = const LemonsGame();
                     } else {
-                      // Default to the new game for the interject album
+                      // life's lemons now plays the matching game
                       gamePage = const InterjectGame();
                     }
 
@@ -162,6 +145,15 @@ class AlbumDetails extends StatelessWidget {
             ],
           ),
         ),
+        if (item.tracks.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: MusicPlayer(
+              tracks: item.tracks,
+              audioPath: item.audioPath,
+              isDesktop: isDesktop,
+            ),
+          ),
         Padding(
           padding: const EdgeInsets.all(8.0),
           child: Column(
@@ -184,8 +176,7 @@ String _getTooltipForAlbum(String title) {
   final t = title.toLowerCase();
   if (t == 'blubber') return "launch_protocol: gravity";
   if (t == 'santa\'s cookies') return "launch_protocol: chimney";
-  if (t.contains('interject')) return "launch_protocol: gnu/linux";
-  return "launch_protocol: citrus"; // lemons
+  return "launch_protocol: gnu/linux"; // lemons now uses the matching game protocol
 }
 
 // List<TextSpan> _buildLyricSpans(String lyrics, {required bool isDesktop}) {
@@ -225,9 +216,9 @@ List<TextSpan> _buildLyricSpans(String lyrics, {required bool isDesktop}) {
   // 1. Adjusted sizes
   final double defaultFontSize = isDesktop ? 16 : 14;
   // Decreased title size slightly (was 22/18)
-  final double titleFontSize = isDesktop ? 20 : 16; 
+  final double titleFontSize = isDesktop ? 20 : 16;
   // New size for descriptions
-  final double descriptionFontSize = isDesktop ? 14 : 12; 
+  final double descriptionFontSize = isDesktop ? 14 : 12;
 
   final defaultStyle = TextStyle(
     color: kTextColor,
@@ -246,7 +237,8 @@ List<TextSpan> _buildLyricSpans(String lyrics, {required bool isDesktop}) {
 
   // New style for the "behind the songs" text
   final descriptionStyle = TextStyle(
-    color: kTextColor, // You might want to use .withOpacity(0.8) for a softer look
+    color:
+        kTextColor, // You might want to use .withOpacity(0.8) for a softer look
     fontSize: descriptionFontSize,
     fontStyle: FontStyle.italic,
     height: 1.5,
@@ -255,7 +247,7 @@ List<TextSpan> _buildLyricSpans(String lyrics, {required bool isDesktop}) {
 
   final List<TextSpan> spans = [];
   final lines = lyrics.split('\n');
-  
+
   // State to track if we are currently inside the ** block
   bool inDescriptionBlock = false;
 
