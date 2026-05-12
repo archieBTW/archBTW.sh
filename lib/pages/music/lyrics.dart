@@ -310,7 +310,6 @@ I know that I'm impatient but I also know that You're omnipotent.
 
 """;
 
-
 const idJustLikeToInterjectLyrics = """
 
 [bad luck comes in threes]
@@ -518,8 +517,6 @@ He's crazy in love, now he's two times committed
 
 """;
 
-
-
 const String santasCookiesLyrics = """
 
 
@@ -711,12 +708,118 @@ Rudolph snapped. Clapped back a little too hard
 """;
 
 const String blubberLyrics = """ 
+[why is it spicy?]
+It was 5 or 4pm when they held the ceremony.
+Gave him a third-rate secondhand 1st place trophy.
+
+Blastoff. The shockwaves destroyed all the windows.
+Crescent moon, starry eyed. Silent crescendo.
+
+No strings attached so all the puppets ran free.
+The forest feels familiar. The valley's uncanny.
+
+Skyline's highlighted. In hindsight, I'd underline it.
+Apple in the limelight. Bronze-covered silver linings.
+
+My gums are bleeding but the cottonmouth should soak it up.
+Jogging with a rabbit foot but running out of luck.
+
+Clearance sale saturday. Monday, we're retro.
+He'll take all the hand-me-downs you outgrow.
+
+Majored in madness, minored in morose.
+The rose does smell sweeter when you call it a rose.
+
+Backgammon with receptors . Backhanded undermine.
+Filleted the atom with a butter knife.
+
+It wasn't rocket science. It was barely AP.
+He had vivid visions but he made straight-Ds.
+
+In high-speed pursuit of any good mood.
+Made of rubber that's drenched in glue.
+
+
+[whale mail]
+Dear Carpenter, it's been a couple minutes.
+How have you been? I've been hitting my limit.
+
+One more bad day, I know I'll flip the table.
+They gave me mood stabilizers. I'm still unstable.
+
+Can You give me a hand? I'm almost out of options.
+I wanna drown it out but I'd settle for a dropkick.
+
+I want my day of rest but I can't sit down.
+My legs get so sore because I can't stop pacing around.
+
+I need some good news. I turned off the TV.
+I can switch to other mediums or sit under the tree.
+
+I have no friends. How did You do it?
+I know You're reading this but I really wish You'd prove it.
+
+How is Dad? I hope He reads it too
+and when He's done could You pass it to the Spirit in the room?
+
+Your footsteps are so hard to follow. What a trek.
+I cast it all out but there's still no fish in the net.
+
+The sick all need a doctor and You can make them better.
+I thought that I could heal. Somehow I became the leper.
+
+Got some stories for You later. We'll have a couple laughs.
+Sincerely, Arch. I really hope You write back
+
+I need some good news. I turned off the TV.
+I can switch to other mediums or sit under the tree.
+
+I have no friends. How did You do it?
+I know You're reading this but I really wish You'd prove it.
+
+[i'll have the ribs please]
+He made me out of dust pulled from the ground
+It was eerily quiet. The birds were the only sound.
+
+Life was pretty lonely in this garden.
+With pure gold. Onyx for carving.
+
+He tried to entertain me. I got to name the beasts
+but I kept finding myself looking west from the east.
+
+He had a bone to pick with me.
+Maybe it's an idiom but he did it surgically.
+
+Sewn. Do the stitches make me look cool?
+I didn't need that bone. The only thing missing here was you.
+
+Becoming one flesh. Now I want a piece of your mind.
+There's plenty of things to do here but I don't want to just pass the time.
+
+Naked but not ashamed. It's just us and the weather's nice.
+I love the way your fingers trace my chest and its lopside.
+
+This seems too good to be true but no one here knows how to lie.
+I don't want this day to end. Let's stay up and talk all night.
+
+I could stay awake for days here in this scene.
+And when I crash, I still see you in my dreams.
+
+Maybe this is all just some metaphor
+but I really think it's real and it's spectacular.
+
+Sewn. Do the stitches make me look cool?
+I didn't need that bone. The only thing missing here was you.
+
+Becoming one flesh. Now I want a piece of your mind.
+There's plenty of things to do here but I don't want to just pass the time.
+
 [beached]
 Powdered sugar on mountain peaks.
 Weak geek. Fatigued pipsqueak physique.
 
 Plane's going down. Preparing for the masquerade.
-One stitch away. Lacerations don't exaggerate. 
+One stitch away. Lacerations don't exaggerate.
 
 Duck duck goose. Swan dove into the autumn foliage.
 Thought I'd get a point but I don't know what the goal is.
@@ -724,33 +827,29 @@ Thought I'd get a point but I don't know what the goal is.
 I live inside someone else's fever dream.
 I'm just a voice in a head. No matter what I scream.
 
-
 No contest but pleading nonetheless.
-Freeze warning. Daydreaming of her summer dress. 
+Freeze warning. Daydreaming of her summer dress.
 
-The heatwave sucked but the cold wind blows. 
-I'm not quite convinced that this isn't limbo. 
-
-
-Heart started beating at a faster pace.
-Started sweet but it had a bitter aftertaste. 
-
-I'm not a human anymore, I'm a brain exercise. 
-It's just a shame that the origin is not so bright. 
-
-Wisdom takes time. I'll just wait and cram later.
-Crash landing. We created a crater. 
-
-Hopefully the catering is good. Don't cheap out.
-I'm sure I'll wake up soon but I don't know how. 
-
-No contest but pleading nonetheless.
-Freeze warning. Daydreaming of her summer dress. 
-
-The heatwave sucked but the cold wind blows. 
+The heatwave sucked but the cold wind blows.
 I'm not quite convinced that this isn't limbo.
 
+Heart started beating at a faster pace.
+Started sweet but it had a bitter aftertaste.
 
+I'm not a human anymore, I'm a brain exercise.
+It's just a shame that the origin is not so bright.
+
+Wisdom takes time. I'll just wait and cram later.
+Crash landing. We created a crater.
+
+Hopefully the catering is good. Don't cheap out.
+I'm sure I'll wake up soon but I don't know how.
+
+No contest but pleading nonetheless.
+Freeze warning. Daydreaming of her summer dress.
+
+The heatwave sucked but the cold wind blows.
+I'm not quite convinced that this isn't limbo.
 
 [s.o.s.]
 Stranded on an island made purely of dessert.
@@ -763,7 +862,7 @@ Time stops when I look into the hourglass.
 Always in a good way but a little bit crass.
 
 Headlights were bright. Frozen like deer.
-Whatever did you have to do to get the car here? 
+Whatever did you have to do to get the car here?
 
 The tide is coming in. It dragged out all of our twizzlers.
 Smoke signals or not, all I want to do is kiss her.
@@ -772,9 +871,9 @@ Maybe the boat won't come through.
 Fingers crossed, I'll stay stuck here with you
 
 Cotton candy laughter with sour patch speech.
-Sugar in your veins and I'm addicted to sweets. 
+Sugar in your veins and I'm addicted to sweets.
 
-Moonbeams reflect off of caramel eyes. 
+Moonbeams reflect off of caramel eyes.
 Stars barely shining through the amethyst sky.
 
 Behind the optics' butterscotch, you illuminate.
@@ -789,22 +888,18 @@ Smoke signals or not, all I want to do is kiss her.
 Maybe the boat won't come through.
 Fingers crossed, I'll stay stuck here with you
 
-
-
-
-
 [all aboard that's going aboard]
 Filled up the tank. Now I'm on a spiteful ego trip.
-I'm never coming back. Sun's up but I'm shadowless. 
+I'm never coming back. Sun's up but I'm shadowless.
 
 Treehouse is way too high. Did you even get a permit?
-I've been stuck inside a shell. Just another hermit. 
+I've been stuck inside a shell. Just another hermit.
 
 Carelessly took care of carefully carved characters.
 Left the paper in the rain. It smudged all of the lavender.
 
-If I'm being honest though, the purple blur's still gorgeous. 
-The lack of structure makes me feel just a little bit more curious. 
+If I'm being honest though, the purple blur's still gorgeous.
+The lack of structure makes me feel just a little bit more curious.
 
 Shared smokes with an angel. I don't know if they fell.
 I didn't think to ask at the time. Instead, we just shared tales.
@@ -815,14 +910,14 @@ Time is a commodity and money is the essence.
 I'm player one this go. You can wear the green.
 On platforms with toadstool-power, so it seems.
 
-Usually, I'd go last. Not chasing wins, just laughs. 
+Usually, I'd go last. Not chasing wins, just laughs.
 This time I bought a fastpass. Cutting lines like class.
 
 You'll never have enough of anything that you desire
-but I'll keep making it rain with my corduroy's on fire. 
+but I'll keep making it rain with my corduroy's on fire.
 
-Total eclipse. He skimped on random access. 
-Hand me another paper. I'll roll the past, then pass it. 
+Total eclipse. He skimped on random access.
+Hand me another paper. I'll roll the past, then pass it.
 
 Shared smokes with an angel. I don't know if they fell.
 I didn't think to ask at the time. Instead, we just shared tales.
@@ -830,97 +925,245 @@ I didn't think to ask at the time. Instead, we just shared tales.
 Arachnophobic weaving webs highlighted by fluorescence.
 Time is a commodity and money is the essence.
 
+[we just need to budget better]
+Out on the balcony, sharing our last smoke
+We tried to save it for the AM but we both started to jones
 
+We napped all day. There's nothing else to do.
+Can we get 3 dollars on pump number 2?
 
+Noodles again. I think we're both sick of it.
+The tap water's not bad here. Well, maybe just a bit.
 
+The lights didn't come on when we hit the switch.
+But i heard its better to be poor than to be rich.
 
+We don't need to worry about food or what to wear.
+He feeds and clothes the birds and probably the bears.
 
-[whale mail]
-Dear Carpenter, it's been a couple minutes.
-How have you been? I've been hitting my limit.
+Money equals camels passing through the needle's eye.
+There's gonna be a big party when we finally arrive.
 
-One more bad day, I know I'll flip the table.
-They gave me mood stabilizers. I'm still unstable. 
+We'll get to see our grandparents and the terriers we miss.
+So we don't need to fear, or dread, or even be anxious.
 
-Can You give me a hand? I'm almost out of options. 
-I wanna drown it out but I'd settle for a dropkick.
+Yeah, it'd be nice to have variety. Even just a big Mac.
+But we can get a free junior burger if we sign up on this app.
 
-I want my day of rest but I can't sit down. 
-My legs get so sore because I can't stop pacing around. 
+We'll cut it in half and have a couple bites each.
+Maybe there's enough in the couch for a small sweet tea.
 
-I need some good news. I turned off the TV.
-I can switch to other mediums or sit under the tree.
+I promise God will make it better. Layoffs or not.
+You can't buy this kind of happiness. If you could, it'd cost a lot.
 
-I have no friends. How did You do it?
-I know You're reading this but I really wish You'd prove it.
+We don't need to worry about food or what to wear.
+He feeds and clothes the birds and probably the bears.
 
-How is Dad? I hope He reads it too
-and when He's done could You pass it to the Spirit in the room?
+Money equals camels passing through the needle's eye.
+There's gonna be a big party when we finally arrive.
 
-Your footsteps are so hard to follow. What a trek.
-I cast it all out but there's still no fish in the net.
+[Is that real wool?]
+There's a bump on the log in the hole of your eye.
+Get comfy. The abyss has no night light.
 
-The sick all need a doctor and You can make them better. 
-I thought that I could heal. Somehow I became the leper. 
+Sea floor. Watch the angler fish escape.
+They tried to show you how. Even saw them demonstrate.
 
-Got some stories for You later. We'll have a couple laughs. 
-Sincerely, Arch. I really hope You write back
+Come out and see the Son. It's worth a little death.
+Just swim up. Though, your puddle has no depth.
 
-I need some good news. I turned off the TV.
-I can switch to other mediums or sit under the tree.
+Whitewashed tombs full of bones and dust and fingernails.
+High and mighty you might be but I'll keep singing the sinner's prayer.
 
-I have no friends. How did You do it?
-I know You're reading this but I really wish You'd prove it.
+Why pretend that we're something that we're not?
+We sat in your pew, forgot the answers that you sought.
 
+You heard but didn't comprehend. Whatever did he say?
+One ear to the other even if it gets replayed.
 
+At least we know that we're confused and lost and dropped all the directions.
+The subscription GPS in your SUV's defective.
 
+"Forgive us of our debts and please forgive our debtors."
+All she had was 2 cents and she still tipped better.
+
+You can raise your hands and recite any words thrown on the screen.
+But as you think in your heart, so you do. Don't be deceived.
+
+Either give up or give and do your best to take away.
+There's lessons in the parchment, open up to any page.
+
+[I don't like you very much]
+I want to shove you in the refrigerator and duct tape it shut.
+Then take a long vacation and check back in a month
+
+I'll go wherever you dream of going and send you a post card.
+I don't wish you were here. XOXO heart.
+
+I wanna learn a hundred languages just to have more curse words
+To throw your way. I won't resort to slurs.
+
+Break off all your pencil lead before filling up your pencil box.
+Take the blade from the sharpener and hide it in your socks.
+
+I wanna buy you groceries and then let them expire.
+Donate them to your favorite cause before setting them on fire.
+
+Sugar in your gas tank just sounds so kindergarten.
+I'll use a flaming rag right before it's started.
+
+Put handwarmers in your pillows and then move in next door.
+Blaring genres that you hate and then I'll laugh and laugh some more.
+
+I'm scared of spiders but you are too so I'll tough it out
+And build up a collection I'll pour in your sleeping mouth
+
+What's your favorite movie? I'll rewrite the story
+And then go back in time and make sure they make it boring.
+
+I think you see where I'm going but maybe not.
+Next time you'll think twice before taking my parking spot.
+
+[where's the boat?]
+It's 4:30am. I've already been up for hours.
+Contemplating life and death and my own lack of power.
+
+Was that just a weird dream or was it a vision from an angel?
+When will the Son rise? I know that it can't just be a fable.
+
+Where are we headed? Do You want me overseas?
+I'll go door to door if needed. Just guide me please.
+
+I've never been so confused. Everything is a sign.
+But there's a lot of contradictions. It's hard to discern what's Yours and mine.
+
+What is my purpose? Just to spin around on a rock?
+I know You've got a plan. We're waiting for a boat at the dock.
+
+How long will You make us wait? This is getting harder by the second.
+I know that I'm impatient but I also know that You're omnipotent.
+
+Where am I needed? I hate these idle hands.
+What is my calling? What are Your demands?
+
+We read Your book everyday while we pray and cry and plead.
+I hate to see her sad. I can't fix it. What do You want from me?
+
+I'll shave my head. Starve myself. Whatever it takes.
+Just to know You heard my voice. Lord, I'm about to break.
+
+I know You'll get us out of this rut. I can't wait to see how.
+Emphasis on "can't wait". We're going crazy. Can it happen now?
+
+What is my purpose? Just to spin around on a rock?
+I know You've got a plan. We're waiting for a boat at the dock.
+
+How long will You make us wait? This is getting harder by the second.
+I know that I'm impatient but I also know that You're omnipotent.
+
+[specter]
+White membrane worlds bulged out of his skull
+A cup of red-eye coffee with emerald mold
+
+Joints stiffening while he shuffles around
+Dragging his feet to the beat of the clouds
+
+The mattress is calling like telephone rings
+A classic red with a coiling spring
+
+Monotonous monotone terrors on checkerboards
+The moonlight falls safely with no need for bungee cords
+
+A zealot for nightmares. A phantom fanatic.
+There's bones in the closet and some in the attic.
+
+An omen for certain. It might be a wraith.
+He prays the Lord his soul to take.
+
+Blue-light gaze into a snow-globe's heat wave
+Might be hazed, frontal lobe betrayed
+
+Sugared periques make up his smile
+If he had any foresight, he would've picked mild
+
+Haunted hellhounds hover over his head
+Maybe the eggshell-white paint contains lead
+
+Dreamscape dares or truths in the messages
+Either one's the same, I ghost-wrote these sentences
+
+[tightrope]
+The EKG beeps seep into your sleep.
+I'd wake you up but I've never seen so much peace.
+
+I'm a figment. Your mind is wrecked.
+Crashed. Existential side effects.
+
+Deflected insecurities. Perplexing similarities.
+Incomplete corpse. Complex clarity.
+
+Infrequently tuned frequencies
+to free himself in secrecy.
+
+Jumped the gun. Offsides.
+Slumber is the penalty.
+
+Most are deprived. But you overate.
+Loosen the belt and dull the blade.
+
+On a tightrope. Decided by doses.
+Playing Tug of war against death and hypnosis.
+
+Hiding signs from yourself. You want to wake up.
+There's no re-entry. You lost your stub.
+
+I hit the snooze button for you too many times.
+Maybe I'm reaching, I read between lines.
+
+I like it in your head. It's so spacious.
+Blamed it on God. Does He ever blame us?
+
+Coffee's brewing, bacon sizzles.
+I bought you some roses.
+
+I'm sorry I cant wake you up.
+In my defense, you chose this.
 
 [jonah's prayer]
 “I called out to the Lord, out of my distress,
 and he answered me;
 out of the belly of Sheol I cried,
 and you heard my voice.
-
 For you cast me into the deep,
 into the heart of the seas,
 and the flood surrounded me;
 all your breakers and your waves
 passed over me.
-
 Then I said, ‘I am driven away
 from your sight;
 yet I shall again look
 upon your holy temple.’
-
 The waters closed in over me to take my life;
 the deep surrounded me;
 weeds were wrapped about my head.
-
 To the roots of the mountains I went down,
 to the land whose bars closed upon me forever.
-
 Yet you brought up my life from the pit,
 O Lord my God.
-
 When my life was fainting away,
 I remembered the Lord,
 and my prayer came to you,
 into your holy temple.
-
 Those who pay regard to vain idols
 forsake their hope of steadfast love.
-
 But I with the voice of thanksgiving
 will sacrifice to you;
 what I have vowed I will pay.
-
 Salvation belongs to the Lord!”
-
-
 
 [i swear, the fish was this big]
 Given one job. Walked out the first day.
-They wont listen to anything that I say. 
+They wont listen to anything that I say.
 
 So I'll dip out of here and hide, not knowing what I seek
 but I'll hit the ground running with alternating feet.
@@ -932,72 +1175,70 @@ I know it's terrifying. One way to stop this rain:
 Walk the plank. Overboard. I'm the one to blame.
 
 The belly of this fish is cold and damp and full of prayers I scream.
-I'll quit running away. I'm begging now. Let me be redeemed. 
+I'll quit running away. I'm begging now. Let me be redeemed.
 
-Puked out. God, I'm alive and I'm racing through these city streets. 
-Should've listened in the first place or at least sent out a tweet. 
+Puked out. God, I'm alive and I'm racing through these city streets.
+Should've listened in the first place or at least sent out a tweet.
 
-They listened and they fell at the sound of Your name. 
-No flames ignite or embers fall on this unholy place. 
+They listened and they fell at the sound of Your name.
+No flames ignite or embers fall on this unholy place.
 
-You saw them change, You changed Your mind but I'll be bitter until the end. 
-You give and take away. That plant was my last friend. 
+You saw them change, You changed Your mind but I'll be bitter until the end.
+You give and take away. That plant was my last friend.
 
-Why do I write when the songs just go unheard? 
+Why do I write when the songs just go unheard?
 He said, "there's no pity where it's undeserved"
 
 Do I do well to be angry? Maybe not.
 Closed the door. Slammed, in fact, but closure is an afterthought.
 
 The belly of this fish is cold and damp and full of prayers I scream.
-I'll quit running away. I'm begging now. Let me be redeemed. 
+I'll quit running away. I'm begging now. Let me be redeemed.
 
-Puked out. God, I'm alive and I'm racing through these city streets. 
+Puked out. God, I'm alive and I'm racing through these city streets.
 Should've listened in the first place or at least sent out a tweet.
 
-
-
 [spouted (ft. Christian Rigdon)]
-I'm finally feeling good regardless of my situation. 
+I'm finally feeling good regardless of my situation.
 The doctors said theyd fix me with bad enunciation.
 
-Money might be tight but I trust we'll dine like birds tonight. 
+Money might be tight but I trust we'll dine like birds tonight.
 Lies in limelights. The light of day through cloudy skies.
 
 Raising our hands is not enough. I'll worship with these words
 with an orchestra behind me, singing songs for each Third.
 
-Anointed with oil, submerged in a lake. 
+Anointed with oil, submerged in a lake.
 Can you really wash away all of my mistakes?
 
-Heal me. Save me from this person I've become. 
-"I wanna hear You too", at the top of darkened lungs. 
+Heal me. Save me from this person I've become.
+"I wanna hear You too", at the top of darkened lungs.
 
-Fix me, I'm shattered in pieces. 
+Fix me, I'm shattered in pieces.
 Snapped harp and lyre strings while playing for Jesus.
 
 A lot of bad habits inhabit this temple.
-Out of the cardboard. Ready to assemble. 
+Out of the cardboard. Ready to assemble.
 
 I get lost in the art and l can't focus.
-I chase the wrong things. Even tried to talk to a lotus. 
+I chase the wrong things. Even tried to talk to a lotus.
 
 You lead me home, no more loco locomotive.
-I tried to jump and roll while it was still in motion. 
+I tried to jump and roll while it was still in motion.
 
-I missed You more than life and I can't wait to see You after. 
-I think You missed me too. After all, You were my crafter. 
+I missed You more than life and I can't wait to see You after.
+I think You missed me too. After all, You were my crafter.
 
-Heal me. Save me from this person I've become. 
-"I wanna hear You too", at the top of darkened lungs. 
+Heal me. Save me from this person I've become.
+"I wanna hear You too", at the top of darkened lungs.
 
-Fix me, I'm shattered in pieces. 
+Fix me, I'm shattered in pieces.
 Snapped harp and lyre strings while playing for Jesus.
 
 (Christian Rigdon)
 thinking back
 i didn’t wanna go Your way and so i hit the gas
-the other way and went astray, and i was spitting raps 
+the other way and went astray, and i was spitting raps
 chilling, i was kicking back, sinnin ‘till i hit the mat
 i went overboard with it
 i saw my life, i was bored with it
@@ -1005,7 +1246,7 @@ thought that i could make it on my own
 never worked, did it?
 hated everything that i was and wanted to kill me
 i even turned to the fallen one and i thought he’d heal me
-a fool with a hell-sent death wish 
+a fool with a hell-sent death wish
 now i’m sitting in a fish with regrets
 i messed this whole thing up
 but a message i heard said it’s never too late
@@ -1016,15 +1257,50 @@ when You sent me
 now im reaching out cuz im bout to go six feet down
 i need You now, Spirit spout, come and cleanse me
 
+Heal me. Save me from this person I've become.
+"I wanna hear You too", at the top of darkened lungs.
 
-Heal me. Save me from this person I've become. 
-"I wanna hear You too", at the top of darkened lungs. 
-
-Fix me, I'm shattered in pieces. 
+Fix me, I'm shattered in pieces.
 Snapped harp and lyre strings while playing for Jesus.
 
-""";
+[before the before]
+No stars or moon or glimpse of light
+What's your angle, there's not a shape in sight.
 
+It can all change in a couple of days.
+A couple dimensions. Plants that glaze.
+
+I can't imagine. What was it like in the void?
+Were You ever bored or did You play with toys?
+
+Do You ever pray? If so, then why?
+Sometimes I talk to myself when I lie.
+
+How did you come up with math and magic?
+I had all the same asks before all the acid.
+
+Serpents with fruit in a beautiful garden.
+The good and the bad. I hope that we're pardoned.
+
+Predetermined free will. Questions on questions.
+Am I a robot or not? What's the lesson?
+
+Left in the dark, searching for the light switch.
+The world won't respond to my voice or my crisis.
+
+I accept and give up but I'll still overthink.
+You gave me that trait so I don't lip sync.
+
+One more question and I'll let you go.
+Will anything ever be something I know?
+
+How did you come up with math and magic?
+I had all the same asks before all the acid.
+
+Serpents with fruit in a beautiful garden.
+The good and the bad. I hope that we're pardoned
+
+""";
 
 // A helper constant for placeholder lyrics
 const String lifesLemonsLyrics = """

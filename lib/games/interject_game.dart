@@ -527,11 +527,11 @@ class _InterjectGameState extends State<InterjectGame> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          _isWon ? "SYSTEM CLEAN" : (_isGameOver ? "TIMEOUT" : _timerString),
+          _isWon ? "Quit Addiction" : (_isGameOver ? "TIMEOUT" : _timerString),
           style: TextStyle(
             fontFamily: 'JetBrainsMono',
             color: _isWon
-                ? Colors.green
+                ? kAccentColor
                 : (_isGameOver ? Colors.red : kAccentColor),
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -542,7 +542,7 @@ class _InterjectGameState extends State<InterjectGame> {
             child: Padding(
               padding: const EdgeInsets.only(right: 16.0),
               child: Text(
-                "DATA CLEARED: $_score",
+                "Pills Popped: $_score",
                 style: const TextStyle(
                   fontFamily: 'JetBrainsMono',
                   color: Colors.white,
@@ -575,14 +575,14 @@ class _InterjectGameState extends State<InterjectGame> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.check_circle_outline, color: Colors.green, size: 80),
+          const Icon(Icons.check_circle_outline, color: kAccentColor, size: 80),
           const SizedBox(height: 20),
           const Text(
-            "ROOT ACCESS GRANTED",
+            "All pills popped.",
             textAlign: TextAlign.center,
             style: TextStyle(
               fontFamily: 'JetBrainsMono',
-              color: Colors.green,
+              color: kAccentColor,
               fontWeight: FontWeight.bold,
               fontSize: 24,
             ),
@@ -596,7 +596,7 @@ class _InterjectGameState extends State<InterjectGame> {
             ),
             onPressed: () => _initGrid(resetScore: false),
             child: const Text(
-              "sudo reboot",
+              "go to pharmacy",
               style: TextStyle(fontFamily: 'JetBrainsMono', fontSize: 18),
             ),
           ),

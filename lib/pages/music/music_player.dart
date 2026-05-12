@@ -112,7 +112,7 @@ class _MusicPlayerState extends State<MusicPlayer> {
   }
 
   String _cleanTrackName(String name) {
-    return name.replaceAll('.wav', '');
+    return name.replaceAll('.wav', '').replaceAll('.m4a', '');
   }
 
   Widget _buildTextButton(
@@ -138,6 +138,148 @@ class _MusicPlayerState extends State<MusicPlayer> {
     );
   }
 
+  Widget _buildTerminalHeader(Color accentColor) {
+    return Row(
+      children: [
+        Text(
+          '~ > ',
+          style: TextStyle(
+            color: accentColor,
+            fontFamily: 'JetBrainsMono',
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        Expanded(
+          child: Text(
+            './${_cleanTrackName(widget.tracks[_currentTrackIndex]).replaceAll(' ', '_')}.sh',
+            style: const TextStyle(
+              color: Colors.white,
+              fontFamily: 'JetBrainsMono',
+              fontSize: 14,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildControlsRow(Color accentColor) {
+    return Row(
+      children: [
+        _buildTextButton(
+          _isPlaying ? '[ PAUSE ]' : '[ PLAY ]',
+          _playPause,
+          isPrimary: true,
+        ),
+        const SizedBox(width: 8),
+        _buildTextButton('[ BACK ]', _previous),
+        const SizedBox(width: 4),
+        _buildTextButton('[ NEXT ]', _next),
+        const SizedBox(width: 16),
+        Expanded(
+          child: SliderTheme(
+            data: SliderThemeData(
+              trackHeight: 1,
+              activeTrackColor: accentColor,
+              inactiveTrackColor: Colors.white.withOpacity(0.1),
+              thumbColor: accentColor,
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 4),
+              overlayShape: const RoundSliderOverlayShape(overlayRadius: 10),
+            ),
+            child: Slider(
+              value: _position.inMilliseconds.toDouble(),
+              max: _duration.inMilliseconds.toDouble() > 0
+                  ? _duration.inMilliseconds.toDouble()
+                  : 1.0,
+              onChanged: (value) {
+                _audioPlayer.seek(Duration(milliseconds: value.toInt()));
+              },
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Text(
+          '${_formatDuration(_position)} / ${_formatDuration(_duration)}',
+          style: TextStyle(
+            color: Colors.white.withOpacity(0.5),
+            fontFamily: 'JetBrainsMono',
+            fontSize: 12,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTracklist(Color accentColor) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '// AVAILABLE_TRACKS',
+          style: TextStyle(
+            color: Colors.white.withOpacity(0.3),
+            fontFamily: 'JetBrainsMono',
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1.1,
+          ),
+        ),
+        const SizedBox(height: 12),
+        ...widget.tracks.asMap().entries.map((entry) {
+          final int index = entry.key;
+          final String track = entry.value;
+          final bool isCurrent = index == _currentTrackIndex;
+
+          return InkWell(
+            onTap: () {
+              setState(() => _currentTrackIndex = index);
+              _playTrack();
+            },
+            hoverColor: accentColor.withOpacity(0.05),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                vertical: 6.0,
+                horizontal: 4.0,
+              ),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 24,
+                    child: Text(
+                      isCurrent ? '->' : '  ',
+                      style: TextStyle(
+                        color: accentColor,
+                        fontFamily: 'JetBrainsMono',
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    _cleanTrackName(track).toLowerCase(),
+                    style: TextStyle(
+                      color: isCurrent
+                          ? accentColor
+                          : Colors.white.withOpacity(0.7),
+                      fontFamily: 'JetBrainsMono',
+                      fontSize: 13,
+                      decoration: isCurrent ? TextDecoration.none : null,
+                    ),
+                  ),
+                  if (isCurrent && _isPlaying) ...[
+                    const SizedBox(width: 12),
+                    _buildPlayingIndicator(accentColor),
+                  ],
+                ],
+              ),
+            ),
+          );
+        }).toList(),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final Color accentColor = kAccentColor;
@@ -147,144 +289,11 @@ class _MusicPlayerState extends State<MusicPlayer> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Terminal Header
-          Row(
-            children: [
-              Text(
-                '~ > ',
-                style: TextStyle(
-                  color: accentColor,
-                  fontFamily: 'JetBrainsMono',
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Expanded(
-                child: Text(
-                  './${_cleanTrackName(widget.tracks[_currentTrackIndex]).replaceAll(' ', '_')}.sh',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontFamily: 'JetBrainsMono',
-                    fontSize: 14,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
+          _buildTerminalHeader(accentColor),
           const SizedBox(height: 16),
-          // Progress & Controls Row
-          Row(
-            children: [
-              _buildTextButton(
-                _isPlaying ? '[ PAUSE ]' : '[ PLAY ]',
-                _playPause,
-                isPrimary: true,
-              ),
-              const SizedBox(width: 8),
-              _buildTextButton('[ BACK ]', _previous),
-              const SizedBox(width: 4),
-              _buildTextButton('[ NEXT ]', _next),
-              const SizedBox(width: 16),
-              Expanded(
-                child: SliderTheme(
-                  data: SliderThemeData(
-                    trackHeight: 1,
-                    activeTrackColor: accentColor,
-                    inactiveTrackColor: Colors.white.withOpacity(0.1),
-                    thumbColor: accentColor,
-                    thumbShape: const RoundSliderThumbShape(
-                      enabledThumbRadius: 4,
-                    ),
-                    overlayShape: const RoundSliderOverlayShape(
-                      overlayRadius: 10,
-                    ),
-                  ),
-                  child: Slider(
-                    value: _position.inMilliseconds.toDouble(),
-                    max: _duration.inMilliseconds.toDouble() > 0
-                        ? _duration.inMilliseconds.toDouble()
-                        : 1.0,
-                    onChanged: (value) {
-                      _audioPlayer.seek(Duration(milliseconds: value.toInt()));
-                    },
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                '${_formatDuration(_position)} / ${_formatDuration(_duration)}',
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.5),
-                  fontFamily: 'JetBrainsMono',
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
-
-          // Tracklist
+          _buildControlsRow(accentColor),
           const SizedBox(height: 32),
-          Text(
-            '// AVAILABLE_TRACKS',
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.3),
-              fontFamily: 'JetBrainsMono',
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.1,
-            ),
-          ),
-          const SizedBox(height: 12),
-          ...widget.tracks.asMap().entries.map((entry) {
-            final int index = entry.key;
-            final String track = entry.value;
-            final bool isCurrent = index == _currentTrackIndex;
-
-            return InkWell(
-              onTap: () {
-                setState(() => _currentTrackIndex = index);
-                _playTrack();
-              },
-              hoverColor: accentColor.withOpacity(0.05),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 6.0,
-                  horizontal: 4.0,
-                ),
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: 24,
-                      child: Text(
-                        isCurrent ? '->' : '  ',
-                        style: TextStyle(
-                          color: accentColor,
-                          fontFamily: 'JetBrainsMono',
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    Text(
-                      _cleanTrackName(track).toLowerCase(),
-                      style: TextStyle(
-                        color: isCurrent
-                            ? accentColor
-                            : Colors.white.withOpacity(0.7),
-                        fontFamily: 'JetBrainsMono',
-                        fontSize: 13,
-                        decoration: isCurrent ? TextDecoration.none : null,
-                      ),
-                    ),
-                    if (isCurrent && _isPlaying) ...[
-                      const SizedBox(width: 12),
-                      _buildPlayingIndicator(accentColor),
-                    ],
-                  ],
-                ),
-              ),
-            );
-          }).toList(),
+          _buildTracklist(accentColor),
         ],
       ),
     );

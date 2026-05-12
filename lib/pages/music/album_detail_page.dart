@@ -4,10 +4,22 @@ import 'package:archbtw_sh/pages/music/album_details.dart';
 import 'package:archbtw_sh/pages/music/album_item.dart';
 import 'package:flutter/material.dart';
 
-class AlbumDetailPage extends StatelessWidget {
+class AlbumDetailPage extends StatefulWidget {
   final AlbumItem item;
   const AlbumDetailPage({super.key, required this.item});
 
+  @override
+  State<AlbumDetailPage> createState() => _AlbumDetailPageState();
+}
+
+class _AlbumDetailPageState extends State<AlbumDetailPage> {
+  bool _isLyricsExpanded = false;
+
+  void _toggleLyrics() {
+    setState(() {
+      _isLyricsExpanded = !_isLyricsExpanded;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,18 +38,48 @@ class AlbumDetailPage extends StatelessWidget {
               builder: (context, constraints) {
                 final bool isDesktop = constraints.maxWidth > 800.0;
   
-                final albumArt = AlbumArt(item: item);
-                final albumDetails = AlbumDetails(item: item, isDesktop: isDesktop,);
-  
+                final albumArt = AlbumArt(item: widget.item);
+
                 if (isDesktop) {
                   return Padding(
                     padding: const EdgeInsets.all(32.0),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Column(
                       children: [
-                        Expanded(flex: 2, child: albumArt),
-                        const SizedBox(width: 32.0),
-                        Expanded(flex: 3, child: albumDetails),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              flex: 2,
+                              child: Column(
+                                children: [
+                                  albumArt,
+                                  AlbumDetails(
+                                    item: widget.item,
+                                    isDesktop: isDesktop,
+                                    showTitle: true,
+                                    showPlayer: false,
+                                    showLyricsButton: false,
+                                    showLyricsContent: false,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 32.0),
+                            Expanded(
+                              flex: 3,
+                              child: AlbumDetails(
+                                item: widget.item,
+                                isDesktop: isDesktop,
+                                showTitle: false,
+                                showPlayer: true,
+                                showLyricsButton: true,
+                                showLyricsContent: true,
+                                isLyricsExpanded: _isLyricsExpanded,
+                                onToggleLyrics: _toggleLyrics,
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   );
@@ -46,7 +88,14 @@ class AlbumDetailPage extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       albumArt,
-                      albumDetails,
+                      AlbumDetails(
+                        item: widget.item,
+                        isDesktop: isDesktop,
+                        showTitle: true,
+                        showPlayer: true,
+                        showLyricsButton: true,
+                        showLyricsContent: true,
+                      ),
                     ],
                   );
                 }

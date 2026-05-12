@@ -16,12 +16,21 @@ class _WhaleGameState extends State<WhaleGame> {
   final AudioPlayer _audioPlayer = AudioPlayer();
 
   final List<String> _playlist = [
-    'all_aboard_thats_going_aboard.wav',
-    'spouted.wav',
+    'why_is_it_spicy.m4a',
     'whale_mail.wav',
+    'ill_have_the_ribs_please.wav',
     'beached.wav',
     'sos.wav',
+    'all_aboard_thats_going_aboard.wav',
+    'we_just_need_to_budget_better.wav',
+    'is_that_real_wool.m4a',
+    'i_dont_like_you_very_much.m4a',
+    'wheres_the_boat.wav',
+    'specter.wav',
+    'tightrope.wav',
     'i_swear_the_fish_was_this_big.wav',
+    'spouted.wav',
+    'before_the_before.wav',
   ];
 
   List<String> _musicQueue = [];
