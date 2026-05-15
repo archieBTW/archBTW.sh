@@ -79,6 +79,7 @@ class SelectableHighlightView extends StatelessWidget {
             highlight.parse(source, language: language).nodes!,
           ),
         ),
+        softWrap: false,
       ),
     );
   }

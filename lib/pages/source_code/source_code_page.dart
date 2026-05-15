@@ -64,32 +64,34 @@ class _SourceCodePageState extends State<SourceCodePage> {
     final lines = content.split('\n');
     final double fontSize = isDesktop ? 14 : 11;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
+    return SelectionArea(
       child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Line numbers
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: List.generate(lines.length, (index) {
-                return Text(
-                  '${index + 1}',
-                  style: TextStyle(
-                    fontFamily: 'JetBrainsMono',
-                    fontSize: fontSize,
-                    color: Colors.white38,
-                    height: 1.5,
-                  ),
-                );
-              }),
-            ),
-            const SizedBox(width: 16),
-            // Code
-            SelectionArea(
-              child: SelectableHighlightView(
+        padding: const EdgeInsets.all(16.0),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Line numbers
+              SelectionContainer.disabled(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: List.generate(lines.length, (index) {
+                    return Text(
+                      '${index + 1}',
+                      style: TextStyle(
+                        fontFamily: 'JetBrainsMono',
+                        fontSize: fontSize,
+                        color: Colors.white38,
+                        height: 1.5,
+                      ),
+                    );
+                  }),
+                ),
+              ),
+              const SizedBox(width: 16),
+              // Code
+              SelectableHighlightView(
                 content,
                 language: 'dart',
                 theme: {
@@ -108,8 +110,8 @@ class _SourceCodePageState extends State<SourceCodePage> {
                   height: 1.5,
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
