@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:archbtw_sh/global/colors.dart';
 import 'package:archbtw_sh/pages/about/about.dart';
+import 'package:archbtw_sh/pages/error/kernel_panic_page.dart';
 import 'package:archbtw_sh/pages/home/home_page.dart';
 import 'package:archbtw_sh/pages/merch/merch__page.dart';
 import 'package:archbtw_sh/pages/music/music_page.dart';
@@ -10,8 +11,10 @@ import 'package:archbtw_sh/widgets/loading_waveform.dart';
 import 'package:archbtw_sh/widgets/social_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:flutter_web_plugins/url_strategy.dart' if (dart.library.io) 'package:archbtw_sh/global/noop_url_strategy.dart';
 
 void main() {
+  usePathUrlStrategy();
   runApp(const ArchWebsite());
 }
 
@@ -31,7 +34,17 @@ class ArchWebsite extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: const MainScreen(),
+      initialRoute: '/',
+      onGenerateRoute: (settings) {
+        if (settings.name == '/') {
+          return PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) => const MainScreen(),
+            transitionDuration: Duration.zero,
+            reverseTransitionDuration: Duration.zero,
+          );
+        }
+        return MaterialPageRoute(builder: (context) => const KernelPanicPage());
+      },
     );
   }
 }
