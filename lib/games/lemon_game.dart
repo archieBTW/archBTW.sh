@@ -1,10 +1,15 @@
 import 'dart:async';
 import 'dart:math';
+import 'package:archbtw_sh/global/colors.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
-import 'package:flutter/services.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+
+class Pill {
+  final Color color;
+  final String id;
+
+  Pill(this.color) : id = UniqueKey().toString();
+}
 
 class LemonsGame extends StatefulWidget {
   const LemonsGame({super.key});
@@ -13,98 +18,87 @@ class LemonsGame extends StatefulWidget {
   State<LemonsGame> createState() => _LemonsGameState();
 }
 
-class _LemonsGameState extends State<LemonsGame> with SingleTickerProviderStateMixin {
-  static const List<String> _playlist = [
-    'ai.wav',
+class _LemonsGameState extends State<LemonsGame> {
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  final List<String> _playlist = [
+    'almost_intelligent.wav',
     'crosstops.wav',
-    'cunt.wav',
-    'cups.wav',
+    'c_u_next_tuesday.wav',
+    'drinking_outta_cups.wav',
     'elixir.wav',
     'florence.wav',
     'it_seemed_like_a_good_idea_at_the_time.wav',
-    'mercy.wav',
+    'you_call_this_mercy.wav',
     'midnight_oil.wav',
-    'smart_man.wav',
-    'take_it_apart.wav',
-    'thats_how.wav',
-    'third_time.wav',
+    'i_may_not_be_a_smart_man_but_i_know_what_love_is.wav',
+    'lets_take_it_apart_and_put_it_back_together.wav',
+    'and_thats_how_it_happened.wav',
+    'third_times_a_charm.wav',
   ];
 
-List<String> _musicQueue = [];
+  List<String> _musicQueue = [];
+
   StreamSubscription? _playerCompleteSubscription;
 
-  static const double playerYOffset = 100.0; 
-  static const double playerWidth = 70.0; // Adjusted for Basket Emoji width
-  static const double playerHeight = 70.0; // Adjusted for Basket Emoji height
-  static const double lemonSize = 35.0;
-  static const double keyboardSpeed = 10.0; // Slightly faster response for keys
-  
-  final Random _rng = Random();
-  late Ticker _ticker;
-  final AudioPlayer _audioPlayer = AudioPlayer();
-  final FocusNode _focusNode = FocusNode();
+  final int _rows = 8;
+  final int _cols = 5;
 
-  double playerX = 0;
-  double screenWidth = 0;
-  double screenHeight = 0;
-  bool isPlaying = false;
-  bool isGameOver = false;
-  int score = 0;
-  int lives = 5;
-  
-  bool _isMovingLeft = false;
-  bool _isMovingRight = false;
+  final List<Color> _pillColors = [
+    const Color(0xFFE53935),
+    const Color(0xFF1E88E5),
+    const Color(0xFF43A047),
+    const Color(0xFFFDD835),
+    const Color(0xFF8E24AA),
+    const Color(0xFFFB8C00),
+  ];
 
-  List<LemonEntity> lemons = [];
+  late List<List<Pill?>> _grid;
+  Point<int>? _selectedPoint;
+
+  int _score = 0;
+  bool _isWon = false;
+  bool _isGameOver = false;
+  bool _isProcessing = false;
+
+  Timer? _gameTimer;
+  int _secondsRemaining = 180;
 
   @override
   void initState() {
     super.initState();
-    _ticker = createTicker(_onTick);
-      _setupAudioPlayer();
-    
-    // Force focus immediately so keyboard works without clicking first
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      FocusScope.of(context).requestFocus(_focusNode);
-    });
+    _initGrid(resetScore: true);
+
+    _setupAudioPlayer();
   }
 
   @override
   void dispose() {
-    _ticker.dispose();
     _playerCompleteSubscription?.cancel();
-    _audioPlayer.stop();
     _audioPlayer.dispose();
-    _focusNode.dispose();
+    _gameTimer?.cancel();
     super.dispose();
   }
 
-void _setupAudioPlayer() {
-    // 1. Don't loop a single song; stop when it finishes so we can trigger the next one
+  void _setupAudioPlayer() {
     _audioPlayer.setReleaseMode(ReleaseMode.release);
 
-    // 2. Listen for the song ending
     _playerCompleteSubscription = _audioPlayer.onPlayerComplete.listen((event) {
       _playNextTrack();
     });
 
-    // 3. Start the queue
     _playNextTrack();
   }
 
   Future<void> _playNextTrack() async {
     if (_playlist.isEmpty) return;
 
-    // A. If queue is empty, refill and shuffle
     if (_musicQueue.isEmpty) {
       _musicQueue = List.of(_playlist)..shuffle();
     }
 
-    // B. Get the next song
     final nextSong = _musicQueue.removeAt(0);
 
     try {
-      // Note: Using the specific folder for this game
       final fullPath = 'music/lemons/$nextSong';
       await _audioPlayer.setSource(AssetSource(fullPath));
       await _audioPlayer.setVolume(0.5);
@@ -114,314 +108,663 @@ void _setupAudioPlayer() {
     }
   }
 
-
-  void _startGame() {
-    setState(() {
-      score = 0;
-      lives = 5;
-      lemons.clear();
-      isGameOver = false;
-      isPlaying = true;
-      if (screenWidth > 0) {
-        playerX = (screenWidth / 2) - (playerWidth / 2);
-      }
-      // Re-grab focus on start to ensure keys work if user clicked away
-      FocusScope.of(context).requestFocus(_focusNode);
-    });
-    _ticker.start();
-  }
-
-  void _stopGame({required bool gameOver}) {
-    _ticker.stop();
-    setState(() {
-      isPlaying = false;
-      isGameOver = gameOver;
-      _isMovingLeft = false;
-      _isMovingRight = false;
-    });
-  }
-
-  void _onTick(Duration elapsed) {
-    if (!isPlaying) return;
-
-    setState(() {
-      // 1. Handle Keyboard Movement
-      if (_isMovingLeft) {
-        playerX -= keyboardSpeed;
-      }
-      if (_isMovingRight) {
-        playerX += keyboardSpeed;
-      }
-
-      // Clamp Player to Screen
-      if (playerX < 0) playerX = 0;
-      if (playerX > screenWidth - playerWidth) playerX = screenWidth - playerWidth;
-
-      // 2. Spawn Lemons
-      // Chance increases slightly with score
-      if (_rng.nextDouble() < 0.015 + (score * 0.0001)) {
-        lemons.add(LemonEntity(
-          x: _rng.nextDouble() * (screenWidth - lemonSize),
-          y: -50,
-          
-          speed: 1.5 + _rng.nextDouble() * 3.0 + (score * 0.005), 
-          isRotten: _rng.nextDouble() < 0.3, 
-        ));
-      }
-
-      // 3. Update Lemons & Collisions
-      final double playerTop = screenHeight - playerYOffset;
-      final double playerBottom = screenHeight - 20; 
-      
-      for (int i = lemons.length - 1; i >= 0; i--) {
-        final lemon = lemons[i];
-        lemon.y += lemon.speed;
-
-        final bool hitX = (lemon.x + (lemonSize/2) > playerX) && 
-                          (lemon.x + (lemonSize/2) < playerX + playerWidth);
-        
-        final bool hitY = (lemon.y + lemonSize > playerTop + 10) && 
-                          (lemon.y < playerBottom);
-
-        // Caught
-        if (hitX && hitY) {
-          if (lemon.isRotten) {
-            lives--;
-            if (lives <= 0) _stopGame(gameOver: true);
-          } else {
-            score += 10;
-          }
-          lemons.removeAt(i);
-          continue;
+  Future<void> _cleanupStragglers() async {
+    Map<Color, int> colorCounts = {};
+    for (var row in _grid) {
+      for (var pill in row) {
+        if (pill != null) {
+          colorCounts[pill.color] = (colorCounts[pill.color] ?? 0) + 1;
         }
-
-        // Floor
-        if (lemon.y > screenHeight) {
-          if (!lemon.isRotten) {
-            lives--;
-            if (lives <= 0) _stopGame(gameOver: true);
-          }
-          lemons.removeAt(i);
-        }
-      }
-    });
-  }
-
-  void _handleKeyEvent(KeyEvent event) {
-    if (event is KeyDownEvent) {
-      if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
-        setState(() => _isMovingLeft = true);
-      } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
-        setState(() => _isMovingRight = true);
-      }
-    } else if (event is KeyUpEvent) {
-      if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
-        setState(() => _isMovingLeft = false);
-      } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
-        setState(() => _isMovingRight = false);
       }
     }
+
+    List<Color> doomedColors = [];
+    colorCounts.forEach((color, count) {
+      if (count > 0 && count < 3) {
+        doomedColors.add(color);
+      }
+    });
+
+    if (doomedColors.isEmpty) return;
+
+    bool changed = false;
+    setState(() {
+      for (int y = 0; y < _rows; y++) {
+        for (int x = 0; x < _cols; x++) {
+          final pill = _grid[y][x];
+          if (pill != null && doomedColors.contains(pill.color)) {
+            _grid[y][x] = null;
+            _score += 5;
+            changed = true;
+          }
+        }
+      }
+    });
+
+    if (changed) {
+      await Future.delayed(const Duration(milliseconds: 200));
+      await _applyGravity();
+      await _resolveMatches();
+    }
+  }
+
+  void _startTimer() {
+    _gameTimer?.cancel();
+    _secondsRemaining = 180;
+    _gameTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) return;
+      setState(() {
+        if (_secondsRemaining > 0) {
+          _secondsRemaining--;
+        } else {
+          _isGameOver = true;
+          _gameTimer?.cancel();
+        }
+      });
+    });
+  }
+
+  void _initGrid({bool resetScore = true}) {
+    _grid = List.generate(_rows, (_) => List<Pill?>.filled(_cols, null));
+
+    for (int y = 0; y < _rows; y++) {
+      for (int x = 0; x < _cols; x++) {
+        Color proposedColor;
+        do {
+          proposedColor = _pillColors[Random().nextInt(_pillColors.length)];
+        } while (!_isMatchSafe(_grid, x, y, proposedColor, isTopDown: true));
+
+        _grid[y][x] = Pill(proposedColor);
+      }
+    }
+
+    setState(() {
+      if (resetScore) _score = 0;
+
+      _isWon = false;
+      _isGameOver = false;
+      _isProcessing = false;
+      _selectedPoint = null;
+    });
+
+    _startTimer();
+  }
+
+  Future<void> _shuffleGrid() async {
+    if (_isProcessing || _isWon || _isGameOver) return;
+
+    setState(() {
+      _isProcessing = true;
+    });
+
+    List<Pill> availablePills = [];
+    for (var row in _grid) {
+      for (var pill in row) {
+        if (pill != null) availablePills.add(pill);
+      }
+    }
+    availablePills.shuffle();
+
+    List<List<Pill?>> newGrid = List.generate(
+      _rows,
+      (_) => List<Pill?>.filled(_cols, null),
+    );
+
+    int pillIndex = 0;
+
+    for (int y = _rows - 1; y >= 0; y--) {
+      for (int x = 0; x < _cols; x++) {
+        if (pillIndex >= availablePills.length) break;
+
+        int foundIndex = -1;
+
+        for (int k = pillIndex; k < availablePills.length; k++) {
+          if (_isMatchSafe(
+            newGrid,
+            x,
+            y,
+            availablePills[k].color,
+            isTopDown: false,
+          )) {
+            foundIndex = k;
+            break;
+          }
+        }
+
+        if (foundIndex != -1) {
+          final temp = availablePills[pillIndex];
+          availablePills[pillIndex] = availablePills[foundIndex];
+          availablePills[foundIndex] = temp;
+        }
+
+        newGrid[y][x] = availablePills[pillIndex];
+        pillIndex++;
+      }
+    }
+
+    setState(() {
+      _grid = newGrid;
+      _selectedPoint = null;
+    });
+
+    await Future.delayed(const Duration(milliseconds: 500));
+    await _resolveMatches();
+
+    if (mounted) {
+      setState(() {
+        _isProcessing = false;
+      });
+    }
+  }
+
+  bool _isMatchSafe(
+    List<List<Pill?>> tempGrid,
+    int x,
+    int y,
+    Color color, {
+    required bool isTopDown,
+  }) {
+    if (x >= 2) {
+      if (tempGrid[y][x - 1]?.color == color &&
+          tempGrid[y][x - 2]?.color == color) {
+        return false;
+      }
+    }
+
+    if (isTopDown) {
+      if (y >= 2) {
+        if (tempGrid[y - 1][x]?.color == color &&
+            tempGrid[y - 2][x]?.color == color)
+          return false;
+      }
+
+      if (x >= 2 && y >= 2) {
+        if (tempGrid[y - 1][x - 1]?.color == color &&
+            tempGrid[y - 2][x - 2]?.color == color)
+          return false;
+      }
+      if (x <= _cols - 3 && y >= 2) {
+        if (tempGrid[y - 1][x + 1]?.color == color &&
+            tempGrid[y - 2][x + 2]?.color == color)
+          return false;
+      }
+    } else {
+      if (y <= _rows - 3) {
+        if (tempGrid[y + 1][x]?.color == color &&
+            tempGrid[y + 2][x]?.color == color)
+          return false;
+      }
+
+      if (x >= 2 && y <= _rows - 3) {
+        if (tempGrid[y + 1][x - 1]?.color == color &&
+            tempGrid[y + 2][x - 2]?.color == color)
+          return false;
+      }
+
+      if (x <= _cols - 3 && y <= _rows - 3) {
+        if (tempGrid[y + 1][x + 1]?.color == color &&
+            tempGrid[y + 2][x + 2]?.color == color)
+          return false;
+      }
+    }
+
+    return true;
+  }
+
+  void _handleTap(int x, int y) {
+    if (_isProcessing || _isWon || _isGameOver || _grid[y][x] == null) return;
+
+    setState(() {
+      if (_selectedPoint == null) {
+        _selectedPoint = Point(x, y);
+      } else if (_selectedPoint!.x == x && _selectedPoint!.y == y) {
+        _selectedPoint = null;
+      } else {
+        final dx = (x - _selectedPoint!.x).abs();
+        final dy = (y - _selectedPoint!.y).abs();
+
+        final isNeighbor = dx <= 1 && dy <= 1 && !(dx == 0 && dy == 0);
+
+        if (isNeighbor) {
+          _attemptSwap(_selectedPoint!, Point(x, y));
+          _selectedPoint = null;
+        } else {
+          _selectedPoint = Point(x, y);
+        }
+      }
+    });
+  }
+
+  Future<void> _attemptSwap(Point<int> p1, Point<int> p2) async {
+    setState(() {
+      _isProcessing = true;
+      final temp = _grid[p1.y][p1.x];
+      _grid[p1.y][p1.x] = _grid[p2.y][p2.x];
+      _grid[p2.y][p2.x] = temp;
+    });
+
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    bool hasMatch = await _resolveMatches();
+
+    if (!hasMatch) {
+      if (mounted) {
+        setState(() {
+          final temp = _grid[p1.y][p1.x];
+          _grid[p1.y][p1.x] = _grid[p2.y][p2.x];
+          _grid[p2.y][p2.x] = temp;
+          _isProcessing = false;
+        });
+      }
+    }
+  }
+
+  Future<bool> _resolveMatches({bool initial = false}) async {
+    Set<Point<int>> matchedPoints = {};
+
+    Color? getColor(int x, int y) => _grid[y][x]?.color;
+
+    for (int y = 0; y < _rows; y++) {
+      for (int x = 0; x < _cols - 2; x++) {
+        final c = getColor(x, y);
+        if (c == null) continue;
+        if (getColor(x + 1, y) == c && getColor(x + 2, y) == c) {
+          matchedPoints.addAll([Point(x, y), Point(x + 1, y), Point(x + 2, y)]);
+          int k = x + 3;
+          while (k < _cols && getColor(k, y) == c) {
+            matchedPoints.add(Point(k, y));
+            k++;
+          }
+        }
+      }
+    }
+
+    for (int x = 0; x < _cols; x++) {
+      for (int y = 0; y < _rows - 2; y++) {
+        final c = getColor(x, y);
+        if (c == null) continue;
+        if (getColor(x, y + 1) == c && getColor(x, y + 2) == c) {
+          matchedPoints.addAll([Point(x, y), Point(x, y + 1), Point(x, y + 2)]);
+          int k = y + 3;
+          while (k < _rows && getColor(x, k) == c) {
+            matchedPoints.add(Point(x, k));
+            k++;
+          }
+        }
+      }
+    }
+
+    for (int y = 0; y < _rows - 2; y++) {
+      for (int x = 0; x < _cols - 2; x++) {
+        final c = getColor(x, y);
+        if (c == null) continue;
+        if (getColor(x + 1, y + 1) == c && getColor(x + 2, y + 2) == c) {
+          matchedPoints.addAll([
+            Point(x, y),
+            Point(x + 1, y + 1),
+            Point(x + 2, y + 2),
+          ]);
+          int k = 3;
+          while (y + k < _rows &&
+              x + k < _cols &&
+              getColor(x + k, y + k) == c) {
+            matchedPoints.add(Point(x + k, y + k));
+            k++;
+          }
+        }
+      }
+    }
+
+    for (int y = 0; y < _rows - 2; y++) {
+      for (int x = 2; x < _cols; x++) {
+        final c = getColor(x, y);
+        if (c == null) continue;
+        if (getColor(x - 1, y + 1) == c && getColor(x - 2, y + 2) == c) {
+          matchedPoints.addAll([
+            Point(x, y),
+            Point(x - 1, y + 1),
+            Point(x - 2, y + 2),
+          ]);
+          int k = 3;
+          while (y + k < _rows && x - k >= 0 && getColor(x - k, y + k) == c) {
+            matchedPoints.add(Point(x - k, y + k));
+            k++;
+          }
+        }
+      }
+    }
+
+    if (matchedPoints.isNotEmpty) {
+      if (!initial) {
+        if (mounted) {
+          setState(() {
+            for (var p in matchedPoints) {
+              _grid[p.y][p.x] = null;
+            }
+            _score += matchedPoints.length * 10;
+          });
+        }
+        await Future.delayed(const Duration(milliseconds: 300));
+      } else {
+        for (var p in matchedPoints) {
+          _grid[p.y][p.x] = null;
+        }
+      }
+
+      await _applyGravity();
+      await _resolveMatches(initial: initial);
+      return true;
+    }
+
+    if (!initial) {
+      await _cleanupStragglers();
+      _checkWinCondition();
+    }
+
+    if (!initial && mounted) {
+      setState(() {
+        _isProcessing = false;
+      });
+    }
+    return false;
+  }
+
+  void _checkWinCondition() {
+    bool isEmpty = true;
+    for (var row in _grid) {
+      for (var pill in row) {
+        if (pill != null) {
+          isEmpty = false;
+          break;
+        }
+      }
+    }
+    if (isEmpty && !_isWon) {
+      setState(() {
+        _isWon = true;
+        _gameTimer?.cancel();
+      });
+    }
+  }
+
+  Future<void> _applyGravity() async {
+    bool moved = false;
+    for (int x = 0; x < _cols; x++) {
+      int writeIdx = _rows - 1;
+      for (int readIdx = _rows - 1; readIdx >= 0; readIdx--) {
+        if (_grid[readIdx][x] != null) {
+          if (writeIdx != readIdx) {
+            _grid[writeIdx][x] = _grid[readIdx][x];
+            _grid[readIdx][x] = null;
+            moved = true;
+          }
+          writeIdx--;
+        }
+      }
+    }
+    if (moved && mounted) {
+      setState(() {});
+      await Future.delayed(const Duration(milliseconds: 300));
+    }
+  }
+
+  String get _timerString {
+    final mins = (_secondsRemaining ~/ 60).toString().padLeft(2, '0');
+    final secs = (_secondsRemaining % 60).toString().padLeft(2, '0');
+    return "$mins:$secs";
   }
 
   @override
   Widget build(BuildContext context) {
-    return KeyboardListener(
-      focusNode: _focusNode,
-      autofocus: true,
-      onKeyEvent: _handleKeyEvent,
-      child: Scaffold(
-        backgroundColor: Colors.black,
-        body: LayoutBuilder(
-          builder: (context, constraints) {
-            screenWidth = constraints.maxWidth;
-            screenHeight = constraints.maxHeight;
-            
-            if (!isPlaying && !isGameOver && playerX == 0) {
-              playerX = (screenWidth / 2) - (playerWidth / 2);
-            }
-
-            return Stack(
-              children: [
-                GestureDetector(
-                  behavior: HitTestBehavior.translucent,
-                  onPanUpdate: (details) {
-                    if (isPlaying) {
-                      setState(() {
-                        playerX += details.delta.dx;
-                        if (playerX < 0) playerX = 0;
-                        if (playerX > screenWidth - playerWidth) playerX = screenWidth - playerWidth;
-                      });
-                    }
-                  },
-                  child: Container(
-                    color: Colors.transparent,
-                    width: double.infinity,
-                    height: double.infinity,
-                    child: Stack(
-                      children: [
-                        for (final lemon in lemons)
-                          Positioned(
-                            left: lemon.x,
-                            top: lemon.y,
-                            child: _buildLemon(lemon),
-                          ),
-                        Positioned(
-                          left: playerX,
-                          bottom: 20,
-                          child: _buildPlayer(),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'SCORE: $score',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontFamily: 'JetBrainsMono',
-                            fontWeight: FontWeight.bold,
-                            fontSize: 24,
-                          ),
-                        ),
-                        Row(
-                          children: List.generate(5, (index) {
-                            return Icon(
-                              FontAwesomeIcons.heart,
-                              color: index < lives ? const Color(0xFFE74C3C) : Colors.grey.withOpacity(0.3),
-                              size: 24,
-                            );
-                          }),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                Positioned(
-                  top: 10,
-                  left: 10,
-                  child: SafeArea(
-                    child: IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                  ),
-                ),
-
-                if (!isPlaying)
-                  Container(
-                    color: Colors.black.withOpacity(0.85),
-                    child: Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            isGameOver ? "LIFE GAVE YOU LEMONS" : "LIFE'S LEMONS",
-                            style: const TextStyle(
-                              color: Color(0xFFB072FF),
-                              fontFamily: 'JetBrainsMono',
-                              fontWeight: FontWeight.bold,
-                              fontSize: 32,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          if (isGameOver)
-                            Text(
-                              "Final Score: $score",
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontFamily: 'JetBrainsMono',
-                                fontSize: 24,
-                              ),
-                            ),
-                          const SizedBox(height: 48),
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFB072FF),
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            onPressed: _startGame,
-                            child: Text(
-                              isGameOver ? "TRY AGAIN" : "START GAME",
-                              style: const TextStyle(
-                                fontFamily: 'JetBrainsMono',
-                                fontWeight: FontWeight.bold,
-                                fontSize: 18,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          const Text(
-                            "Use Arrow Keys or Drag to Move\nCatch Yellow. Dodge Brown.",
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: Colors.grey,
-                              fontFamily: 'JetBrainsMono',
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-              ],
-            );
-          },
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: kAccentColor),
+          onPressed: () => Navigator.of(context).pop(),
         ),
-      ),
-    );
-  }
-
-  Widget _buildLemon(LemonEntity lemon) {
-    if (lemon.isRotten) {
-      return ColorFiltered(
-        colorFilter: const ColorFilter.mode(
-          Color(0xFF5D4037),
-          BlendMode.srcATop,
-        ),
-        child: const Text('🍋', style: TextStyle(fontSize: 35)),
-      );
-    } else {
-      return const Text('🍋', style: TextStyle(fontSize: 35));
-    }
-  }
-
-  Widget _buildPlayer() {
-    return SizedBox(
-      width: playerWidth,
-      height: playerHeight,
-      child: const Center(
-        child: Text(
-          '🧺',
+        title: Text(
+          _isWon ? "Quit Addiction" : (_isGameOver ? "TIMEOUT" : _timerString),
           style: TextStyle(
-            fontSize: 65, 
+            fontFamily: 'JetBrainsMono',
+            color: _isWon
+                ? kAccentColor
+                : (_isGameOver ? Colors.red : kAccentColor),
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
           ),
         ),
+        actions: [
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.only(right: 16.0),
+              child: Text(
+                "Pills Popped: $_score",
+                style: const TextStyle(
+                  fontFamily: 'JetBrainsMono',
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+      floatingActionButton: (!_isWon && !_isGameOver)
+          ? FloatingActionButton(
+              onPressed: _shuffleGrid,
+              backgroundColor: kAccentColor,
+              child: const Icon(Icons.shuffle, color: Colors.black),
+            )
+          : null,
+      body: Stack(
+        children: [
+          if (_isWon) _buildWinScreen(),
+          if (_isGameOver && !_isWon) _buildLoseScreen(),
+          if (!_isWon && !_isGameOver) _buildGameLayout(),
+        ],
       ),
     );
   }
-}
 
-class LemonEntity {
-  double x;
-  double y;
-  double speed;
-  bool isRotten;
+  Widget _buildWinScreen() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.check_circle_outline, color: kAccentColor, size: 80),
+          const SizedBox(height: 20),
+          const Text(
+            "All pills popped.",
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: 'JetBrainsMono',
+              color: kAccentColor,
+              fontWeight: FontWeight.bold,
+              fontSize: 24,
+            ),
+          ),
+          const SizedBox(height: 40),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+              backgroundColor: kAccentColor,
+              foregroundColor: Colors.black,
+            ),
+            onPressed: () => _initGrid(resetScore: false),
+            child: const Text(
+              "go to pharmacy",
+              style: TextStyle(fontFamily: 'JetBrainsMono', fontSize: 18),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-  LemonEntity({
-    required this.x,
-    required this.y,
-    required this.speed,
-    required this.isRotten,
-  });
+  Widget _buildLoseScreen() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error_outline, color: Colors.red, size: 80),
+          const SizedBox(height: 20),
+          const Text(
+            "CONNECTION TIMED OUT",
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: 'JetBrainsMono',
+              color: Colors.red,
+              fontWeight: FontWeight.bold,
+              fontSize: 24,
+            ),
+          ),
+          const SizedBox(height: 40),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+              backgroundColor: kAccentColor,
+              foregroundColor: Colors.black,
+            ),
+            onPressed: () => _initGrid(resetScore: true),
+            child: const Text(
+              "retry",
+              style: TextStyle(fontFamily: 'JetBrainsMono', fontSize: 18),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGameLayout() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final double maxWidth = constraints.maxWidth - 16;
+        final double maxHeight = constraints.maxHeight - 16;
+
+        double cellSize = maxWidth / _cols;
+        if (cellSize * _rows > maxHeight) {
+          cellSize = maxHeight / _rows;
+        }
+
+        final double xOffset = (constraints.maxWidth - (cellSize * _cols)) / 2;
+        final double yOffset = (constraints.maxHeight - (cellSize * _rows)) / 2;
+
+        List<Widget> pillWidgets = [];
+
+        for (int y = 0; y < _rows; y++) {
+          for (int x = 0; x < _cols; x++) {
+            pillWidgets.add(
+              Positioned(
+                left: xOffset + (x * cellSize),
+                top: yOffset + (y * cellSize),
+                width: cellSize,
+                height: cellSize,
+                child: Container(
+                  margin: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.white10),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.translucent,
+                    onTap: () => _handleTap(x, y),
+                  ),
+                ),
+              ),
+            );
+          }
+        }
+
+        for (int y = 0; y < _rows; y++) {
+          for (int x = 0; x < _cols; x++) {
+            final pill = _grid[y][x];
+            if (pill == null) continue;
+
+            pillWidgets.add(
+              AnimatedPositioned(
+                key: Key(pill.id),
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOutBack,
+                left: xOffset + (x * cellSize),
+                top: yOffset + (y * cellSize),
+                width: cellSize,
+                height: cellSize,
+                child: IgnorePointer(
+                  child: _buildPillCell(x, y, cellSize, pill),
+                ),
+              ),
+            );
+          }
+        }
+
+        return Stack(children: pillWidgets);
+      },
+    );
+  }
+
+  Widget _buildPillCell(int x, int y, double size, Pill pill) {
+    final isSelected =
+        _selectedPoint != null &&
+        _selectedPoint!.x == x &&
+        _selectedPoint!.y == y;
+
+    return Center(
+      child: SizedBox(
+        width: size * 0.9,
+        height: size * 0.9,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                color: pill.color,
+                borderRadius: BorderRadius.circular(size * 0.3),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.3),
+                    offset: const Offset(2, 2),
+                    blurRadius: 3,
+                  ),
+                  BoxShadow(
+                    color: Colors.white.withOpacity(0.2),
+                    offset: const Offset(-2, -2),
+                    blurRadius: 2,
+                    // inset: true
+                  ),
+                ],
+              ),
+              child: Center(
+                child: Text(
+                  '💊',
+                  style: TextStyle(
+                    fontSize: size * 0.5,
+                    height: 1.0,
+                    color: Colors.white.withOpacity(0.9),
+                  ),
+                ),
+              ),
+            ),
+            if (isSelected)
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(size * 0.3),
+                  border: Border.all(color: Colors.white, width: 3),
+                  boxShadow: [
+                    BoxShadow(
+                      color: pill.color.withOpacity(0.8),
+                      blurRadius: 15,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 }

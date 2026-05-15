@@ -8,10 +8,10 @@ import 'package:archbtw_sh/pages/merch/merch__page.dart';
 import 'package:archbtw_sh/pages/music/music_page.dart';
 import 'package:archbtw_sh/widgets/header.dart';
 import 'package:archbtw_sh/widgets/loading_waveform.dart';
-import 'package:archbtw_sh/widgets/social_icons.dart';
+import 'package:archbtw_sh/pages/source_code/source_code_page.dart';
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:flutter_web_plugins/url_strategy.dart' if (dart.library.io) 'package:archbtw_sh/global/noop_url_strategy.dart';
+import 'package:flutter_web_plugins/url_strategy.dart'
+    if (dart.library.io) 'package:archbtw_sh/global/noop_url_strategy.dart';
 
 void main() {
   usePathUrlStrategy();
@@ -30,7 +30,11 @@ class ArchWebsite extends StatelessWidget {
         fontFamily: 'JetBrainsMono',
         scaffoldBackgroundColor: kBackgroundColor,
         textTheme: TextTheme(
-          bodyMedium: TextStyle(color: kTextColor, fontSize: 16, fontFamily: 'JetBrainsMono'),
+          bodyMedium: TextStyle(
+            color: kTextColor,
+            fontSize: 16,
+            fontFamily: 'JetBrainsMono',
+          ),
         ),
         useMaterial3: true,
       ),
@@ -38,7 +42,15 @@ class ArchWebsite extends StatelessWidget {
       onGenerateRoute: (settings) {
         if (settings.name == '/') {
           return PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) => const MainScreen(),
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                const MainScreen(),
+            transitionDuration: Duration.zero,
+            reverseTransitionDuration: Duration.zero,
+          );
+        } else if (settings.name == '/source') {
+          return PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                const SourceCodePage(),
             transitionDuration: Duration.zero,
             reverseTransitionDuration: Duration.zero,
           );
@@ -58,13 +70,10 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
-
-  // Individual loading states for the Staggered/Cascade load
   bool _loadAbout = false;
   bool _loadMusic = false;
   bool _loadMerch = false;
 
-  // Constant instance of HomePage
   final Widget _homePage = const RepaintBoundary(child: HomePage());
 
   @override
@@ -74,26 +83,14 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Future<void> _startStaggeredLoading() async {
-    // 1. Wait the initial 2.8 seconds
     await Future.delayed(const Duration(milliseconds: 2800));
     if (!mounted) return;
-
-    // 2. Load About Page
     setState(() => _loadAbout = true);
-
-    // 3. Wait a small breath (200ms) so the UI thread can breathe 
-    // and render the next frame of your typing animation
     await Future.delayed(const Duration(milliseconds: 200));
     if (!mounted) return;
-
-    // 4. Load Music Page
     setState(() => _loadMusic = true);
-
-    // 5. Wait another small breath
     await Future.delayed(const Duration(milliseconds: 200));
     if (!mounted) return;
-
-    // 6. Load Merch Page
     setState(() => _loadMerch = true);
   }
 
@@ -108,25 +105,21 @@ class _MainScreenState extends State<MainScreen> {
     return Scaffold(
       body: Column(
         children: [
-          Header(
-            currentIndex: _currentIndex,
-            onItemTapped: _onItemTapped,
-          ),
+          Header(currentIndex: _currentIndex, onItemTapped: _onItemTapped),
           Expanded(
             child: IndexedStack(
               index: _currentIndex,
               children: [
-                // Index 0: Home (Always loaded)
                 _homePage,
-
-                // Index 1: About (Loads at 2.8s)
-                _loadAbout ? const AboutPage() : const Center(child: WaveformLoader()),
-
-                // Index 2: Music (Loads at ~3.0s)
-                _loadMusic ? const MusicPage() : const Center(child: WaveformLoader()),
-
-                // Index 3: Merch (Loads at ~3.2s)
-                _loadMerch ? const MerchPage() : const Center(child: WaveformLoader()),
+                _loadAbout
+                    ? const AboutPage()
+                    : const Center(child: WaveformLoader()),
+                _loadMusic
+                    ? const MusicPage()
+                    : const Center(child: WaveformLoader()),
+                _loadMerch
+                    ? const MerchPage()
+                    : const Center(child: WaveformLoader()),
               ],
             ),
           ),
@@ -135,4 +128,3 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 }
-

@@ -4,20 +4,24 @@ import 'package:flutter/material.dart';
 
 class SocialIcon extends StatelessWidget {
   final IconData icon;
-  final String url;
+  final String? url;
   final double iconSize;
+  final VoidCallback? onPressed;
 
   const SocialIcon({super.key, 
     required this.icon,
-    required this.url,
+    this.url,
     this.iconSize = 18.0,
+    this.onPressed,
   });
 
   @override
   Widget build(BuildContext context) {
     return IconButton(
       icon: Icon(icon, color: Colors.grey, size: iconSize),
-      onPressed: () => openUrl(url),
+      onPressed: onPressed ?? () {
+        if (url != null) openUrl(url!);
+      },
       splashColor: kAccentColor.withOpacity(0.3),
       hoverColor: kAccentColor.withOpacity(0.1),
     );

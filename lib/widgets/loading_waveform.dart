@@ -25,7 +25,6 @@ class _WaveformLoaderState extends State<WaveformLoader>
   @override
   void initState() {
     super.initState();
-    // Match CSS duration: 1.2s
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1200),
@@ -58,12 +57,12 @@ class _WaveformLoaderState extends State<WaveformLoader>
 
               double sinVal = math.sin(t * 2 * math.pi);
 
-              double normalized = (sinVal + 1) / 2; 
+              double normalized = (sinVal + 1) / 2;
               double scale = 0.1 + (normalized * 0.9);
 
               return Container(
                 width: widget.barWidth,
-                height: widget.height * scale, 
+                height: widget.height * scale,
                 margin: const EdgeInsets.symmetric(horizontal: 3.0),
                 decoration: BoxDecoration(
                   color: color,

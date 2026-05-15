@@ -9,12 +9,7 @@ const String kPlayerEmoji = '💸';
 const String kBulletEmoji = '🎁';
 const Color kMoneyGreen = Color(0xFF00FF00);
 
-enum EnemyType {
-  santa, // Big Boss
-  baby, // Fast & erratic
-  snowman, // Zig Zag
-  cookie, // Slow fodder
-}
+enum EnemyType { santa, baby, snowman, cookie }
 
 class SantasInvadersGame extends StatefulWidget {
   const SantasInvadersGame({super.key});
@@ -28,7 +23,6 @@ class _SantasInvadersGameState extends State<SantasInvadersGame>
   final FocusNode _focusNode = FocusNode();
   final AudioPlayer _audioPlayer = AudioPlayer();
 
-  // Game State
   double playerX = 0.0;
   List<_Bullet> bullets = [];
   List<_Enemy> enemies = [];
@@ -36,11 +30,9 @@ class _SantasInvadersGameState extends State<SantasInvadersGame>
   bool isGameOver = false;
   bool isPlaying = false;
 
-  // Controls State
   bool _movingLeft = false;
   bool _movingRight = false;
 
-  // Loop Logic
   late Ticker _ticker;
   double _time = 0;
   final double _playerMoveSpeed = 0.03;
@@ -123,17 +115,9 @@ class _SantasInvadersGameState extends State<SantasInvadersGame>
   }
 
   void _spawnWave() {
-    // We now spawn fewer enemies with specific counts
-    // 2 Santas (Bosses) at the top
     _spawnSpecificEnemies(EnemyType.santa, count: 2, y: -0.9);
-
-    // 3 Snowmen (Zig Zaggers) below them
     _spawnSpecificEnemies(EnemyType.snowman, count: 3, y: -0.6);
-
-    // 3 Babies (Fast jittery ones)
     _spawnSpecificEnemies(EnemyType.baby, count: 3, y: -0.3);
-
-    // 4 Cookies (Slow fodder) at the front
     _spawnSpecificEnemies(EnemyType.cookie, count: 4, y: 0.0);
   }
 
@@ -143,14 +127,11 @@ class _SantasInvadersGameState extends State<SantasInvadersGame>
     required double y,
   }) {
     if (count <= 0) return;
-    // Calculate spacing to center them
-    // available width is roughly 1.6 (-0.8 to 0.8)
     double totalWidth = 1.4;
     double gap = count > 1 ? totalWidth / (count - 1) : 0;
     double startX = -(totalWidth / 2);
 
     for (int i = 0; i < count; i++) {
-      // If only 1 enemy, center it. Otherwise, spread them.
       double xPos = count == 1 ? 0.0 : startX + (gap * i);
 
       enemies.add(_Enemy(x: xPos, y: y, type: type, initialX: xPos));
@@ -184,29 +165,19 @@ class _SantasInvadersGameState extends State<SantasInvadersGame>
     setState(() {
       _time += 0.05;
 
-      // 1. Player Movement
       if (_movingLeft) playerX -= _playerMoveSpeed;
       if (_movingRight) playerX += _playerMoveSpeed;
       playerX = playerX.clamp(-0.95, 0.95);
-
-      // 2. Bullet Movement
       for (var b in bullets) b.y -= 0.03;
       bullets.removeWhere((b) => b.y < -1.2);
-
-      // 3. Enemy Logic
       for (var e in enemies) {
         _updateEnemyPosition(e);
-
-        // Wrap around Logic
         if (e.y > 1.2) {
           e.y = -1.3;
-          // Randomize X slightly on respawn
           e.initialX = (Random().nextDouble() * 1.4) - 0.7;
           e.x = e.initialX;
         }
       }
-
-      // 4. Collision: Bullet vs Enemy
       List<_Bullet> bulletsToRemove = [];
       List<_Enemy> enemiesToRemove = [];
 
@@ -221,8 +192,6 @@ class _SantasInvadersGameState extends State<SantasInvadersGame>
           }
         }
       }
-
-      // 5. Collision: Player vs Enemy
       for (var e in enemies) {
         double dx = playerX - e.x;
         double dy = 0.9 - e.y;
@@ -234,9 +203,8 @@ class _SantasInvadersGameState extends State<SantasInvadersGame>
       bullets.removeWhere((b) => bulletsToRemove.contains(b));
       enemies.removeWhere((e) => enemiesToRemove.contains(e));
 
-      // Auto-spawn next wave if cleared
       if (enemies.isEmpty) {
-        _spawnWave(); // Uses the new cleaner spawn logic
+        _spawnWave();
       }
     });
   }
@@ -249,20 +217,17 @@ class _SantasInvadersGameState extends State<SantasInvadersGame>
         break;
 
       case EnemyType.baby:
-        // "Jittery" - Medium fall, fast shake
         e.y += 0.0035;
         e.x = e.initialX + sin(_time * 6 + e.offset) * 0.05;
         break;
 
       case EnemyType.snowman:
-        // "Zig Zag" - Diagonal bounce
         e.y += 0.0025;
         e.x += (e.dx * 0.6);
         if (e.x > 0.9 || e.x < -0.9) e.dx *= -1;
         break;
 
       case EnemyType.cookie:
-        // "Floater" - Very slow fall
         e.y += 0.001;
         e.x = e.initialX + cos(_time * 1.0 + e.offset) * 0.15;
         break;

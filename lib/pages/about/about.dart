@@ -4,8 +4,6 @@ import 'package:flutter/material.dart';
 class AboutPage extends StatelessWidget {
   const AboutPage({super.key});
 
-  
-
   @override
   Widget build(BuildContext context) {
     final bool isDesktop = MediaQuery.of(context).size.width >= 768.0;
@@ -17,7 +15,7 @@ class AboutPage extends StatelessWidget {
       padding: padding,
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 800), // Max width for readability
+          constraints: const BoxConstraints(maxWidth: 800),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -59,7 +57,7 @@ So that's pretty much me in a nutshell. If you wanna know more, check out some o
                 style: TextStyle(
                   color: kTextColor,
                   fontSize: isDesktop ? 16 : 14,
-                  height: 1.6, // Line height
+                  height: 1.6,
                   fontFamily: 'JetBrainsMono',
                 ),
               ),

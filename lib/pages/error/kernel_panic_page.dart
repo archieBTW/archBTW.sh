@@ -103,7 +103,6 @@ class _KernelPanicPageState extends State<KernelPanicPage> {
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // The Log Content
           Padding(
             padding: const EdgeInsets.all(20.0),
             child: ListView.builder(
@@ -111,7 +110,9 @@ class _KernelPanicPageState extends State<KernelPanicPage> {
               itemCount: _lines.length + 1,
               itemBuilder: (context, index) {
                 if (index == _lines.length) {
-                  return _isPanic ? _buildRebootPrompt() : const SizedBox.shrink();
+                  return _isPanic
+                      ? _buildRebootPrompt()
+                      : const SizedBox.shrink();
                 }
                 return Text(
                   _lines[index],
@@ -124,8 +125,6 @@ class _KernelPanicPageState extends State<KernelPanicPage> {
               },
             ),
           ),
-
-          // CRT Scanlines Effect
           IgnorePointer(
             child: Container(
               decoration: BoxDecoration(
@@ -143,18 +142,8 @@ class _KernelPanicPageState extends State<KernelPanicPage> {
               child: _buildScanlines(),
             ),
           ),
-
-          // Flickering overlay
-          if (_isPanic)
-            const IgnorePointer(
-              child: FlickeringOverlay(),
-            ),
-
-          // Glitch Effect
-          if (_isPanic)
-            IgnorePointer(
-              child: GlitchEffect(),
-            ),
+          if (_isPanic) const IgnorePointer(child: FlickeringOverlay()),
+          if (_isPanic) IgnorePointer(child: GlitchEffect()),
         ],
       ),
     );
@@ -166,10 +155,8 @@ class _KernelPanicPageState extends State<KernelPanicPage> {
         return Column(
           children: List.generate(
             (constraints.maxHeight / 3).floor(),
-            (index) => Container(
-              height: 1,
-              color: Colors.black.withOpacity(0.3),
-            ),
+            (index) =>
+                Container(height: 1, color: Colors.black.withOpacity(0.3)),
           ),
         );
       },
@@ -206,7 +193,10 @@ class _KernelPanicPageState extends State<KernelPanicPage> {
             child: GestureDetector(
               onTap: () => Navigator.of(context).pushReplacementNamed('/'),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   border: Border.all(color: Colors.white),
                   color: Colors.transparent,
@@ -235,7 +225,8 @@ class GlitchEffect extends StatefulWidget {
   State<GlitchEffect> createState() => _GlitchEffectState();
 }
 
-class _GlitchEffectState extends State<GlitchEffect> with SingleTickerProviderStateMixin {
+class _GlitchEffectState extends State<GlitchEffect>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   final Random _random = Random();
 
@@ -260,7 +251,7 @@ class _GlitchEffectState extends State<GlitchEffect> with SingleTickerProviderSt
       animation: _controller,
       builder: (context, child) {
         if (_random.nextDouble() > 0.1) return const SizedBox.shrink();
-        
+
         return Stack(
           children: [
             Positioned(
@@ -295,7 +286,8 @@ class FlickeringOverlay extends StatefulWidget {
   State<FlickeringOverlay> createState() => _FlickeringOverlayState();
 }
 
-class _FlickeringOverlayState extends State<FlickeringOverlay> with SingleTickerProviderStateMixin {
+class _FlickeringOverlayState extends State<FlickeringOverlay>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   final Random _random = Random();
 

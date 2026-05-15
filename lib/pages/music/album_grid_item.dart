@@ -21,9 +21,10 @@ class AlbumGridItem extends StatelessWidget {
             pageBuilder: (context, animation, secondaryAnimation) {
               return AlbumDetailPage(item: item);
             },
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              return FadeTransition(opacity: animation, child: child);
-            },
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+                  return FadeTransition(opacity: animation, child: child);
+                },
           ),
         );
       },
@@ -43,7 +44,10 @@ class AlbumGridItem extends StatelessWidget {
               elevation: 0,
               clipBehavior: Clip.antiAlias,
               shape: RoundedRectangleBorder(
-                side: BorderSide(color: Colors.white.withOpacity(0.1), width: 1),
+                side: BorderSide(
+                  color: Colors.white.withOpacity(0.1),
+                  width: 1,
+                ),
                 borderRadius: BorderRadius.circular(12.0),
               ),
               child: Column(
@@ -55,19 +59,21 @@ class AlbumGridItem extends StatelessWidget {
                       child: Image.asset(
                         item.coverUrl,
                         fit: BoxFit.cover,
-                        // Use frameBuilder to show loader while decoding/loading
-                        frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
-                          if (wasSynchronouslyLoaded || frame != null) {
-                            return child;
-                          }
-                          return Container(
-                            color: Colors.white.withOpacity(0.02),
-                            child: const Center(
-                              // Scaled down version of the loader for grid items
-                              child: WaveformLoader(height: 25, barWidth: 3),
-                            ),
-                          );
-                        },
+                        frameBuilder:
+                            (context, child, frame, wasSynchronouslyLoaded) {
+                              if (wasSynchronouslyLoaded || frame != null) {
+                                return child;
+                              }
+                              return Container(
+                                color: Colors.white.withOpacity(0.02),
+                                child: const Center(
+                                  child: WaveformLoader(
+                                    height: 25,
+                                    barWidth: 3,
+                                  ),
+                                ),
+                              );
+                            },
                         errorBuilder: (context, error, stackTrace) {
                           return Container(
                             color: Colors.grey[800],

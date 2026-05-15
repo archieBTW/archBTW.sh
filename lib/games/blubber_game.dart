@@ -36,7 +36,6 @@ class _WhaleGameState extends State<WhaleGame> {
   List<String> _musicQueue = [];
   StreamSubscription? _playerCompleteSubscription;
 
-  // --- Physics Variables ---
   static double birdYaxis = 0;
   double time = 0;
   double height = 0;
@@ -47,7 +46,6 @@ class _WhaleGameState extends State<WhaleGame> {
   int score = 0;
   int highScore = 0;
 
-  // --- Barrier Variables ---
   static double barrierXone = 2.5;
   double barrierXtwo = 2.5 + 1.8;
   double barrierYone = 0;
@@ -60,7 +58,6 @@ class _WhaleGameState extends State<WhaleGame> {
   void initState() {
     super.initState();
 
-    // Initialize the smart playlist player
     _setupAudioPlayer();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -71,8 +68,7 @@ class _WhaleGameState extends State<WhaleGame> {
   @override
   void dispose() {
     _timer?.cancel();
-    _playerCompleteSubscription
-        ?.cancel(); // Cancel listener to prevent memory leaks
+    _playerCompleteSubscription?.cancel();
     _gameFocusNode.dispose();
     _audioPlayer.dispose();
     super.dispose();
@@ -91,16 +87,13 @@ class _WhaleGameState extends State<WhaleGame> {
   Future<void> _playNextTrack() async {
     if (_playlist.isEmpty) return;
 
-    // A. If queue is empty, refill and shuffle
     if (_musicQueue.isEmpty) {
       _musicQueue = List.of(_playlist)..shuffle();
     }
 
-    // B. Get the next song
     final nextSong = _musicQueue.removeAt(0);
 
     try {
-      // Note: Using the specific folder for this game
       final fullPath = 'music/blubber/$nextSong';
       await _audioPlayer.setSource(AssetSource(fullPath));
       await _audioPlayer.setVolume(0.5);
@@ -136,7 +129,6 @@ class _WhaleGameState extends State<WhaleGame> {
     time = 0;
 
     _timer = Timer.periodic(const Duration(milliseconds: 30), (timer) {
-      // Physics
       time += 0.025;
       height = -4.5 * time * time + 2.1 * time;
 
@@ -185,29 +177,18 @@ class _WhaleGameState extends State<WhaleGame> {
   }
 
   bool _checkCollision() {
-    // 1. Floor/Ceiling
     if (birdYaxis > 1.2 || birdYaxis < -1.1) return true;
 
     bool checkSingleBarrier(double bX, double bY) {
-      // Define the Gap Size in Alignment Units (Same as visuals below)
       const double gapHeight = 0.7;
 
-      // Whale Size Compensation
-      // The whale isn't a single point; it has height (approx 0.1).
-      // We shrink the safe zone by half the whale's height so the *edges* of the whale collide.
       const double whaleHalfHeight = 0.05;
 
-      // Horizontal Check
-      // Check if the whale (width ~0.4) overlaps the pipe (width ~0.5)
       bool horizontalOverlap = (bX > -0.65 && bX < -0.35);
 
       if (horizontalOverlap) {
-        // Vertical Check
-        // The "Safe Zone" is the distance from the center of the gap to the wall.
-        // Formula: (Gap / 2) - (Whale / 2)
         double safeDist = (gapHeight / 2) - whaleHalfHeight;
 
-        // If the distance between the bird and the gap center is larger than safeDist, HIT.
         if ((birdYaxis - bY).abs() > safeDist) {
           return true;
         }
@@ -246,17 +227,14 @@ class _WhaleGameState extends State<WhaleGame> {
               ),
               child: Stack(
                 children: [
-                  // 1. Game World
                   Column(
                     children: [
                       Expanded(
                         flex: 4,
                         child: Stack(
                           children: [
-                            // Background Grid
                             const _TerminalGrid(),
 
-                            // Barriers
                             _AsciiBarrier(
                               barrierX: barrierXone,
                               barrierY: barrierYone,
@@ -266,14 +244,12 @@ class _WhaleGameState extends State<WhaleGame> {
                               barrierY: barrierYtwo,
                             ),
 
-                            // The Whale
                             AnimatedContainer(
                               alignment: Alignment(-0.5, birdYaxis),
                               duration: const Duration(milliseconds: 0),
                               child: const _AsciiWhale(),
                             ),
 
-                            // Messages
                             if (!gameHasStarted && !gameOver)
                               const _OverlayMessage(
                                 title: "FloppyWhale",
@@ -290,7 +266,6 @@ class _WhaleGameState extends State<WhaleGame> {
                         ),
                       ),
 
-                      // 2. Status Bar
                       Container(
                         height: 60,
                         color: Colors.black,
@@ -333,7 +308,6 @@ class _WhaleGameState extends State<WhaleGame> {
                     ],
                   ),
 
-                  // 3. Scanlines
                   IgnorePointer(
                     child: Container(
                       decoration: BoxDecoration(
@@ -353,7 +327,6 @@ class _WhaleGameState extends State<WhaleGame> {
                     ),
                   ),
 
-                  // Close Button
                   Positioned(
                     top: 20,
                     right: 20,
@@ -463,17 +436,13 @@ class _AsciiBarrier extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Must match gapHeight in _checkCollision exactly
     const double gapSize = 0.7;
 
     return Container(
       alignment: Alignment(barrierX, 0),
       child: Column(
         children: [
-          // TOP PIPE
           Expanded(
-            // Calculate the flex based on how much space is ABOVE the gap
-            // Formula: Total Space (2.0) - Bottom Space - Gap
             flex: ((1 + barrierY - (gapSize / 2)) * 1000).toInt().clamp(
               1,
               2000,
@@ -481,19 +450,11 @@ class _AsciiBarrier extends StatelessWidget {
             child: Container(
               width: 80,
               alignment: Alignment.bottomCenter,
-              // Clip to prevent the text from spilling into the gap
               child: ClipRect(child: const _GlitchBlock(isTop: true)),
             ),
           ),
-
-          // THE GAP
-          // We use Spacer with flex to ensure the gap is exactly proportional
-          // to the alignment coordinates used in physics.
           Spacer(flex: (gapSize * 1000).toInt()),
-
-          // BOTTOM PIPE
           Expanded(
-            // Calculate the flex based on how much space is BELOW the gap
             flex: ((1 - barrierY - (gapSize / 2)) * 1000).toInt().clamp(
               1,
               2000,

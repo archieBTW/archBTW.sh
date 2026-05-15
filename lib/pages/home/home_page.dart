@@ -105,12 +105,6 @@ class _HomePageState extends State<HomePage>
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // SocialIcon(
-              //   icon: FontAwesomeIcons.spotify,
-              //   url: 'https://open.spotify.com/artist/54LLXYgKGZTqH9tZzsmDtS',
-              //   iconSize: iconSize,
-              // ),
-              // SizedBox(width: socialSpacing),
               SocialIcon(
                 icon: FontAwesomeIcons.tiktok,
                 url: 'https://www.tiktok.com/@fyr.archbtw',
@@ -122,17 +116,19 @@ class _HomePageState extends State<HomePage>
                 url: 'https://soundcloud.com/archbtw',
                 iconSize: iconSize,
               ),
-              // SizedBox(width: socialSpacing),
-              // SocialIcon(
-              //   icon: FontAwesomeIcons.youtube,
-              //   url: 'https://www.youtube.com/channel/UCEkivs08T2wb9m6NSuryc8A',
-              //   iconSize: iconSize,
-              // ),
               SizedBox(width: socialSpacing),
               SocialIcon(
                 icon: FontAwesomeIcons.github,
                 url: 'https://www.github.com/archieBTW',
                 iconSize: iconSize,
+              ),
+              SizedBox(width: socialSpacing),
+              SocialIcon(
+                icon: FontAwesomeIcons.code,
+                iconSize: iconSize,
+                onPressed: () {
+                  Navigator.pushNamed(context, '/source');
+                },
               ),
             ],
           ),
