@@ -106,14 +106,14 @@ class _HomePageState extends State<HomePage>
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               SocialIcon(
-                icon: FontAwesomeIcons.tiktok,
-                url: 'https://www.tiktok.com/@fyr.archbtw',
+                icon: FontAwesomeIcons.linux,
+                url: 'https://welledumacated.dev',
                 iconSize: iconSize,
               ),
               SizedBox(width: socialSpacing),
               SocialIcon(
-                icon: FontAwesomeIcons.soundcloud,
-                url: 'https://soundcloud.com/archbtw',
+                icon: FontAwesomeIcons.computer,
+                url: 'https://archiebtw.dev',
                 iconSize: iconSize,
               ),
               SizedBox(width: socialSpacing),

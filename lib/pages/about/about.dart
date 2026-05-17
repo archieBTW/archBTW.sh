@@ -41,15 +41,13 @@ All of the guitar sounds you hear come from various pedals (the main 2 being a f
 
 More background on me as a person:
 
-My real name is Billy and I grew up in Jacksonville, FL before moving to OKC where I've lived for the past 20 years. I live in a small apartment with my wife who is my best friend, a tortie cat who is my next best friend, and a pitbull/corgie mix who is also a close homie. 
+I grew up in Jacksonville, FL before moving to OKC where I've lived for the past 20 years. I live in a small apartment with my wife who is my best friend, a tortie cat who is my next best friend, a pitbull/corgie mix who is also a close homie, as well as a bearded dragon. 
 
 I work as a software developer, mainly on mobile apps using flutter (I actually made this site with flutter), but I also work on other various projects using a multitude of programming languages. I'm also a huge fan of Linux and I've been using it since 2014. The name "archBTW." actually comes from a Linux meme. 
 
-I have Bipolar Disorder Type I and have struggled with addiction for many years. Mainly alcohol and amphetamines but dabbling in pretty much everything I could get my hands on. I've been clean for a couple years now! 
+Aside from music and coding, I'm a pretty big gear head. I've loved cars since I was a kid and I really enjoy working on them. I'm also in school part-time for theology! 
 
-I'm a devoted Christian but I'm not like other Christians, I'm a cool Christian 😎 Jokes aside, I'm not afraid to admit I'm a sinner and I won't pretend I'm not. I'm a human. I also try my best to love everybody. Gay, atheist, satanic, I don't really give af. Just don't be an asshole and you're cool with me. 
-
-So that's pretty much me in a nutshell. If you wanna know more, check out some of my music. Like I said, it's pretty much my diary. 
+That's pretty much me in a nutshell. If you wanna know more, check out some of my music. Like I said, it's pretty much my diary. 
 
 -archBTW
 
