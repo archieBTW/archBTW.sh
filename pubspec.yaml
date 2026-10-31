@@ -35,7 +35,7 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   url_launcher: ^6.3.2
-  font_awesome_flutter: ^10.12.0
+  font_awesome_flutter: ^11.0.0
   audioplayers: ^6.5.1
   flutter_highlight: ^0.7.0
 

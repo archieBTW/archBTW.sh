@@ -41,13 +41,13 @@ All of the guitar sounds you hear come from various pedals (the main 2 being a f
 
 More background on me as a person:
 
-I grew up in Jacksonville, FL before moving to OKC where I've lived for the past 20 years. I live in a small apartment with my wife who is my best friend, a tortie cat who is my next best friend, a pitbull/corgie mix who is also a close homie, as well as a bearded dragon. 
+My name is Archer and I live in Oklahoma City with my wife, dog, cat, and bearded dragon. When I'm not writing and making music, I'm working as a DevOps Engineer or coding on my personal projects. Before DevOps, I worked as a software developer and before that, as a systems administrator so DevOps has been a fun way to combine the two worlds.
 
-I work as a software developer, mainly on mobile apps using flutter (I actually made this site with flutter), but I also work on other various projects using a multitude of programming languages. I'm also a huge fan of Linux and I've been using it since 2014. The name "archBTW." actually comes from a Linux meme. 
+Coding and music are huge passions of mine, but aside from those, I'm also a pretty big gearhead, a theology nerd, and a huge Linux fanboy.
 
-Aside from music and coding, I'm a pretty big gear head. I've loved cars since I was a kid and I really enjoy working on them. I'm also in school part-time for theology! 
+Oh, I also have a mild obsession with Sanrio, specifically My Melody.
 
-That's pretty much me in a nutshell. If you wanna know more, check out some of my music. Like I said, it's pretty much my diary. 
+If you'd like to know more, click on the music tab. Like I said, it's pretty much my diary.
 
 -archBTW
 

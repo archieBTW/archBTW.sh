@@ -20,7 +20,7 @@ class _HomePageState extends State<HomePage>
   bool _showCursor = true;
 
   late final Timer _typingTimer;
-  late final Timer _cursorTimer;
+  Timer? _cursorTimer;
 
   @override
   bool get wantKeepAlive => true;
@@ -39,12 +39,14 @@ class _HomePageState extends State<HomePage>
         }
       } else {
         timer.cancel();
-      }
-    });
-    _cursorTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
-      if (mounted) {
-        setState(() {
-          _showCursor = !_showCursor;
+        _cursorTimer = Timer.periodic(const Duration(milliseconds: 500), (
+          timer,
+        ) {
+          if (mounted) {
+            setState(() {
+              _showCursor = !_showCursor;
+            });
+          }
         });
       }
     });
@@ -53,7 +55,7 @@ class _HomePageState extends State<HomePage>
   @override
   void dispose() {
     _typingTimer.cancel();
-    _cursorTimer.cancel();
+    _cursorTimer?.cancel();
     super.dispose();
   }
 
@@ -113,7 +115,7 @@ class _HomePageState extends State<HomePage>
               SizedBox(width: socialSpacing),
               SocialIcon(
                 icon: FontAwesomeIcons.computer,
-                url: 'https://archiebtw.dev',
+                url: 'https://archerwoods.dev',
                 iconSize: iconSize,
               ),
               SizedBox(width: socialSpacing),

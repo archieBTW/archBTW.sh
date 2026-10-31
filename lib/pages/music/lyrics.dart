@@ -993,35 +993,38 @@ But as you think in your heart, so you do. Don't be deceived.
 Either give up or give and do your best to take away.
 There's lessons in the parchment, open up to any page.
 
-[I don't like you very much]
-I want to shove you in the refrigerator and duct tape it shut.
-Then take a long vacation and check back in a month
+[i don't like you very much]
+I want to shove you in the refrigerator and duct tape it shut. 
+Then take a long vacation and check back in a month 
 
 I'll go wherever you dream of going and send you a post card.
-I don't wish you were here. XOXO heart.
+I don't wish you were here. XOXO heart. 
 
 I wanna learn a hundred languages just to have more curse words
 To throw your way. I won't resort to slurs.
 
 Break off all your pencil lead before filling up your pencil box.
-Take the blade from the sharpener and hide it in your socks.
+Take the blade from the sharpener and hide it in your socks. 
 
 I wanna buy you groceries and then let them expire.
-Donate them to your favorite cause before setting them on fire.
+Donate them to your favorite cause before setting them on fire. 
+
+Let's play Doctor but let's not play pretend. 
+I don't have any experience but I'll carve out your pretense
 
 Sugar in your gas tank just sounds so kindergarten.
 I'll use a flaming rag right before it's started.
 
-Put handwarmers in your pillows and then move in next door.
+Put handwarmers in your pillows and then move in next door. 
 Blaring genres that you hate and then I'll laugh and laugh some more.
 
 I'm scared of spiders but you are too so I'll tough it out
 And build up a collection I'll pour in your sleeping mouth
 
 What's your favorite movie? I'll rewrite the story
-And then go back in time and make sure they make it boring.
+And then go back in time and make sure they make it boring. 
 
-I think you see where I'm going but maybe not.
+I think you see where I'm going but you seem dumb so maybe not. 
 Next time you'll think twice before taking my parking spot.
 
 [where's the boat?]
@@ -1128,38 +1131,6 @@ I bought you some roses.
 
 I'm sorry I cant wake you up.
 In my defense, you chose this.
-
-[jonah's prayer]
-“I called out to the Lord, out of my distress,
-and he answered me;
-out of the belly of Sheol I cried,
-and you heard my voice.
-For you cast me into the deep,
-into the heart of the seas,
-and the flood surrounded me;
-all your breakers and your waves
-passed over me.
-Then I said, ‘I am driven away
-from your sight;
-yet I shall again look
-upon your holy temple.’
-The waters closed in over me to take my life;
-the deep surrounded me;
-weeds were wrapped about my head.
-To the roots of the mountains I went down,
-to the land whose bars closed upon me forever.
-Yet you brought up my life from the pit,
-O Lord my God.
-When my life was fainting away,
-I remembered the Lord,
-and my prayer came to you,
-into your holy temple.
-Those who pay regard to vain idols
-forsake their hope of steadfast love.
-But I with the voice of thanksgiving
-will sacrifice to you;
-what I have vowed I will pay.
-Salvation belongs to the Lord!”
 
 [i swear, the fish was this big]
 Given one job. Walked out the first day.

@@ -2,12 +2,9 @@ import 'package:archbtw_sh/games/blubber_game.dart';
 import 'package:archbtw_sh/pages/music/music_player.dart';
 import 'package:archbtw_sh/games/lemon_game.dart';
 import 'package:archbtw_sh/games/santa_game.dart';
-import 'package:archbtw_sh/global/helpers.dart';
 import 'package:archbtw_sh/global/colors.dart';
 import 'package:archbtw_sh/pages/music/album_item.dart';
-import 'package:archbtw_sh/pages/music/album_social_icon.dart';
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class AlbumDetails extends StatefulWidget {
   final AlbumItem item;
@@ -90,7 +87,7 @@ class _AlbumDetailsState extends State<AlbumDetails> {
                   IconButton(
                     tooltip: _getTooltipForAlbum(widget.item.title),
                     icon: Icon(
-                      FontAwesomeIcons.terminal,
+                      Icons.terminal,
                       color: kAccentColor,
                       size: iconSize,
                     ),
