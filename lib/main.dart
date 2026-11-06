@@ -6,6 +6,7 @@ import 'package:archbtw_sh/pages/error/kernel_panic_page.dart';
 import 'package:archbtw_sh/pages/home/home_page.dart';
 import 'package:archbtw_sh/pages/merch/merch__page.dart';
 import 'package:archbtw_sh/pages/music/music_page.dart';
+import 'package:archbtw_sh/pages/overheat/overheat_page.dart';
 import 'package:archbtw_sh/widgets/header.dart';
 import 'package:archbtw_sh/widgets/loading_waveform.dart';
 import 'package:archbtw_sh/pages/source_code/source_code_page.dart';
@@ -51,6 +52,14 @@ class ArchWebsite extends StatelessWidget {
           return PageRouteBuilder(
             pageBuilder: (context, animation, secondaryAnimation) =>
                 const SourceCodePage(),
+            transitionDuration: Duration.zero,
+            reverseTransitionDuration: Duration.zero,
+          );
+        } else if (settings.name == '/overheat' ||
+            settings.name == '/third-degree') {
+          return PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                const OverheatPage(),
             transitionDuration: Duration.zero,
             reverseTransitionDuration: Duration.zero,
           );

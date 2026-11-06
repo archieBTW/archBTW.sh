@@ -9,6 +9,7 @@ class AlbumItem {
   final String lyrics;        
   final List<String> tracks;
   final String audioPath;
+  final bool isLocked;
 
   const AlbumItem({
     required this.title,
@@ -21,5 +22,6 @@ class AlbumItem {
     required this.soundCloudOnly,
     required this.tracks,
     required this.audioPath,
+    this.isLocked = false,
   });
 }

@@ -73,4 +73,17 @@ final List<AlbumItem> albumItems = [
       'before_the_before.wav',
     ],
   ),
+  const AlbumItem(
+    title: 'third-degree',
+    coverUrl: 'assets/images/fire.png',
+    spotifyUrl: '',
+    appleMusicUrl: '',
+    soundCloudUrl: '',
+    youtubeUrl: '',
+    soundCloudOnly: false,
+    lyrics: '',
+    audioPath: '',
+    tracks: [],
+    isLocked: true,
+  ),
 ];

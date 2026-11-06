@@ -40,12 +40,12 @@ class AlbumGridItem extends StatelessWidget {
               ),
             ),
             Card(
-              color: Colors.white.withOpacity(0.05),
+              color: Colors.white.withValues(alpha: 0.05),
               elevation: 0,
               clipBehavior: Clip.antiAlias,
               shape: RoundedRectangleBorder(
                 side: BorderSide(
-                  color: Colors.white.withOpacity(0.1),
+                  color: Colors.white.withValues(alpha: 0.1),
                   width: 1,
                 ),
                 borderRadius: BorderRadius.circular(12.0),
@@ -56,36 +56,64 @@ class AlbumGridItem extends StatelessWidget {
                   Expanded(
                     child: Hero(
                       tag: item.coverUrl,
-                      child: Image.asset(
-                        item.coverUrl,
-                        fit: BoxFit.cover,
-                        frameBuilder:
-                            (context, child, frame, wasSynchronouslyLoaded) {
-                              if (wasSynchronouslyLoaded || frame != null) {
-                                return child;
-                              }
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          Image.asset(
+                            item.coverUrl,
+                            fit: BoxFit.cover,
+                            frameBuilder:
+                                (context, child, frame, wasSynchronouslyLoaded) {
+                                  if (wasSynchronouslyLoaded || frame != null) {
+                                    return child;
+                                  }
+                                  return Container(
+                                    color: Colors.white.withValues(alpha: 0.02),
+                                    child: const Center(
+                                      child: WaveformLoader(
+                                        height: 25,
+                                        barWidth: 3,
+                                      ),
+                                    ),
+                                  );
+                                },
+                            errorBuilder: (context, error, stackTrace) {
                               return Container(
-                                color: Colors.white.withOpacity(0.02),
+                                color: Colors.grey[800],
                                 child: const Center(
-                                  child: WaveformLoader(
-                                    height: 25,
-                                    barWidth: 3,
+                                  child: Icon(
+                                    Icons.album_outlined,
+                                    color: kTextColor,
+                                    size: 50,
                                   ),
                                 ),
                               );
                             },
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            color: Colors.grey[800],
-                            child: const Center(
-                              child: Icon(
-                                Icons.album_outlined,
-                                color: kTextColor,
-                                size: 50,
+                          ),
+                          if (item.isLocked) ...[
+                            Container(
+                              color: Colors.black.withValues(alpha: 0.45),
+                            ),
+                            Center(
+                              child: Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.65),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Colors.white24,
+                                    width: 1.5,
+                                  ),
+                                ),
+                                child: const Icon(
+                                  Icons.lock_outline,
+                                  color: Colors.white,
+                                  size: 26,
+                                ),
                               ),
                             ),
-                          );
-                        },
+                          ],
+                        ],
                       ),
                     ),
                   ),
@@ -97,18 +125,42 @@ class AlbumGridItem extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(
-                            item.title,
-                            style: const TextStyle(
-                              color: kTextColor,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                              fontFamily: 'JetBrainsMono',
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  item.title,
+                                  style: const TextStyle(
+                                    color: kTextColor,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                    fontFamily: 'JetBrainsMono',
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              if (item.isLocked)
+                                const Padding(
+                                  padding: EdgeInsets.only(left: 4.0),
+                                  child: Icon(
+                                    Icons.lock_outline,
+                                    size: 14,
+                                    color: Colors.white54,
+                                  ),
+                                ),
+                            ],
                           ),
                           const SizedBox(height: 4),
+                          if (item.isLocked)
+                            const Text(
+                              'coming march 2027',
+                              style: TextStyle(
+                                color: Colors.white54,
+                                fontSize: 11,
+                                fontFamily: 'JetBrainsMono',
+                              ),
+                            ),
                         ],
                       ),
                     ),

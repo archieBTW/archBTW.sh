@@ -13,8 +13,31 @@ class AlbumArt extends StatelessWidget {
         tag: item.coverUrl,
         child: ClipRRect(
           borderRadius: BorderRadius.circular(12.0),
-          child: Image.asset(
-            item.coverUrl,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Image.asset(item.coverUrl),
+              if (item.isLocked) ...[
+                Positioned.fill(
+                  child: Container(
+                    color: Colors.black.withValues(alpha: 0.35),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.7),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white24, width: 1.5),
+                  ),
+                  child: const Icon(
+                    Icons.lock_outline,
+                    color: Colors.white,
+                    size: 36,
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
       ),

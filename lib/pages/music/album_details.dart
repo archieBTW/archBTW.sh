@@ -4,7 +4,9 @@ import 'package:archbtw_sh/games/lemon_game.dart';
 import 'package:archbtw_sh/games/santa_game.dart';
 import 'package:archbtw_sh/global/colors.dart';
 import 'package:archbtw_sh/pages/music/album_item.dart';
+import 'package:archbtw_sh/pages/overheat/overheat_page.dart';
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class AlbumDetails extends StatefulWidget {
   final AlbumItem item;
@@ -74,14 +76,42 @@ class _AlbumDetailsState extends State<AlbumDetails> {
                   ),
                 ),
                 if (!widget.isDesktop) Expanded(child: const SizedBox()),
-                if (widget.item.title.toLowerCase() == 'blubber' ||
+                if (widget.item.isLocked) ...[
+                  const SizedBox(width: 16),
+                  Container(
+                    width: 1,
+                    height: 20,
+                    color: Colors.grey.withValues(alpha: 0.5),
+                  ),
+                  const SizedBox(width: 16),
+                  IconButton(
+                    tooltip: "launch_protocol: overheat",
+                    icon: FaIcon(
+                      FontAwesomeIcons.fire,
+                      color: const Color(0xFFFF6F00),
+                      size: iconSize,
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        PageRouteBuilder(
+                          opaque: false,
+                          pageBuilder: (context, anim, secAnim) =>
+                              const OverheatPage(),
+                          transitionsBuilder: (context, anim, secAnim, child) {
+                            return FadeTransition(opacity: anim, child: child);
+                          },
+                        ),
+                      );
+                    },
+                  ),
+                ] else if (widget.item.title.toLowerCase() == 'blubber' ||
                     widget.item.title.toLowerCase() == 'santa\'s cookies' ||
                     widget.item.title.toLowerCase() == 'life\'s lemons') ...[
                   const SizedBox(width: 16),
                   Container(
                     width: 1,
                     height: 20,
-                    color: Colors.grey.withOpacity(0.5),
+                    color: Colors.grey.withValues(alpha: 0.5),
                   ),
                   const SizedBox(width: 16),
                   IconButton(
@@ -117,6 +147,42 @@ class _AlbumDetailsState extends State<AlbumDetails> {
               ],
             ),
           ),
+        if (widget.item.isLocked && (widget.showPlayer || !widget.isDesktop))
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.white24),
+                color: Colors.white.withValues(alpha: 0.04),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "your order is in the oven.",
+                    style: TextStyle(
+                      color: kTextColor,
+                      fontFamily: 'JetBrainsMono',
+                      fontSize: 14,
+                      height: 1.5,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    "estimated delivery time: march 2027",
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontFamily: 'JetBrainsMono',
+                      fontSize: 13,
+                      letterSpacing: 1.1,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         if (widget.showPlayer && widget.item.tracks.isNotEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -126,7 +192,9 @@ class _AlbumDetailsState extends State<AlbumDetails> {
               isDesktop: widget.isDesktop,
             ),
           ),
-        if (widget.showLyricsButton)
+        if (widget.showLyricsButton &&
+            !widget.item.isLocked &&
+            widget.item.lyrics.isNotEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Row(
@@ -151,7 +219,10 @@ class _AlbumDetailsState extends State<AlbumDetails> {
               ],
             ),
           ),
-        if (widget.showLyricsContent && _isExpanded)
+        if (widget.showLyricsContent &&
+            _isExpanded &&
+            !widget.item.isLocked &&
+            widget.item.lyrics.isNotEmpty)
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
