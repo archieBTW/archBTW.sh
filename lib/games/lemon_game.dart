@@ -4,11 +4,58 @@ import 'package:archbtw_sh/global/colors.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 
+enum LemonItemType {
+  lemon,
+  crosstopPill,
+  elixirPotion,
+  blueCandle,
+  coffeeCup,
+  cherrySeven,
+}
+
+extension LemonItemTypeMeta on LemonItemType {
+  Color get themeColor {
+    switch (this) {
+      case LemonItemType.lemon:
+        return const Color(0xFFFACC15);
+      case LemonItemType.crosstopPill:
+        return const Color(0xFFEF4444);
+      case LemonItemType.elixirPotion:
+        return const Color(0xFFA855F7);
+      case LemonItemType.blueCandle:
+        return const Color(0xFF38BDF8);
+      case LemonItemType.coffeeCup:
+        return const Color(0xFFD97706);
+      case LemonItemType.cherrySeven:
+        return const Color(0xFFEC4899);
+    }
+  }
+
+  String get label {
+    switch (this) {
+      case LemonItemType.lemon:
+        return 'LEMON';
+      case LemonItemType.crosstopPill:
+        return 'CROSSTOP';
+      case LemonItemType.elixirPotion:
+        return 'ELIXIR';
+      case LemonItemType.blueCandle:
+        return 'CANDLEWAX';
+      case LemonItemType.coffeeCup:
+        return 'COLOMBIAN';
+      case LemonItemType.cherrySeven:
+        return 'CHERRY 7';
+    }
+  }
+}
+
 class Pill {
-  final Color color;
+  final LemonItemType type;
   final String id;
 
-  Pill(this.color) : id = UniqueKey().toString();
+  Pill(this.type) : id = UniqueKey().toString();
+
+  Color get color => type.themeColor;
 }
 
 class LemonsGame extends StatefulWidget {
@@ -37,20 +84,12 @@ class _LemonsGameState extends State<LemonsGame> {
   ];
 
   List<String> _musicQueue = [];
-
   StreamSubscription? _playerCompleteSubscription;
 
   final int _rows = 8;
   final int _cols = 5;
 
-  final List<Color> _pillColors = [
-    const Color(0xFFE53935),
-    const Color(0xFF1E88E5),
-    const Color(0xFF43A047),
-    const Color(0xFFFDD835),
-    const Color(0xFF8E24AA),
-    const Color(0xFFFB8C00),
-  ];
+  final List<LemonItemType> _itemTypes = LemonItemType.values;
 
   late List<List<Pill?>> _grid;
   Point<int>? _selectedPoint;
@@ -67,7 +106,6 @@ class _LemonsGameState extends State<LemonsGame> {
   void initState() {
     super.initState();
     _initGrid(resetScore: true);
-
     _setupAudioPlayer();
   }
 
@@ -104,35 +142,35 @@ class _LemonsGameState extends State<LemonsGame> {
       await _audioPlayer.setVolume(0.5);
       await _audioPlayer.resume();
     } catch (e) {
-      debugPrint("Audio Error: $e");
+      debugPrint('Audio Error: $e');
     }
   }
 
   Future<void> _cleanupStragglers() async {
-    Map<Color, int> colorCounts = {};
-    for (var row in _grid) {
-      for (var pill in row) {
-        if (pill != null) {
-          colorCounts[pill.color] = (colorCounts[pill.color] ?? 0) + 1;
+    final Map<LemonItemType, int> typeCounts = {};
+    for (final row in _grid) {
+      for (final item in row) {
+        if (item != null) {
+          typeCounts[item.type] = (typeCounts[item.type] ?? 0) + 1;
         }
       }
     }
 
-    List<Color> doomedColors = [];
-    colorCounts.forEach((color, count) {
+    final List<LemonItemType> doomedTypes = [];
+    typeCounts.forEach((type, count) {
       if (count > 0 && count < 3) {
-        doomedColors.add(color);
+        doomedTypes.add(type);
       }
     });
 
-    if (doomedColors.isEmpty) return;
+    if (doomedTypes.isEmpty) return;
 
     bool changed = false;
     setState(() {
       for (int y = 0; y < _rows; y++) {
         for (int x = 0; x < _cols; x++) {
-          final pill = _grid[y][x];
-          if (pill != null && doomedColors.contains(pill.color)) {
+          final item = _grid[y][x];
+          if (item != null && doomedTypes.contains(item.type)) {
             _grid[y][x] = null;
             _score += 5;
             changed = true;
@@ -165,22 +203,22 @@ class _LemonsGameState extends State<LemonsGame> {
   }
 
   void _initGrid({bool resetScore = true}) {
+    final rng = Random();
     _grid = List.generate(_rows, (_) => List<Pill?>.filled(_cols, null));
 
     for (int y = 0; y < _rows; y++) {
       for (int x = 0; x < _cols; x++) {
-        Color proposedColor;
+        LemonItemType proposedType;
         do {
-          proposedColor = _pillColors[Random().nextInt(_pillColors.length)];
-        } while (!_isMatchSafe(_grid, x, y, proposedColor, isTopDown: true));
+          proposedType = _itemTypes[rng.nextInt(_itemTypes.length)];
+        } while (!_isMatchSafe(_grid, x, y, proposedType, isTopDown: true));
 
-        _grid[y][x] = Pill(proposedColor);
+        _grid[y][x] = Pill(proposedType);
       }
     }
 
     setState(() {
       if (resetScore) _score = 0;
-
       _isWon = false;
       _isGameOver = false;
       _isProcessing = false;
@@ -197,33 +235,33 @@ class _LemonsGameState extends State<LemonsGame> {
       _isProcessing = true;
     });
 
-    List<Pill> availablePills = [];
-    for (var row in _grid) {
-      for (var pill in row) {
-        if (pill != null) availablePills.add(pill);
+    final List<Pill> availableItems = [];
+    for (final row in _grid) {
+      for (final item in row) {
+        if (item != null) availableItems.add(item);
       }
     }
-    availablePills.shuffle();
+    availableItems.shuffle();
 
-    List<List<Pill?>> newGrid = List.generate(
+    final List<List<Pill?>> newGrid = List.generate(
       _rows,
       (_) => List<Pill?>.filled(_cols, null),
     );
 
-    int pillIndex = 0;
+    int itemIndex = 0;
 
     for (int y = _rows - 1; y >= 0; y--) {
       for (int x = 0; x < _cols; x++) {
-        if (pillIndex >= availablePills.length) break;
+        if (itemIndex >= availableItems.length) break;
 
         int foundIndex = -1;
 
-        for (int k = pillIndex; k < availablePills.length; k++) {
+        for (int k = itemIndex; k < availableItems.length; k++) {
           if (_isMatchSafe(
             newGrid,
             x,
             y,
-            availablePills[k].color,
+            availableItems[k].type,
             isTopDown: false,
           )) {
             foundIndex = k;
@@ -232,13 +270,13 @@ class _LemonsGameState extends State<LemonsGame> {
         }
 
         if (foundIndex != -1) {
-          final temp = availablePills[pillIndex];
-          availablePills[pillIndex] = availablePills[foundIndex];
-          availablePills[foundIndex] = temp;
+          final temp = availableItems[itemIndex];
+          availableItems[itemIndex] = availableItems[foundIndex];
+          availableItems[foundIndex] = temp;
         }
 
-        newGrid[y][x] = availablePills[pillIndex];
-        pillIndex++;
+        newGrid[y][x] = availableItems[itemIndex];
+        itemIndex++;
       }
     }
 
@@ -261,50 +299,56 @@ class _LemonsGameState extends State<LemonsGame> {
     List<List<Pill?>> tempGrid,
     int x,
     int y,
-    Color color, {
+    LemonItemType type, {
     required bool isTopDown,
   }) {
     if (x >= 2) {
-      if (tempGrid[y][x - 1]?.color == color &&
-          tempGrid[y][x - 2]?.color == color) {
+      if (tempGrid[y][x - 1]?.type == type &&
+          tempGrid[y][x - 2]?.type == type) {
         return false;
       }
     }
 
     if (isTopDown) {
       if (y >= 2) {
-        if (tempGrid[y - 1][x]?.color == color &&
-            tempGrid[y - 2][x]?.color == color)
+        if (tempGrid[y - 1][x]?.type == type &&
+            tempGrid[y - 2][x]?.type == type) {
           return false;
+        }
       }
 
       if (x >= 2 && y >= 2) {
-        if (tempGrid[y - 1][x - 1]?.color == color &&
-            tempGrid[y - 2][x - 2]?.color == color)
+        if (tempGrid[y - 1][x - 1]?.type == type &&
+            tempGrid[y - 2][x - 2]?.type == type) {
           return false;
+        }
       }
       if (x <= _cols - 3 && y >= 2) {
-        if (tempGrid[y - 1][x + 1]?.color == color &&
-            tempGrid[y - 2][x + 2]?.color == color)
+        if (tempGrid[y - 1][x + 1]?.type == type &&
+            tempGrid[y - 2][x + 2]?.type == type) {
           return false;
+        }
       }
     } else {
       if (y <= _rows - 3) {
-        if (tempGrid[y + 1][x]?.color == color &&
-            tempGrid[y + 2][x]?.color == color)
+        if (tempGrid[y + 1][x]?.type == type &&
+            tempGrid[y + 2][x]?.type == type) {
           return false;
+        }
       }
 
       if (x >= 2 && y <= _rows - 3) {
-        if (tempGrid[y + 1][x - 1]?.color == color &&
-            tempGrid[y + 2][x - 2]?.color == color)
+        if (tempGrid[y + 1][x - 1]?.type == type &&
+            tempGrid[y + 2][x - 2]?.type == type) {
           return false;
+        }
       }
 
       if (x <= _cols - 3 && y <= _rows - 3) {
-        if (tempGrid[y + 1][x + 1]?.color == color &&
-            tempGrid[y + 2][x + 2]?.color == color)
+        if (tempGrid[y + 1][x + 1]?.type == type &&
+            tempGrid[y + 2][x + 2]?.type == type) {
           return false;
+        }
       }
     }
 
@@ -345,7 +389,7 @@ class _LemonsGameState extends State<LemonsGame> {
 
     await Future.delayed(const Duration(milliseconds: 300));
 
-    bool hasMatch = await _resolveMatches();
+    final bool hasMatch = await _resolveMatches();
 
     if (!hasMatch) {
       if (mounted) {
@@ -360,18 +404,18 @@ class _LemonsGameState extends State<LemonsGame> {
   }
 
   Future<bool> _resolveMatches({bool initial = false}) async {
-    Set<Point<int>> matchedPoints = {};
+    final Set<Point<int>> matchedPoints = {};
 
-    Color? getColor(int x, int y) => _grid[y][x]?.color;
+    LemonItemType? getType(int x, int y) => _grid[y][x]?.type;
 
     for (int y = 0; y < _rows; y++) {
       for (int x = 0; x < _cols - 2; x++) {
-        final c = getColor(x, y);
-        if (c == null) continue;
-        if (getColor(x + 1, y) == c && getColor(x + 2, y) == c) {
+        final t = getType(x, y);
+        if (t == null) continue;
+        if (getType(x + 1, y) == t && getType(x + 2, y) == t) {
           matchedPoints.addAll([Point(x, y), Point(x + 1, y), Point(x + 2, y)]);
           int k = x + 3;
-          while (k < _cols && getColor(k, y) == c) {
+          while (k < _cols && getType(k, y) == t) {
             matchedPoints.add(Point(k, y));
             k++;
           }
@@ -381,12 +425,12 @@ class _LemonsGameState extends State<LemonsGame> {
 
     for (int x = 0; x < _cols; x++) {
       for (int y = 0; y < _rows - 2; y++) {
-        final c = getColor(x, y);
-        if (c == null) continue;
-        if (getColor(x, y + 1) == c && getColor(x, y + 2) == c) {
+        final t = getType(x, y);
+        if (t == null) continue;
+        if (getType(x, y + 1) == t && getType(x, y + 2) == t) {
           matchedPoints.addAll([Point(x, y), Point(x, y + 1), Point(x, y + 2)]);
           int k = y + 3;
-          while (k < _rows && getColor(x, k) == c) {
+          while (k < _rows && getType(x, k) == t) {
             matchedPoints.add(Point(x, k));
             k++;
           }
@@ -396,9 +440,9 @@ class _LemonsGameState extends State<LemonsGame> {
 
     for (int y = 0; y < _rows - 2; y++) {
       for (int x = 0; x < _cols - 2; x++) {
-        final c = getColor(x, y);
-        if (c == null) continue;
-        if (getColor(x + 1, y + 1) == c && getColor(x + 2, y + 2) == c) {
+        final t = getType(x, y);
+        if (t == null) continue;
+        if (getType(x + 1, y + 1) == t && getType(x + 2, y + 2) == t) {
           matchedPoints.addAll([
             Point(x, y),
             Point(x + 1, y + 1),
@@ -407,7 +451,7 @@ class _LemonsGameState extends State<LemonsGame> {
           int k = 3;
           while (y + k < _rows &&
               x + k < _cols &&
-              getColor(x + k, y + k) == c) {
+              getType(x + k, y + k) == t) {
             matchedPoints.add(Point(x + k, y + k));
             k++;
           }
@@ -417,16 +461,16 @@ class _LemonsGameState extends State<LemonsGame> {
 
     for (int y = 0; y < _rows - 2; y++) {
       for (int x = 2; x < _cols; x++) {
-        final c = getColor(x, y);
-        if (c == null) continue;
-        if (getColor(x - 1, y + 1) == c && getColor(x - 2, y + 2) == c) {
+        final t = getType(x, y);
+        if (t == null) continue;
+        if (getType(x - 1, y + 1) == t && getType(x - 2, y + 2) == t) {
           matchedPoints.addAll([
             Point(x, y),
             Point(x - 1, y + 1),
             Point(x - 2, y + 2),
           ]);
           int k = 3;
-          while (y + k < _rows && x - k >= 0 && getColor(x - k, y + k) == c) {
+          while (y + k < _rows && x - k >= 0 && getType(x - k, y + k) == t) {
             matchedPoints.add(Point(x - k, y + k));
             k++;
           }
@@ -438,7 +482,7 @@ class _LemonsGameState extends State<LemonsGame> {
       if (!initial) {
         if (mounted) {
           setState(() {
-            for (var p in matchedPoints) {
+            for (final p in matchedPoints) {
               _grid[p.y][p.x] = null;
             }
             _score += matchedPoints.length * 10;
@@ -446,7 +490,7 @@ class _LemonsGameState extends State<LemonsGame> {
         }
         await Future.delayed(const Duration(milliseconds: 300));
       } else {
-        for (var p in matchedPoints) {
+        for (final p in matchedPoints) {
           _grid[p.y][p.x] = null;
         }
       }
@@ -471,9 +515,9 @@ class _LemonsGameState extends State<LemonsGame> {
 
   void _checkWinCondition() {
     bool isEmpty = true;
-    for (var row in _grid) {
-      for (var pill in row) {
-        if (pill != null) {
+    for (final row in _grid) {
+      for (final item in row) {
+        if (item != null) {
           isEmpty = false;
           break;
         }
@@ -511,26 +555,28 @@ class _LemonsGameState extends State<LemonsGame> {
   String get _timerString {
     final mins = (_secondsRemaining ~/ 60).toString().padLeft(2, '0');
     final secs = (_secondsRemaining % 60).toString().padLeft(2, '0');
-    return "$mins:$secs";
+    return '$mins:$secs';
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: const Color(0xFF0B1021),
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: const Color(0xFF070B17),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: kAccentColor),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          _isWon ? "Quit Addiction" : (_isGameOver ? "TIMEOUT" : _timerString),
+          _isWon
+              ? 'NO MORE MELANCHOLY'
+              : (_isGameOver ? 'TIMEOUT' : _timerString),
           style: TextStyle(
             fontFamily: 'JetBrainsMono',
             color: _isWon
-                ? kAccentColor
+                ? const Color(0xFFFACC15)
                 : (_isGameOver ? Colors.red : kAccentColor),
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -540,12 +586,26 @@ class _LemonsGameState extends State<LemonsGame> {
           Center(
             child: Padding(
               padding: const EdgeInsets.only(right: 16.0),
-              child: Text(
-                "Pills Popped: $_score",
-                style: const TextStyle(
-                  fontFamily: 'JetBrainsMono',
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: const Color(0xFFFACC15).withValues(alpha: 0.6),
+                  ),
+                ),
+                child: Text(
+                  'SCORE: $_score',
+                  style: const TextStyle(
+                    fontFamily: 'JetBrainsMono',
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
                 ),
               ),
             ),
@@ -554,87 +614,145 @@ class _LemonsGameState extends State<LemonsGame> {
       ),
       floatingActionButton: (!_isWon && !_isGameOver)
           ? FloatingActionButton(
+              tooltip: 'Shuffle Board',
               onPressed: _shuffleGrid,
-              backgroundColor: kAccentColor,
+              backgroundColor: const Color(0xFFFACC15),
               child: const Icon(Icons.shuffle, color: Colors.black),
             )
           : null,
-      body: Stack(
-        children: [
-          if (_isWon) _buildWinScreen(),
-          if (_isGameOver && !_isWon) _buildLoseScreen(),
-          if (!_isWon && !_isGameOver) _buildGameLayout(),
-        ],
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: RadialGradient(
+            center: Alignment(0.0, -0.3),
+            radius: 1.2,
+            colors: [
+              Color(0xFF1E1B4B),
+              Color(0xFF0F172A),
+              Color(0xFF060913),
+            ],
+          ),
+        ),
+        child: Stack(
+          children: [
+            if (_isWon) _buildWinScreen(),
+            if (_isGameOver && !_isWon) _buildLoseScreen(),
+            if (!_isWon && !_isGameOver) _buildGameLayout(),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildWinScreen() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.check_circle_outline, color: kAccentColor, size: 80),
-          const SizedBox(height: 20),
-          const Text(
-            "All pills popped.",
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontFamily: 'JetBrainsMono',
-              color: kAccentColor,
-              fontWeight: FontWeight.bold,
-              fontSize: 24,
+      child: Container(
+        margin: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(28),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0F172A).withValues(alpha: 0.92),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFFFACC15), width: 3),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFFACC15).withValues(alpha: 0.25),
+              blurRadius: 20,
             ),
-          ),
-          const SizedBox(height: 40),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-              backgroundColor: kAccentColor,
-              foregroundColor: Colors.black,
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(
+              width: 90,
+              height: 90,
+              child: CustomPaint(
+                painter: _LemonItemPainter(type: LemonItemType.lemon),
+              ),
             ),
-            onPressed: () => _initGrid(resetScore: false),
-            child: const Text(
-              "go to pharmacy",
-              style: TextStyle(fontFamily: 'JetBrainsMono', fontSize: 18),
+            const SizedBox(height: 18),
+            const Text(
+              "LIFE'S LEMONS CLEARED!",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'JetBrainsMono',
+                color: Color(0xFFFACC15),
+                fontWeight: FontWeight.bold,
+                fontSize: 22,
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 28),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 16,
+                ),
+                backgroundColor: const Color(0xFFFACC15),
+                foregroundColor: Colors.black,
+              ),
+              onPressed: () => _initGrid(resetScore: false),
+              child: const Text(
+                'squeeze another batch',
+                style: TextStyle(
+                  fontFamily: 'JetBrainsMono',
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildLoseScreen() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.error_outline, color: Colors.red, size: 80),
-          const SizedBox(height: 20),
-          const Text(
-            "CONNECTION TIMED OUT",
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontFamily: 'JetBrainsMono',
-              color: Colors.red,
-              fontWeight: FontWeight.bold,
-              fontSize: 24,
+      child: Container(
+        margin: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(28),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0F172A).withValues(alpha: 0.92),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.redAccent, width: 3),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline, color: Colors.redAccent, size: 76),
+            const SizedBox(height: 20),
+            const Text(
+              'CONNECTION TIMED OUT',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'JetBrainsMono',
+                color: Colors.redAccent,
+                fontWeight: FontWeight.bold,
+                fontSize: 22,
+              ),
             ),
-          ),
-          const SizedBox(height: 40),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-              backgroundColor: kAccentColor,
-              foregroundColor: Colors.black,
+            const SizedBox(height: 28),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 16,
+                ),
+                backgroundColor: const Color(0xFFFACC15),
+                foregroundColor: Colors.black,
+              ),
+              onPressed: () => _initGrid(resetScore: true),
+              child: const Text(
+                'retry',
+                style: TextStyle(
+                  fontFamily: 'JetBrainsMono',
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
             ),
-            onPressed: () => _initGrid(resetScore: true),
-            child: const Text(
-              "retry",
-              style: TextStyle(fontFamily: 'JetBrainsMono', fontSize: 18),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -642,32 +760,60 @@ class _LemonsGameState extends State<LemonsGame> {
   Widget _buildGameLayout() {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final double maxWidth = constraints.maxWidth - 16;
-        final double maxHeight = constraints.maxHeight - 16;
+        final double maxWidth = constraints.maxWidth - 20;
+        final double maxHeight = constraints.maxHeight - 20;
 
         double cellSize = maxWidth / _cols;
         if (cellSize * _rows > maxHeight) {
           cellSize = maxHeight / _rows;
         }
 
-        final double xOffset = (constraints.maxWidth - (cellSize * _cols)) / 2;
-        final double yOffset = (constraints.maxHeight - (cellSize * _rows)) / 2;
+        final double boardWidth = cellSize * _cols;
+        final double boardHeight = cellSize * _rows;
+        final double xOffset = (constraints.maxWidth - boardWidth) / 2;
+        final double yOffset = (constraints.maxHeight - boardHeight) / 2;
 
-        List<Widget> pillWidgets = [];
+        final List<Widget> gridWidgets = [
+          // Cartoon Board Frame
+          Positioned(
+            left: xOffset - 6,
+            top: yOffset - 6,
+            width: boardWidth + 12,
+            height: boardHeight + 12,
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF090D1A).withValues(alpha: 0.85),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: const Color(0xFF334155),
+                  width: 3,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.6),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ];
 
         for (int y = 0; y < _rows; y++) {
           for (int x = 0; x < _cols; x++) {
-            pillWidgets.add(
+            gridWidgets.add(
               Positioned(
                 left: xOffset + (x * cellSize),
                 top: yOffset + (y * cellSize),
                 width: cellSize,
                 height: cellSize,
                 child: Container(
-                  margin: const EdgeInsets.all(2),
+                  margin: const EdgeInsets.all(2.5),
                   decoration: BoxDecoration(
-                    border: Border.all(color: Colors.white10),
-                    borderRadius: BorderRadius.circular(8),
+                    color: const Color(0xFF1E293B).withValues(alpha: 0.45),
+                    border: Border.all(color: Colors.white12, width: 1.2),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: GestureDetector(
                     behavior: HitTestBehavior.translucent,
@@ -681,12 +827,12 @@ class _LemonsGameState extends State<LemonsGame> {
 
         for (int y = 0; y < _rows; y++) {
           for (int x = 0; x < _cols; x++) {
-            final pill = _grid[y][x];
-            if (pill == null) continue;
+            final item = _grid[y][x];
+            if (item == null) continue;
 
-            pillWidgets.add(
+            gridWidgets.add(
               AnimatedPositioned(
-                key: Key(pill.id),
+                key: Key(item.id),
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeInOutBack,
                 left: xOffset + (x * cellSize),
@@ -694,77 +840,496 @@ class _LemonsGameState extends State<LemonsGame> {
                 width: cellSize,
                 height: cellSize,
                 child: IgnorePointer(
-                  child: _buildPillCell(x, y, cellSize, pill),
+                  child: _buildCartoonItemCell(x, y, cellSize, item),
                 ),
               ),
             );
           }
         }
 
-        return Stack(children: pillWidgets);
+        return Stack(children: gridWidgets);
       },
     );
   }
 
-  Widget _buildPillCell(int x, int y, double size, Pill pill) {
-    final isSelected =
+  Widget _buildCartoonItemCell(int x, int y, double size, Pill item) {
+    final bool isSelected =
         _selectedPoint != null &&
         _selectedPoint!.x == x &&
         _selectedPoint!.y == y;
+    final Color baseColor = item.color;
 
     return Center(
-      child: SizedBox(
-        width: size * 0.9,
-        height: size * 0.9,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Container(
-              decoration: BoxDecoration(
-                color: pill.color,
-                borderRadius: BorderRadius.circular(size * 0.3),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.3),
-                    offset: const Offset(2, 2),
-                    blurRadius: 3,
-                  ),
-                  BoxShadow(
-                    color: Colors.white.withOpacity(0.2),
-                    offset: const Offset(-2, -2),
-                    blurRadius: 2,
-                    // inset: true
-                  ),
+      child: AnimatedScale(
+        scale: isSelected ? 1.08 : 1.0,
+        duration: const Duration(milliseconds: 140),
+        child: SizedBox(
+          width: size * 0.90,
+          height: size * 0.90,
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                center: const Alignment(-0.3, -0.35),
+                radius: 1.0,
+                colors: [
+                  Color.lerp(baseColor, Colors.white, 0.32)!,
+                  baseColor.withValues(alpha: 0.85),
+                  Color.lerp(baseColor, Colors.black, 0.45)!,
                 ],
               ),
-              child: Center(
-                child: Text(
-                  '💊',
-                  style: TextStyle(
-                    fontSize: size * 0.5,
-                    height: 1.0,
-                    color: Colors.white.withOpacity(0.9),
+              borderRadius: BorderRadius.circular(size * 0.24),
+              border: Border.all(
+                color: isSelected ? Colors.white : const Color(0xFF0F172A),
+                width: isSelected ? 3.2 : 2.2,
+              ),
+              boxShadow: [
+                if (isSelected)
+                  BoxShadow(
+                    color: baseColor.withValues(alpha: 0.85),
+                    blurRadius: 14,
+                    spreadRadius: 2,
                   ),
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.45),
+                  offset: const Offset(0, 3),
+                  blurRadius: 4,
                 ),
+              ],
+            ),
+            child: Padding(
+              padding: EdgeInsets.all(size * 0.11),
+              child: CustomPaint(
+                painter: _LemonItemPainter(type: item.type),
               ),
             ),
-            if (isSelected)
-              Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(size * 0.3),
-                  border: Border.all(color: Colors.white, width: 3),
-                  boxShadow: [
-                    BoxShadow(
-                      color: pill.color.withOpacity(0.8),
-                      blurRadius: 15,
-                      spreadRadius: 2,
-                    ),
-                  ],
-                ),
-              ),
-          ],
+          ),
         ),
       ),
     );
   }
+}
+
+class _LemonItemPainter extends CustomPainter {
+  final LemonItemType type;
+
+  const _LemonItemPainter({required this.type});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final Offset c = size.center(Offset.zero);
+    final double r = min(size.width, size.height) * 0.46;
+
+    final Paint outline = Paint()
+      ..color = const Color(0xFF0F172A)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = (r * 0.11).clamp(1.6, 3.0)
+      ..strokeJoin = StrokeJoin.round
+      ..strokeCap = StrokeCap.round;
+
+    switch (type) {
+      case LemonItemType.lemon:
+        // "No more melancholy, only life's lemons"
+        // Detailed cartoon lemon with tips, green leaf, and glossy shine
+        canvas.save();
+        canvas.translate(c.dx, c.dy);
+        canvas.rotate(-0.35);
+
+        final Path lemonBody = Path()
+          ..moveTo(-r * 1.05, 0)
+          ..quadraticBezierTo(-r * 0.75, -r * 0.78, 0, -r * 0.72)
+          ..quadraticBezierTo(r * 0.75, -r * 0.78, r * 1.05, 0)
+          ..quadraticBezierTo(r * 0.75, r * 0.78, 0, r * 0.72)
+          ..quadraticBezierTo(-r * 0.75, r * 0.78, -r * 1.05, 0)
+          ..close();
+
+        canvas.drawPath(
+          lemonBody,
+          Paint()..color = const Color(0xFFFDE047),
+        );
+        // Bottom shading arc
+        canvas.drawArc(
+          Rect.fromCenter(
+            center: Offset(0, r * 0.1),
+            width: r * 1.6,
+            height: r * 1.0,
+          ),
+          0.1,
+          pi - 0.2,
+          false,
+          Paint()..color = const Color(0xFFEAB308),
+        );
+        canvas.drawPath(lemonBody, outline);
+
+        // Specular highlight
+        canvas.drawArc(
+          Rect.fromCenter(
+            center: Offset(-r * 0.15, -r * 0.22),
+            width: r * 1.1,
+            height: r * 0.5,
+          ),
+          pi + 0.3,
+          1.4,
+          false,
+          Paint()
+            ..color = Colors.white.withValues(alpha: 0.75)
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = r * 0.12
+            ..strokeCap = StrokeCap.round,
+        );
+
+        // Green citrus leaf on top
+        final Path leaf = Path()
+          ..moveTo(-r * 0.2, -r * 0.68)
+          ..quadraticBezierTo(-r * 0.05, -r * 1.25, r * 0.55, -r * 1.05)
+          ..quadraticBezierTo(r * 0.25, -r * 0.62, -r * 0.2, -r * 0.68)
+          ..close();
+        canvas.drawPath(leaf, Paint()..color = const Color(0xFF22C55E));
+        canvas.drawPath(leaf, outline);
+        canvas.restore();
+        break;
+
+      case LemonItemType.crosstopPill:
+        // "[crosstops] Pill pop in peace"
+        // Cartoon two-tone capsule + white scored crosstop tablet
+        canvas.save();
+        canvas.translate(c.dx - r * 0.18, c.dy - r * 0.12);
+        canvas.rotate(-0.55);
+        final RRect topHalf = RRect.fromRectAndCorners(
+          Rect.fromLTWH(-r * 0.42, -r * 0.78, r * 0.84, r * 0.78),
+          topLeft: Radius.circular(r * 0.42),
+          topRight: Radius.circular(r * 0.42),
+        );
+        final RRect bottomHalf = RRect.fromRectAndCorners(
+          Rect.fromLTWH(-r * 0.42, 0, r * 0.84, r * 0.78),
+          bottomLeft: Radius.circular(r * 0.42),
+          bottomRight: Radius.circular(r * 0.42),
+        );
+        canvas.drawRRect(topHalf, Paint()..color = const Color(0xFFEF4444));
+        canvas.drawRRect(bottomHalf, Paint()..color = Colors.white);
+        canvas.drawRRect(
+          RRect.fromRectAndRadius(
+            Rect.fromCenter(
+              center: Offset.zero,
+              width: r * 0.84,
+              height: r * 1.56,
+            ),
+            Radius.circular(r * 0.42),
+          ),
+          outline,
+        );
+        canvas.drawLine(
+          Offset(-r * 0.42, 0),
+          Offset(r * 0.42, 0),
+          outline,
+        );
+        canvas.restore();
+
+        // Foreground crosstop tablet with '+' score lines
+        final Offset tabCenter = c + Offset(r * 0.32, r * 0.28);
+        canvas.drawCircle(
+          tabCenter,
+          r * 0.52,
+          Paint()..color = const Color(0xFFF8FAFC),
+        );
+        canvas.drawCircle(tabCenter, r * 0.52, outline);
+        canvas.drawLine(
+          tabCenter + Offset(-r * 0.32, 0),
+          tabCenter + Offset(r * 0.32, 0),
+          outline,
+        );
+        canvas.drawLine(
+          tabCenter + Offset(0, -r * 0.32),
+          tabCenter + Offset(0, r * 0.32),
+          outline,
+        );
+        break;
+
+      case LemonItemType.elixirPotion:
+        // "[elixir] A violent, greedy alchemist. Amethyst, channeling"
+        // Bubbling amethyst potion flask with cork stopper
+        final Path cork = Path()
+          ..moveTo(c.dx - r * 0.22, c.dy - r * 0.78)
+          ..lineTo(c.dx - r * 0.28, c.dy - r * 1.05)
+          ..lineTo(c.dx + r * 0.28, c.dy - r * 1.05)
+          ..lineTo(c.dx + r * 0.22, c.dy - r * 0.78)
+          ..close();
+        canvas.drawPath(cork, Paint()..color = const Color(0xFFB45309));
+        canvas.drawPath(cork, outline);
+
+        // Glass neck
+        canvas.drawRect(
+          Rect.fromCenter(
+            center: c + Offset(0, -r * 0.62),
+            width: r * 0.46,
+            height: r * 0.36,
+          ),
+          Paint()..color = const Color(0xFFE0E7FF),
+        );
+        canvas.drawRect(
+          Rect.fromCenter(
+            center: c + Offset(0, -r * 0.62),
+            width: r * 0.46,
+            height: r * 0.36,
+          ),
+          outline,
+        );
+
+        // Bulbous flask body
+        final Offset bulbCenter = c + Offset(0, r * 0.16);
+        canvas.drawCircle(
+          bulbCenter,
+          r * 0.74,
+          Paint()..color = const Color(0xFFDDD6FE),
+        );
+        // Glowing purple elixir liquid inside
+        canvas.drawArc(
+          Rect.fromCircle(center: bulbCenter, radius: r * 0.65),
+          -0.2,
+          pi + 0.4,
+          true,
+          Paint()..color = const Color(0xFF9333EA),
+        );
+        // Magic bubbles
+        canvas.drawCircle(
+          bulbCenter + Offset(-r * 0.22, r * 0.12),
+          r * 0.12,
+          Paint()..color = const Color(0xFFF0ABFC),
+        );
+        canvas.drawCircle(
+          bulbCenter + Offset(r * 0.18, -r * 0.08),
+          r * 0.09,
+          Paint()..color = Colors.white,
+        );
+        canvas.drawCircle(bulbCenter, r * 0.74, outline);
+        break;
+
+      case LemonItemType.blueCandle:
+        // "Blue candle wax drips onto bolded yellow letters" / "Mirtazipine and candlewax"
+        final RRect candleBody = RRect.fromRectAndRadius(
+          Rect.fromCenter(
+            center: c + Offset(0, r * 0.24),
+            width: r * 0.92,
+            height: r * 1.18,
+          ),
+          Radius.circular(r * 0.16),
+        );
+        canvas.drawRRect(
+          candleBody,
+          Paint()..color = const Color(0xFF0284C7),
+        );
+        canvas.drawRRect(candleBody, outline);
+
+        // Dripping blue wax down the candle front
+        final Path waxDrips = Path()
+          ..moveTo(c.dx - r * 0.46, c.dy - r * 0.32)
+          ..quadraticBezierTo(
+            c.dx - r * 0.25,
+            c.dy + r * 0.22,
+            c.dx - r * 0.12,
+            c.dy - r * 0.15,
+          )
+          ..quadraticBezierTo(
+            c.dx + r * 0.08,
+            c.dy + r * 0.38,
+            c.dx + r * 0.22,
+            c.dy - r * 0.12,
+          )
+          ..quadraticBezierTo(
+            c.dx + r * 0.36,
+            c.dy + r * 0.12,
+            c.dx + r * 0.46,
+            c.dy - r * 0.32,
+          )
+          ..close();
+        canvas.drawPath(waxDrips, Paint()..color = const Color(0xFF7DD3FC));
+        canvas.drawPath(waxDrips, outline);
+
+        // Wick & Butane/Candle Flame
+        canvas.drawLine(
+          c + Offset(0, -r * 0.35),
+          c + Offset(0, -r * 0.52),
+          outline,
+        );
+        final Path outerFlame = Path()
+          ..moveTo(c.dx, c.dy - r * 1.08)
+          ..quadraticBezierTo(
+            c.dx + r * 0.38,
+            c.dy - r * 0.65,
+            c.dx,
+            c.dy - r * 0.48,
+          )
+          ..quadraticBezierTo(
+            c.dx - r * 0.38,
+            c.dy - r * 0.65,
+            c.dx,
+            c.dy - r * 1.08,
+          )
+          ..close();
+        canvas.drawPath(outerFlame, Paint()..color = const Color(0xFFF97316));
+        canvas.drawPath(outerFlame, outline);
+        canvas.drawCircle(
+          c + Offset(0, -r * 0.68),
+          r * 0.14,
+          Paint()..color = const Color(0xFFFEF08A),
+        );
+        break;
+
+      case LemonItemType.coffeeCup:
+        // "10th cup of Colombian" / "drinking outta cups"
+        // Cup handle
+        canvas.drawArc(
+          Rect.fromCenter(
+            center: c + Offset(r * 0.52, r * 0.12),
+            width: r * 0.62,
+            height: r * 0.68,
+          ),
+          -pi / 2,
+          pi,
+          false,
+          Paint()
+            ..color = Colors.white
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = r * 0.18,
+        );
+        canvas.drawArc(
+          Rect.fromCenter(
+            center: c + Offset(r * 0.52, r * 0.12),
+            width: r * 0.62,
+            height: r * 0.68,
+          ),
+          -pi / 2,
+          pi,
+          false,
+          outline,
+        );
+
+        // Mug body
+        final RRect mug = RRect.fromRectAndCorners(
+          Rect.fromCenter(
+            center: c + Offset(-r * 0.08, r * 0.16),
+            width: r * 1.15,
+            height: r * 1.08,
+          ),
+          bottomLeft: Radius.circular(r * 0.45),
+          bottomRight: Radius.circular(r * 0.45),
+          topLeft: Radius.circular(r * 0.1),
+          topRight: Radius.circular(r * 0.1),
+        );
+        canvas.drawRRect(mug, Paint()..color = const Color(0xFFFFFBEB));
+        canvas.drawRRect(mug, outline);
+
+        // Dark Colombian coffee surface
+        canvas.drawOval(
+          Rect.fromCenter(
+            center: c + Offset(-r * 0.08, -r * 0.34),
+            width: r * 1.12,
+            height: r * 0.34,
+          ),
+          Paint()..color = const Color(0xFF451A03),
+        );
+        canvas.drawOval(
+          Rect.fromCenter(
+            center: c + Offset(-r * 0.08, -r * 0.34),
+            width: r * 1.12,
+            height: r * 0.34,
+          ),
+          outline,
+        );
+
+        // Rising steam curls
+        final Paint steamPaint = Paint()
+          ..color = Colors.white.withValues(alpha: 0.85)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = r * 0.1
+          ..strokeCap = StrokeCap.round;
+        for (int s = -1; s <= 1; s += 2) {
+          final double sx = c.dx - r * 0.08 + s * r * 0.24;
+          final Path steam = Path()
+            ..moveTo(sx, c.dy - r * 0.55)
+            ..quadraticBezierTo(
+              sx + s * r * 0.14,
+              c.dy - r * 0.78,
+              sx - s * r * 0.06,
+              c.dy - r * 0.98,
+            );
+          canvas.drawPath(steam, steamPaint);
+        }
+        break;
+
+      case LemonItemType.cherrySeven:
+        // "The sevens are repetitive. Cherry on top of cherry-flavored sedatives."
+        final Offset leftCherry = c + Offset(-r * 0.42, r * 0.38);
+        final Offset rightCherry = c + Offset(r * 0.42, r * 0.38);
+        final Offset stemTop = c + Offset(0, -r * 0.88);
+
+        // Green arched cherry stems
+        final Path stems = Path()
+          ..moveTo(leftCherry.dx, leftCherry.dy - r * 0.2)
+          ..quadraticBezierTo(
+            c.dx - r * 0.35,
+            c.dy - r * 0.45,
+            stemTop.dx,
+            stemTop.dy,
+          )
+          ..quadraticBezierTo(
+            c.dx + r * 0.35,
+            c.dy - r * 0.45,
+            rightCherry.dx,
+            rightCherry.dy - r * 0.2,
+          );
+        canvas.drawPath(
+          stems,
+          Paint()
+            ..color = const Color(0xFF16A34A)
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = r * 0.14
+            ..strokeCap = StrokeCap.round,
+        );
+
+        // Twin glossy cartoon cherries
+        for (final pos in [leftCherry, rightCherry]) {
+          canvas.drawCircle(
+            pos,
+            r * 0.44,
+            Paint()..color = const Color(0xFFE11D48),
+          );
+          canvas.drawCircle(pos, r * 0.44, outline);
+          canvas.drawCircle(
+            pos + Offset(-r * 0.14, -r * 0.14),
+            r * 0.12,
+            Paint()..color = Colors.white.withValues(alpha: 0.85),
+          );
+        }
+
+        // Golden Lucky '7' badge in the center
+        final TextPainter sevenTp = TextPainter(
+          text: TextSpan(
+            text: '7',
+            style: TextStyle(
+              color: const Color(0xFFFACC15),
+              fontFamily: 'JetBrainsMono',
+              fontWeight: FontWeight.w900,
+              fontSize: r * 1.05,
+              shadows: const [
+                Shadow(
+                  color: Color(0xFF0F172A),
+                  offset: Offset(1.5, 1.5),
+                  blurRadius: 1,
+                ),
+              ],
+            ),
+          ),
+          textDirection: TextDirection.ltr,
+        )..layout();
+        sevenTp.paint(
+          canvas,
+          c - Offset(sevenTp.width / 2, sevenTp.height * 0.72),
+        );
+        break;
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _LemonItemPainter oldDelegate) =>
+      oldDelegate.type != type;
 }

@@ -24,21 +24,6 @@ const List<String> kReindeerNames = [
   'BLITZEN',
 ];
 
-const List<String> kLyricQuotes = [
-  'Rudolph snapped. Clapped back a little too hard.',
-  'Antlers covered in stains of their enemies.',
-  'Herbivores turned predatory. Chewing on the melody.',
-  'Please don\'t make light of a nose that\'s glowing.',
-  'Hooves thrown up but they still lied down.',
-  'He marked their names in crimson red. "A check for you and for you, an X."',
-  'Bloody snow melted off Santa\'s faux white collar.',
-  'Now there\'s 8 or 9 deer on a beatup hauler.',
-  'Twelve-gauged pecks from my favorite pigeon.',
-  'Picked last for games and he drew some bad cards.',
-  'The moon grins down onto the snowcapped trees.',
-  'The next day, the crosses lined the horizon.',
-];
-
 class SantasInvadersGame extends StatefulWidget {
   const SantasInvadersGame({super.key});
 
@@ -93,13 +78,11 @@ class _SantasInvadersGameState extends State<SantasInvadersGame>
   int? _shootButtonPointerId;
   int? _jumpButtonPointerId;
 
-  // Game stats & lyric feed
+  // Game stats
   int _score = 0;
   int _kills = 0;
   int _combo = 0;
   double _comboTimer = 0.0;
-  String _activeLyric = 'The moon grins down onto the snowcapped trees.';
-  double _lyricFlash = 0.0;
 
   // Entities
   final List<_Bullet> _bullets = [];
@@ -220,7 +203,6 @@ class _SantasInvadersGameState extends State<SantasInvadersGame>
       _shells.clear();
       _floatingTexts.clear();
       _horizonCrosses.clear();
-      _activeLyric = 'The moon grins down onto the snowcapped trees.';
       _seedInitialReindeer();
     });
   }
@@ -372,7 +354,6 @@ class _SantasInvadersGameState extends State<SantasInvadersGame>
       if (_muzzleFlashTimer > 0) _muzzleFlashTimer = max(0, _muzzleFlashTimer - dt);
       if (_fireCooldown > 0) _fireCooldown = max(0, _fireCooldown - dt);
       if (_recoilOffset > 0) _recoilOffset = max(0, _recoilOffset - dt * 0.09);
-      if (_lyricFlash > 0) _lyricFlash = max(0, _lyricFlash - dt);
 
       if (_comboTimer > 0) {
         _comboTimer -= dt;
@@ -575,10 +556,6 @@ class _SantasInvadersGameState extends State<SantasInvadersGame>
 
     final int killBonus = 500 * _combo;
     _score += killBonus;
-
-    final String quote = kLyricQuotes[_kills % kLyricQuotes.length];
-    _activeLyric = quote;
-    _lyricFlash = 1.0;
 
     _floatingTexts.add(
       _FloatingText(
@@ -868,7 +845,7 @@ class _SantasInvadersGameState extends State<SantasInvadersGame>
                   ),
                 ),
 
-                // Top HUD: Score, Crimson Checkmarks, and Lyric Ticker
+                // Top HUD: Score & Crimson Checkmarks
                 Positioned(
                   top: 10,
                   left: 14,
@@ -943,40 +920,6 @@ class _SantasInvadersGameState extends State<SantasInvadersGame>
                                 ),
                               ),
                           ],
-                        ),
-                        const SizedBox(height: 6),
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.55),
-                              borderRadius: BorderRadius.circular(4),
-                              border: Border(
-                                left: BorderSide(
-                                  color: _lyricFlash > 0
-                                      ? kNoseGlow
-                                      : Colors.white38,
-                                  width: 3,
-                                ),
-                              ),
-                            ),
-                            child: Text(
-                              '// "$_activeLyric"',
-                              style: TextStyle(
-                                color: _lyricFlash > 0
-                                    ? Colors.white
-                                    : Colors.white70,
-                                fontFamily: 'JetBrainsMono',
-                                fontStyle: FontStyle.italic,
-                                fontSize: isCompact ? 11 : 12,
-                              ),
-                            ),
-                          ),
                         ),
                       ],
                     ),
