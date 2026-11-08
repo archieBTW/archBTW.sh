@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:archbtw_sh/global/colors.dart';
+import 'package:archbtw_sh/global/site_music_controller.dart';
+import 'package:archbtw_sh/widgets/in_game_music_hud.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -32,23 +34,25 @@ class _WhaleGameState extends State<WhaleGame>
 
   final List<String> _playlist = [
     'why_is_it_spicy.m4a',
-    'whale_mail.wav',
-    'ill_have_the_ribs_please.wav',
-    'beached.wav',
-    'sos.wav',
-    'all_aboard_thats_going_aboard.wav',
-    'we_just_need_to_budget_better.wav',
+    'whale_mail.m4a',
+    'ill_have_the_ribs_please.m4a',
+    'beached.m4a',
+    'sos.m4a',
+    'all_aboard_thats_going_aboard.m4a',
+    'we_just_need_to_budget_better.m4a',
     'is_that_real_wool.m4a',
-    'wheres_the_boat.wav',
-    'specter.wav',
-    'tightrope.wav',
-    'i_swear_the_fish_was_this_big.wav',
-    'spouted.wav',
-    'before_the_before.wav',
+    'wheres_the_boat.m4a',
+    'specter.m4a',
+    'tightrope.m4a',
+    'i_swear_the_fish_was_this_big.m4a',
+    'spouted.m4a',
+    'before_the_before.m4a',
   ];
 
-  List<String> _musicQueue = [];
+  int _currentTrackIndex = 0;
+  bool _isMusicPlaying = true;
   StreamSubscription? _playerCompleteSubscription;
+  StreamSubscription? _playerStateSubscription;
 
   late Ticker _ticker;
   Duration _lastElapsed = Duration.zero;
@@ -132,33 +136,70 @@ class _WhaleGameState extends State<WhaleGame>
 
   @override
   void dispose() {
+    SiteMusicController.instance.exitGame();
     _ticker.dispose();
     _playerCompleteSubscription?.cancel();
+    _playerStateSubscription?.cancel();
     _focusNode.dispose();
     _audioPlayer.dispose();
     super.dispose();
   }
 
   void _setupAudioPlayer() {
+    SiteMusicController.instance.enterGame();
+    configureBackgroundAudioContext();
     _audioPlayer.setReleaseMode(ReleaseMode.release);
     _playerCompleteSubscription = _audioPlayer.onPlayerComplete.listen((_) {
       _playNextTrack();
     });
-    _playNextTrack();
+    _playerStateSubscription = _audioPlayer.onPlayerStateChanged.listen((state) {
+      if (mounted) {
+        setState(() {
+          _isMusicPlaying = state == PlayerState.playing;
+        });
+      }
+    });
+    _playTrackAt(_rng.nextInt(_playlist.length));
   }
 
-  Future<void> _playNextTrack() async {
+  Future<void> _playTrackAt(int index) async {
     if (_playlist.isEmpty) return;
-    if (_musicQueue.isEmpty) {
-      _musicQueue = List.of(_playlist)..shuffle();
+    final int wrapped = (index % _playlist.length + _playlist.length) % _playlist.length;
+    if (mounted) {
+      setState(() {
+        _currentTrackIndex = wrapped;
+        _isMusicPlaying = true;
+      });
     }
-    final nextSong = _musicQueue.removeAt(0);
+    final nextSong = _playlist[wrapped];
     try {
       await _audioPlayer.setSource(AssetSource('music/blubber/$nextSong'));
       await _audioPlayer.setVolume(0.5);
       await _audioPlayer.resume();
     } catch (e) {
       debugPrint('Audio Error: $e');
+    }
+  }
+
+  Future<void> _playNextTrack() async {
+    await _playTrackAt(_currentTrackIndex + 1);
+  }
+
+  Future<void> _playPreviousTrack() async {
+    await _playTrackAt(_currentTrackIndex - 1);
+  }
+
+  Future<void> _togglePlayPause() async {
+    try {
+      if (_isMusicPlaying) {
+        await _audioPlayer.pause();
+        if (mounted) setState(() => _isMusicPlaying = false);
+      } else {
+        await _audioPlayer.resume();
+        if (mounted) setState(() => _isMusicPlaying = true);
+      }
+    } catch (e) {
+      debugPrint('Audio Toggle Error: $e');
     }
   }
 
@@ -652,6 +693,17 @@ class _WhaleGameState extends State<WhaleGame>
             icon: const Icon(Icons.refresh, color: Colors.white70, size: 20),
           ),
         ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(36),
+          child: InGameMusicHud(
+            currentTrack: _playlist[_currentTrackIndex],
+            isPlaying: _isMusicPlaying,
+            accentColor: const Color(0xFF00E5FF),
+            onPrevious: _playPreviousTrack,
+            onPlayPause: _togglePlayPause,
+            onNext: _playNextTrack,
+          ),
+        ),
       ),
       body: KeyboardListener(
         focusNode: _focusNode,

@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:archbtw_sh/global/colors.dart';
+import 'package:archbtw_sh/global/site_music_controller.dart';
+import 'package:archbtw_sh/widgets/in_game_music_hud.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 
@@ -68,23 +70,25 @@ class LemonsGame extends StatefulWidget {
 class _LemonsGameState extends State<LemonsGame> {
   final AudioPlayer _audioPlayer = AudioPlayer();
   final List<String> _playlist = [
-    'almost_intelligent.wav',
-    'crosstops.wav',
-    'c_u_next_tuesday.wav',
-    'drinking_outta_cups.wav',
-    'elixir.wav',
-    'florence.wav',
-    'it_seemed_like_a_good_idea_at_the_time.wav',
-    'you_call_this_mercy.wav',
-    'midnight_oil.wav',
-    'i_may_not_be_a_smart_man_but_i_know_what_love_is.wav',
-    'lets_take_it_apart_and_put_it_back_together.wav',
-    'and_thats_how_it_happened.wav',
-    'third_times_a_charm.wav',
+    'almost_intelligent.m4a',
+    'crosstops.m4a',
+    'c_u_next_tuesday.m4a',
+    'drinking_outta_cups.m4a',
+    'elixir.m4a',
+    'florence.m4a',
+    'it_seemed_like_a_good_idea_at_the_time.m4a',
+    'you_call_this_mercy.m4a',
+    'midnight_oil.m4a',
+    'i_may_not_be_a_smart_man_but_i_know_what_love_is.m4a',
+    'lets_take_it_apart_and_put_it_back_together.m4a',
+    'and_thats_how_it_happened.m4a',
+    'third_times_a_charm.m4a',
   ];
 
-  List<String> _musicQueue = [];
+  int _currentTrackIndex = 0;
+  bool _isMusicPlaying = true;
   StreamSubscription? _playerCompleteSubscription;
+  StreamSubscription? _playerStateSubscription;
 
   final int _rows = 8;
   final int _cols = 5;
@@ -111,30 +115,43 @@ class _LemonsGameState extends State<LemonsGame> {
 
   @override
   void dispose() {
+    SiteMusicController.instance.exitGame();
     _playerCompleteSubscription?.cancel();
+    _playerStateSubscription?.cancel();
     _audioPlayer.dispose();
     _gameTimer?.cancel();
     super.dispose();
   }
 
   void _setupAudioPlayer() {
+    SiteMusicController.instance.enterGame();
+    configureBackgroundAudioContext();
     _audioPlayer.setReleaseMode(ReleaseMode.release);
 
     _playerCompleteSubscription = _audioPlayer.onPlayerComplete.listen((event) {
       _playNextTrack();
     });
+    _playerStateSubscription = _audioPlayer.onPlayerStateChanged.listen((state) {
+      if (mounted) {
+        setState(() {
+          _isMusicPlaying = state == PlayerState.playing;
+        });
+      }
+    });
 
-    _playNextTrack();
+    _playTrackAt(Random().nextInt(_playlist.length));
   }
 
-  Future<void> _playNextTrack() async {
+  Future<void> _playTrackAt(int index) async {
     if (_playlist.isEmpty) return;
-
-    if (_musicQueue.isEmpty) {
-      _musicQueue = List.of(_playlist)..shuffle();
+    final int wrapped = (index % _playlist.length + _playlist.length) % _playlist.length;
+    if (mounted) {
+      setState(() {
+        _currentTrackIndex = wrapped;
+        _isMusicPlaying = true;
+      });
     }
-
-    final nextSong = _musicQueue.removeAt(0);
+    final nextSong = _playlist[wrapped];
 
     try {
       final fullPath = 'music/lemons/$nextSong';
@@ -143,6 +160,28 @@ class _LemonsGameState extends State<LemonsGame> {
       await _audioPlayer.resume();
     } catch (e) {
       debugPrint('Audio Error: $e');
+    }
+  }
+
+  Future<void> _playNextTrack() async {
+    await _playTrackAt(_currentTrackIndex + 1);
+  }
+
+  Future<void> _playPreviousTrack() async {
+    await _playTrackAt(_currentTrackIndex - 1);
+  }
+
+  Future<void> _togglePlayPause() async {
+    try {
+      if (_isMusicPlaying) {
+        await _audioPlayer.pause();
+        if (mounted) setState(() => _isMusicPlaying = false);
+      } else {
+        await _audioPlayer.resume();
+        if (mounted) setState(() => _isMusicPlaying = true);
+      }
+    } catch (e) {
+      debugPrint('Audio Toggle Error: $e');
     }
   }
 
@@ -611,6 +650,17 @@ class _LemonsGameState extends State<LemonsGame> {
             ),
           ),
         ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(36),
+          child: InGameMusicHud(
+            currentTrack: _playlist[_currentTrackIndex],
+            isPlaying: _isMusicPlaying,
+            accentColor: const Color(0xFFFACC15),
+            onPrevious: _playPreviousTrack,
+            onPlayPause: _togglePlayPause,
+            onNext: _playNextTrack,
+          ),
+        ),
       ),
       floatingActionButton: (!_isWon && !_isGameOver)
           ? FloatingActionButton(

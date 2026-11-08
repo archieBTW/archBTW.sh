@@ -1,15 +1,18 @@
 import 'dart:async';
 import 'package:archbtw_sh/global/colors.dart';
-import 'package:audioplayers/audioplayers.dart';
+import 'package:archbtw_sh/global/site_music_controller.dart';
+import 'package:archbtw_sh/widgets/marquee_text.dart';
 import 'package:flutter/material.dart';
 
 class MusicPlayer extends StatefulWidget {
+  final String albumTitle;
   final List<String> tracks;
   final String audioPath;
   final bool isDesktop;
 
   const MusicPlayer({
     super.key,
+    this.albumTitle = '',
     required this.tracks,
     required this.audioPath,
     this.isDesktop = true,
@@ -20,88 +23,82 @@ class MusicPlayer extends StatefulWidget {
 }
 
 class _MusicPlayerState extends State<MusicPlayer> {
-  late AudioPlayer _audioPlayer;
-  int _currentTrackIndex = 0;
-  bool _isPlaying = false;
-  Duration _duration = Duration.zero;
-  Duration _position = Duration.zero;
+  final SiteMusicController _controller = SiteMusicController.instance;
+  int _localTrackIndex = 0;
 
-  StreamSubscription? _durationSubscription;
-  StreamSubscription? _positionSubscription;
-  StreamSubscription? _playerCompleteSubscription;
-  StreamSubscription? _playerStateSubscription;
+  bool get _isThisAlbumActive => _controller.isAlbumLoaded(widget.audioPath);
+
+  int get _currentTrackIndex => _isThisAlbumActive
+      ? _controller.currentTrackIndex.clamp(0, widget.tracks.length - 1)
+      : _localTrackIndex.clamp(0, widget.tracks.length - 1);
+
+  bool get _isPlaying => _isThisAlbumActive && _controller.isPlaying;
+
+  Duration get _position =>
+      _isThisAlbumActive ? _controller.position : Duration.zero;
+
+  Duration get _duration =>
+      _isThisAlbumActive ? _controller.duration : Duration.zero;
 
   @override
   void initState() {
     super.initState();
-    _audioPlayer = AudioPlayer();
-    _setupAudioListeners();
+    _controller.registerVisibleAlbum(widget.audioPath);
+    _controller.addListener(_onControllerChanged);
   }
 
-  void _setupAudioListeners() {
-    _durationSubscription = _audioPlayer.onDurationChanged.listen((d) {
-      setState(() => _duration = d);
-    });
-
-    _positionSubscription = _audioPlayer.onPositionChanged.listen((p) {
-      setState(() => _position = p);
-    });
-
-    _playerCompleteSubscription = _audioPlayer.onPlayerComplete.listen((event) {
-      _next();
-    });
-
-    _playerStateSubscription = _audioPlayer.onPlayerStateChanged.listen((
-      state,
-    ) {
-      setState(() {
-        _isPlaying = state == PlayerState.playing;
-      });
-    });
+  @override
+  void didUpdateWidget(covariant MusicPlayer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.audioPath != widget.audioPath) {
+      _controller.unregisterVisibleAlbum(oldWidget.audioPath);
+      _controller.registerVisibleAlbum(widget.audioPath);
+    }
   }
 
   @override
   void dispose() {
-    _durationSubscription?.cancel();
-    _positionSubscription?.cancel();
-    _playerCompleteSubscription?.cancel();
-    _playerStateSubscription?.cancel();
-    _audioPlayer.dispose();
+    _controller.removeListener(_onControllerChanged);
+    _controller.unregisterVisibleAlbum(widget.audioPath);
     super.dispose();
   }
 
-  Future<void> _playPause() async {
-    if (_isPlaying) {
-      await _audioPlayer.pause();
-    } else {
-      if (_position == Duration.zero) {
-        await _playTrack();
-      } else {
-        await _audioPlayer.resume();
-      }
+  void _onControllerChanged() {
+    if (mounted) {
+      setState(() {});
     }
   }
 
-  Future<void> _playTrack() async {
-    final track = widget.tracks[_currentTrackIndex];
-    final fullPath = '${widget.audioPath}$track';
-    await _audioPlayer.play(AssetSource(fullPath));
+  Future<void> _playPause() async {
+    await _controller.togglePlayPause(
+      albumTitle: widget.albumTitle,
+      audioPath: widget.audioPath,
+      tracks: widget.tracks,
+      selectedIndex: _localTrackIndex,
+    );
+  }
+
+  Future<void> _playTrackAt(int index) async {
+    setState(() {
+      _localTrackIndex = index;
+    });
+    await _controller.playAlbumTrack(
+      albumTitle: widget.albumTitle,
+      audioPath: widget.audioPath,
+      tracks: widget.tracks,
+      trackIndex: index,
+    );
   }
 
   Future<void> _next() async {
-    setState(() {
-      _currentTrackIndex = (_currentTrackIndex + 1) % widget.tracks.length;
-    });
-    await _playTrack();
+    final nextIdx = (_currentTrackIndex + 1) % widget.tracks.length;
+    await _playTrackAt(nextIdx);
   }
 
   Future<void> _previous() async {
-    setState(() {
-      _currentTrackIndex =
-          (_currentTrackIndex - 1 + widget.tracks.length) %
-          widget.tracks.length;
-    });
-    await _playTrack();
+    final prevIdx =
+        (_currentTrackIndex - 1 + widget.tracks.length) % widget.tracks.length;
+    await _playTrackAt(prevIdx);
   }
 
   String _formatDuration(Duration duration) {
@@ -151,14 +148,14 @@ class _MusicPlayerState extends State<MusicPlayer> {
           ),
         ),
         Expanded(
-          child: Text(
-            './${_cleanTrackName(widget.tracks[_currentTrackIndex]).replaceAll(' ', '_')}.sh',
+          child: MarqueeText(
+            text:
+                './${_cleanTrackName(widget.tracks[_currentTrackIndex]).replaceAll(' ', '_')}.sh',
             style: const TextStyle(
               color: Colors.white,
               fontFamily: 'JetBrainsMono',
               fontSize: 14,
             ),
-            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],
@@ -166,6 +163,11 @@ class _MusicPlayerState extends State<MusicPlayer> {
   }
 
   Widget _buildControlsRow(Color accentColor) {
+    final double maxMs = _duration.inMilliseconds.toDouble() > 0
+        ? _duration.inMilliseconds.toDouble()
+        : 1.0;
+    final double curMs = _position.inMilliseconds.toDouble().clamp(0.0, maxMs);
+
     return Row(
       children: [
         _buildTextButton(
@@ -183,18 +185,18 @@ class _MusicPlayerState extends State<MusicPlayer> {
             data: SliderThemeData(
               trackHeight: 1,
               activeTrackColor: accentColor,
-              inactiveTrackColor: Colors.white.withOpacity(0.1),
+              inactiveTrackColor: Colors.white.withValues(alpha: 0.1),
               thumbColor: accentColor,
               thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 4),
               overlayShape: const RoundSliderOverlayShape(overlayRadius: 10),
             ),
             child: Slider(
-              value: _position.inMilliseconds.toDouble(),
-              max: _duration.inMilliseconds.toDouble() > 0
-                  ? _duration.inMilliseconds.toDouble()
-                  : 1.0,
+              value: curMs,
+              max: maxMs,
               onChanged: (value) {
-                _audioPlayer.seek(Duration(milliseconds: value.toInt()));
+                if (_isThisAlbumActive) {
+                  _controller.seek(Duration(milliseconds: value.toInt()));
+                }
               },
             ),
           ),
@@ -203,7 +205,7 @@ class _MusicPlayerState extends State<MusicPlayer> {
         Text(
           '${_formatDuration(_position)} / ${_formatDuration(_duration)}',
           style: TextStyle(
-            color: Colors.white.withOpacity(0.5),
+            color: Colors.white.withValues(alpha: 0.5),
             fontFamily: 'JetBrainsMono',
             fontSize: 12,
           ),
@@ -219,7 +221,7 @@ class _MusicPlayerState extends State<MusicPlayer> {
         Text(
           '// AVAILABLE_TRACKS',
           style: TextStyle(
-            color: Colors.white.withOpacity(0.3),
+            color: Colors.white.withValues(alpha: 0.3),
             fontFamily: 'JetBrainsMono',
             fontSize: 11,
             fontWeight: FontWeight.bold,
@@ -233,11 +235,8 @@ class _MusicPlayerState extends State<MusicPlayer> {
           final bool isCurrent = index == _currentTrackIndex;
 
           return InkWell(
-            onTap: () {
-              setState(() => _currentTrackIndex = index);
-              _playTrack();
-            },
-            hoverColor: accentColor.withOpacity(0.05),
+            onTap: () => _playTrackAt(index),
+            hoverColor: accentColor.withValues(alpha: 0.05),
             child: Padding(
               padding: const EdgeInsets.symmetric(
                 vertical: 6.0,
@@ -256,16 +255,25 @@ class _MusicPlayerState extends State<MusicPlayer> {
                       ),
                     ),
                   ),
-                  Text(
-                    _cleanTrackName(track).toLowerCase(),
-                    style: TextStyle(
-                      color: isCurrent
-                          ? accentColor
-                          : Colors.white.withOpacity(0.7),
-                      fontFamily: 'JetBrainsMono',
-                      fontSize: 13,
-                      decoration: isCurrent ? TextDecoration.none : null,
-                    ),
+                  Flexible(
+                    child: isCurrent
+                        ? MarqueeText(
+                            text: _cleanTrackName(track).toLowerCase(),
+                            style: TextStyle(
+                              color: accentColor,
+                              fontFamily: 'JetBrainsMono',
+                              fontSize: 13,
+                            ),
+                          )
+                        : Text(
+                            _cleanTrackName(track).toLowerCase(),
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.7),
+                              fontFamily: 'JetBrainsMono',
+                              fontSize: 13,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
                   ),
                   if (isCurrent && _isPlaying) ...[
                     const SizedBox(width: 12),
@@ -275,7 +283,7 @@ class _MusicPlayerState extends State<MusicPlayer> {
               ),
             ),
           );
-        }).toList(),
+        }),
       ],
     );
   }

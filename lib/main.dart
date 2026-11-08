@@ -7,6 +7,7 @@ import 'package:archbtw_sh/pages/home/home_page.dart';
 import 'package:archbtw_sh/pages/merch/merch__page.dart';
 import 'package:archbtw_sh/pages/music/music_page.dart';
 import 'package:archbtw_sh/pages/overheat/overheat_page.dart';
+import 'package:archbtw_sh/widgets/floating_music_toast.dart';
 import 'package:archbtw_sh/widgets/header.dart';
 import 'package:archbtw_sh/widgets/loading_waveform.dart';
 import 'package:archbtw_sh/pages/source_code/source_code_page.dart';
@@ -39,6 +40,14 @@ class ArchWebsite extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
+      builder: (context, child) {
+        return Stack(
+          children: [
+            if (child != null) child,
+            const FloatingMusicToast(),
+          ],
+        );
+      },
       initialRoute: '/',
       onGenerateRoute: (settings) {
         if (settings.name == '/') {

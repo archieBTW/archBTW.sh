@@ -96,6 +96,65 @@
         navigator.serviceWorker.register('flutter_service_worker.js');
       });
     }
+
+    // Keep music playing in background tabs / when browser is backgrounded
+    (function () {
+      let activeAudio = null;
+
+      function formatTrackName(src) {
+        if (!src) return 'archBTW.';
+        const parts = decodeURIComponent(src).split('/');
+        const file = parts[parts.length - 1] || '';
+        return file.replace(/\.(m4a|wav|mp3|ogg)$/i, '').replace(/_/g, ' ');
+      }
+
+      document.addEventListener(
+        'play',
+        function (e) {
+          if (e.target && e.target.tagName === 'AUDIO') {
+            activeAudio = e.target;
+            activeAudio.setAttribute('playsinline', '');
+            if ('mediaSession' in navigator) {
+              navigator.mediaSession.metadata = new MediaMetadata({
+                title: formatTrackName(activeAudio.currentSrc || activeAudio.src),
+                artist: 'archBTW.',
+                album: 'archbtw.sh',
+              });
+              navigator.mediaSession.playbackState = 'playing';
+              try {
+                navigator.mediaSession.setActionHandler('play', function () {
+                  if (activeAudio) activeAudio.play();
+                });
+                navigator.mediaSession.setActionHandler('pause', function () {
+                  if (activeAudio) activeAudio.pause();
+                });
+              } catch (_) {}
+            }
+          }
+        },
+        true
+      );
+
+      document.addEventListener(
+        'pause',
+        function (e) {
+          if (e.target && e.target === activeAudio && 'mediaSession' in navigator) {
+            navigator.mediaSession.playbackState = 'paused';
+          }
+        },
+        true
+      );
+
+      // Prevent accidental pause on visibilitychange when switching tabs/backgrounding
+      document.addEventListener('visibilitychange', function () {
+        if (document.hidden && activeAudio && !activeAudio.paused) {
+          const playPromise = activeAudio.play();
+          if (playPromise && typeof playPromise.catch === 'function') {
+            playPromise.catch(function () {});
+          }
+        }
+      });
+    })();
   </script>
   <script src="main.dart.js" type="application/javascript"></script>
 </body>

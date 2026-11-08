@@ -61,10 +61,13 @@ class _AlbumDetailsState extends State<AlbumDetails> {
         if (widget.showTitle)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12),
-            child: Row(
-              mainAxisAlignment: widget.isDesktop
-                  ? MainAxisAlignment.center
-                  : MainAxisAlignment.start,
+            child: Wrap(
+              alignment: widget.isDesktop
+                  ? WrapAlignment.center
+                  : WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 14,
+              runSpacing: 10,
               children: [
                 Text(
                   widget.item.title,
@@ -75,15 +78,7 @@ class _AlbumDetailsState extends State<AlbumDetails> {
                     fontFamily: 'JetBrainsMono',
                   ),
                 ),
-                if (!widget.isDesktop) Expanded(child: const SizedBox()),
                 if (widget.item.isLocked) ...[
-                  const SizedBox(width: 16),
-                  Container(
-                    width: 1,
-                    height: 20,
-                    color: Colors.grey.withValues(alpha: 0.5),
-                  ),
-                  const SizedBox(width: 16),
                   IconButton(
                     tooltip: "launch_protocol: overheat",
                     icon: FaIcon(
@@ -107,41 +102,67 @@ class _AlbumDetailsState extends State<AlbumDetails> {
                 ] else if (widget.item.title.toLowerCase() == 'blubber' ||
                     widget.item.title.toLowerCase() == 'santa\'s cookies' ||
                     widget.item.title.toLowerCase() == 'life\'s lemons') ...[
-                  const SizedBox(width: 16),
-                  Container(
-                    width: 1,
-                    height: 20,
-                    color: Colors.grey.withValues(alpha: 0.5),
-                  ),
-                  const SizedBox(width: 16),
-                  IconButton(
-                    tooltip: _getTooltipForAlbum(widget.item.title),
-                    icon: Icon(
-                      Icons.terminal,
-                      color: kAccentColor,
-                      size: iconSize,
-                    ),
-                    onPressed: () {
-                      Widget gamePage;
-                      final title = widget.item.title.toLowerCase();
-
-                      if (title == 'blubber') {
-                        gamePage = WhaleGame();
-                      } else if (title == 'santa\'s cookies') {
-                        gamePage = const SantasInvadersGame();
-                      } else {
-                        gamePage = const LemonsGame();
-                      }
-
-                      Navigator.of(context).push(
-                        PageRouteBuilder(
-                          pageBuilder: (context, anim, secAnim) => gamePage,
-                          transitionsBuilder: (context, anim, secAnim, child) {
-                            return FadeTransition(opacity: anim, child: child);
-                          },
+                  Tooltip(
+                    message: _getTooltipForAlbum(widget.item.title),
+                    child: ElevatedButton.icon(
+                      key: const Key('launch_game_button'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: kAccentColor.withValues(alpha: 0.16),
+                        foregroundColor: kAccentColor,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
                         ),
-                      );
-                    },
+                        side: const BorderSide(
+                          color: kAccentColor,
+                          width: 1.6,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      icon: const Icon(
+                        Icons.sports_esports,
+                        color: kAccentColor,
+                        size: 18,
+                      ),
+                      label: Text(
+                        _getGameLabelForAlbum(widget.item.title),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontFamily: 'JetBrainsMono',
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                      onPressed: () {
+                        Widget gamePage;
+                        final title = widget.item.title.toLowerCase();
+
+                        if (title == 'blubber') {
+                          gamePage = const WhaleGame();
+                        } else if (title == 'santa\'s cookies') {
+                          gamePage = const SantasInvadersGame();
+                        } else {
+                          gamePage = const LemonsGame();
+                        }
+
+                        Navigator.of(context).push(
+                          PageRouteBuilder(
+                            pageBuilder: (context, anim, secAnim) => gamePage,
+                            transitionsBuilder:
+                                (context, anim, secAnim, child) {
+                                  return FadeTransition(
+                                    opacity: anim,
+                                    child: child,
+                                  );
+                                },
+                          ),
+                        );
+                      },
+                    ),
                   ),
                 ],
               ],
@@ -187,6 +208,7 @@ class _AlbumDetailsState extends State<AlbumDetails> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: MusicPlayer(
+              albumTitle: widget.item.title,
               tracks: widget.item.tracks,
               audioPath: widget.item.audioPath,
               isDesktop: widget.isDesktop,
@@ -250,6 +272,13 @@ String _getTooltipForAlbum(String title) {
   if (t == 'blubber') return "launch_protocol: gravity";
   if (t == 'santa\'s cookies') return "launch_protocol: chimney";
   return "launch_protocol: gnu/linux";
+}
+
+String _getGameLabelForAlbum(String title) {
+  final t = title.toLowerCase();
+  if (t == 'blubber') return "PLAY: floppy_whale.sh";
+  if (t == 'santa\'s cookies') return "PLAY: rudolph_spoke.sh";
+  return "PLAY: lifes_lemons.sh";
 }
 
 List<TextSpan> _buildLyricSpans(String lyrics, {required bool isDesktop}) {

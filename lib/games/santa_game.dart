@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:math';
+import 'package:archbtw_sh/global/site_music_controller.dart';
+import 'package:archbtw_sh/widgets/in_game_music_hud.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -99,13 +101,15 @@ class _SantasInvadersGameState extends State<SantasInvadersGame>
 
   // Audio playlist (Santa's Cookies EP)
   final List<String> _playlist = [
-    'rudolph_spoke_in_class_today.wav',
-    'who_you_calling_a_ho_ho.wav',
-    'oh_christmas_tree.wav',
-    'must_be_a_south_pole_elf.wav',
+    'rudolph_spoke_in_class_today.m4a',
+    'who_you_calling_a_ho_ho.m4a',
+    'oh_christmas_tree.m4a',
+    'must_be_a_south_pole_elf.m4a',
   ];
-  List<String> _musicQueue = [];
+  int _currentTrackIndex = 0;
+  bool _isMusicPlaying = true;
   StreamSubscription? _playerCompleteSubscription;
+  StreamSubscription? _playerStateSubscription;
 
   @override
   void initState() {
@@ -148,35 +152,70 @@ class _SantasInvadersGameState extends State<SantasInvadersGame>
 
   @override
   void dispose() {
+    SiteMusicController.instance.exitGame();
     _ticker.dispose();
     _focusNode.dispose();
     _playerCompleteSubscription?.cancel();
+    _playerStateSubscription?.cancel();
     _audioPlayer.dispose();
     super.dispose();
   }
 
   void _setupAudioPlayer() {
+    SiteMusicController.instance.enterGame();
+    configureBackgroundAudioContext();
     _audioPlayer.setReleaseMode(ReleaseMode.release);
     _playerCompleteSubscription = _audioPlayer.onPlayerComplete.listen((_) {
       _playNextTrack();
     });
-    // Start with Rudolph Spoke in Class Today, then shuffle the rest
-    _musicQueue = List.of(_playlist);
-    _playNextTrack();
+    _playerStateSubscription = _audioPlayer.onPlayerStateChanged.listen((state) {
+      if (mounted) {
+        setState(() {
+          _isMusicPlaying = state == PlayerState.playing;
+        });
+      }
+    });
+    _playTrackAt(0);
   }
 
-  Future<void> _playNextTrack() async {
+  Future<void> _playTrackAt(int index) async {
     if (_playlist.isEmpty) return;
-    if (_musicQueue.isEmpty) {
-      _musicQueue = List.of(_playlist)..shuffle();
+    final int wrapped = (index % _playlist.length + _playlist.length) % _playlist.length;
+    if (mounted) {
+      setState(() {
+        _currentTrackIndex = wrapped;
+        _isMusicPlaying = true;
+      });
     }
-    final nextSong = _musicQueue.removeAt(0);
+    final nextSong = _playlist[wrapped];
     try {
       await _audioPlayer.setSource(AssetSource('music/santas_cookies/$nextSong'));
       await _audioPlayer.setVolume(0.5);
       await _audioPlayer.resume();
     } catch (e) {
       debugPrint('Audio Error: $e');
+    }
+  }
+
+  Future<void> _playNextTrack() async {
+    await _playTrackAt(_currentTrackIndex + 1);
+  }
+
+  Future<void> _playPreviousTrack() async {
+    await _playTrackAt(_currentTrackIndex - 1);
+  }
+
+  Future<void> _togglePlayPause() async {
+    try {
+      if (_isMusicPlaying) {
+        await _audioPlayer.pause();
+        if (mounted) setState(() => _isMusicPlaying = false);
+      } else {
+        await _audioPlayer.resume();
+        if (mounted) setState(() => _isMusicPlaying = true);
+      }
+    } catch (e) {
+      debugPrint('Audio Toggle Error: $e');
     }
   }
 
@@ -772,6 +811,17 @@ class _SantasInvadersGameState extends State<SantasInvadersGame>
             icon: const Icon(Icons.refresh, color: Colors.white70, size: 20),
           ),
         ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(36),
+          child: InGameMusicHud(
+            currentTrack: _playlist[_currentTrackIndex],
+            isPlaying: _isMusicPlaying,
+            accentColor: kCrimsonRed,
+            onPrevious: _playPreviousTrack,
+            onPlayPause: _togglePlayPause,
+            onNext: _playNextTrack,
+          ),
+        ),
       ),
       body: KeyboardListener(
         focusNode: _focusNode,

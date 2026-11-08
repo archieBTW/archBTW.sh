@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:archbtw_sh/global/colors.dart';
+import 'package:archbtw_sh/global/site_music_controller.dart';
 import 'package:archbtw_sh/pages/overheat/overheat_page.dart';
 import 'package:archbtw_sh/widgets/social_icons.dart';
 import 'package:flutter/material.dart';
@@ -103,8 +104,20 @@ class _HomePageState extends State<HomePage>
             ),
           ),
         ),
-        Padding(
-          padding: EdgeInsets.only(bottom: bottomPadding),
+        ListenableBuilder(
+          listenable: SiteMusicController.instance,
+          builder: (context, child) {
+            final bool toastVisible =
+                SiteMusicController.instance.shouldShowFloatingToast;
+            return AnimatedPadding(
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOutCubic,
+              padding: EdgeInsets.only(
+                bottom: bottomPadding + (toastVisible ? 68.0 : 0.0),
+              ),
+              child: child,
+            );
+          },
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [

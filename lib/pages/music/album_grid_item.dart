@@ -151,8 +151,8 @@ class AlbumGridItem extends StatelessWidget {
                                 ),
                             ],
                           ),
-                          const SizedBox(height: 4),
-                          if (item.isLocked)
+                          if (item.isLocked) ...[
+                            const SizedBox(height: 4),
                             const Text(
                               'coming march 2027',
                               style: TextStyle(
@@ -161,6 +161,7 @@ class AlbumGridItem extends StatelessWidget {
                                 fontFamily: 'JetBrainsMono',
                               ),
                             ),
+                          ],
                         ],
                       ),
                     ),
