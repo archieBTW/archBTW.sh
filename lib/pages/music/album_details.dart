@@ -283,7 +283,7 @@ String _getGameLabelForAlbum(String title) {
 
 List<TextSpan> _buildLyricSpans(String lyrics, {required bool isDesktop}) {
   final double defaultFontSize = isDesktop ? 16 : 14;
-  final double titleFontSize = isDesktop ? 20 : 16;
+  final double titleFontSize = isDesktop ? 21 : 17;
   final double descriptionFontSize = isDesktop ? 14 : 12;
 
   final defaultStyle = TextStyle(
@@ -294,10 +294,11 @@ List<TextSpan> _buildLyricSpans(String lyrics, {required bool isDesktop}) {
   );
 
   final titleStyle = TextStyle(
-    color: Colors.white70,
+    color: kAccentColor,
     fontSize: titleFontSize,
     fontWeight: FontWeight.bold,
-    height: 1.5,
+    letterSpacing: 0.6,
+    height: 1.8,
     fontFamily: 'JetBrainsMono',
   );
 

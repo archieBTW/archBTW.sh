@@ -25,6 +25,7 @@ class MusicPlayer extends StatefulWidget {
 class _MusicPlayerState extends State<MusicPlayer> {
   final SiteMusicController _controller = SiteMusicController.instance;
   int _localTrackIndex = 0;
+  double? _dragValueMs;
 
   bool get _isThisAlbumActive => _controller.isAlbumLoaded(widget.audioPath);
 
@@ -166,48 +167,86 @@ class _MusicPlayerState extends State<MusicPlayer> {
     final double maxMs = _duration.inMilliseconds.toDouble() > 0
         ? _duration.inMilliseconds.toDouble()
         : 1.0;
-    final double curMs = _position.inMilliseconds.toDouble().clamp(0.0, maxMs);
+    final double effectivePosMs =
+        (_dragValueMs ?? _position.inMilliseconds.toDouble()).clamp(0.0, maxMs);
+    final Duration displayedPosition = _dragValueMs != null
+        ? Duration(milliseconds: _dragValueMs!.toInt())
+        : _position;
 
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildTextButton(
-          _isPlaying ? '[ PAUSE ]' : '[ PLAY ]',
-          _playPause,
-          isPrimary: true,
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildTextButton(
+                  _isPlaying ? '[ PAUSE ]' : '[ PLAY ]',
+                  _playPause,
+                  isPrimary: true,
+                ),
+                const SizedBox(width: 4),
+                _buildTextButton('[ BACK ]', _previous),
+                const SizedBox(width: 4),
+                _buildTextButton('[ NEXT ]', _next),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+              child: Text(
+                '${_formatDuration(displayedPosition)} / ${_formatDuration(_duration)}',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.7),
+                  fontFamily: 'JetBrainsMono',
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 8),
-        _buildTextButton('[ BACK ]', _previous),
-        const SizedBox(width: 4),
-        _buildTextButton('[ NEXT ]', _next),
-        const SizedBox(width: 16),
-        Expanded(
-          child: SliderTheme(
-            data: SliderThemeData(
-              trackHeight: 1,
-              activeTrackColor: accentColor,
-              inactiveTrackColor: Colors.white.withValues(alpha: 0.1),
-              thumbColor: accentColor,
-              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 4),
-              overlayShape: const RoundSliderOverlayShape(overlayRadius: 10),
-            ),
-            child: Slider(
-              value: curMs,
-              max: maxMs,
-              onChanged: (value) {
-                if (_isThisAlbumActive) {
-                  _controller.seek(Duration(milliseconds: value.toInt()));
-                }
-              },
-            ),
+        const SizedBox(height: 10),
+        SliderTheme(
+          data: SliderThemeData(
+            trackHeight: 2,
+            activeTrackColor: accentColor,
+            inactiveTrackColor: Colors.white.withValues(alpha: 0.16),
+            thumbColor: accentColor,
+            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5),
+            overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+            trackShape: const RectangularSliderTrackShape(),
           ),
-        ),
-        const SizedBox(width: 12),
-        Text(
-          '${_formatDuration(_position)} / ${_formatDuration(_duration)}',
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.5),
-            fontFamily: 'JetBrainsMono',
-            fontSize: 12,
+          child: Slider(
+            key: const Key('audio_scrubber'),
+            value: effectivePosMs,
+            max: maxMs,
+            onChangeStart: (value) {
+              if (_isThisAlbumActive) {
+                setState(() {
+                  _dragValueMs = value;
+                });
+              }
+            },
+            onChanged: (value) {
+              if (_isThisAlbumActive) {
+                setState(() {
+                  _dragValueMs = value;
+                });
+                _controller.seek(Duration(milliseconds: value.toInt()));
+              }
+            },
+            onChangeEnd: (value) {
+              if (_isThisAlbumActive) {
+                setState(() {
+                  _dragValueMs = null;
+                });
+                _controller.seek(Duration(milliseconds: value.toInt()));
+              }
+            },
           ),
         ),
       ],

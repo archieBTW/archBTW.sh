@@ -1,6 +1,7 @@
 import 'package:archbtw_sh/games/blubber_game.dart';
 import 'package:archbtw_sh/games/lemon_game.dart';
 import 'package:archbtw_sh/games/santa_game.dart';
+import 'package:archbtw_sh/global/colors.dart';
 import 'package:archbtw_sh/global/site_music_controller.dart';
 import 'package:archbtw_sh/pages/music/album_detail_page.dart';
 import 'package:archbtw_sh/pages/music/album_grid_item.dart';
@@ -176,7 +177,33 @@ void main() {
       expect(find.byKey(const Key('launch_game_button')), findsOneWidget);
       expect(find.text('PLAY: floppy_whale.sh'), findsOneWidget);
 
+      // Verify audio scrubber and time display are present without overflow
+      expect(find.byKey(const Key('audio_scrubber')), findsOneWidget);
+      expect(find.text('00:00 / 00:00'), findsOneWidget);
+
+      // Expand lyrics and verify code-comment titles use visible kAccentColor
+      await tester.ensureVisible(find.text('lyrics.expand();'));
+      await tester.pump();
+      await tester.tap(find.text('lyrics.expand();'));
+      await tester.pump();
+      final richTexts = tester.widgetList<RichText>(find.byType(RichText));
+      bool hasAccentCommentTitle = false;
+      for (final rt in richTexts) {
+        rt.text.visitChildren((span) {
+          if (span is TextSpan &&
+              (span.text?.startsWith('// ') ?? false) &&
+              span.style?.color == kAccentColor &&
+              span.style?.fontWeight == FontWeight.bold) {
+            hasAccentCommentTitle = true;
+          }
+          return true;
+        });
+      }
+      expect(hasAccentCommentTitle, isTrue);
+
       // Start playing music on AlbumDetailPage
+      await tester.ensureVisible(find.text('[ PLAY ]'));
+      await tester.pump();
       await tester.tap(find.text('[ PLAY ]'));
       await tester.pump(const Duration(milliseconds: 500));
       expect(SiteMusicController.instance.isPlaying, isTrue);

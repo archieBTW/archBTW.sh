@@ -115,7 +115,6 @@ class SiteMusicController extends ChangeNotifier {
     required int trackIndex,
   }) async {
     if (tracks.isEmpty) return;
-    final bool sameAlbum = _audioPath == audioPath;
     _albumTitle = albumTitle;
     _audioPath = audioPath;
     _tracks = List<String>.unmodifiable(tracks);
@@ -123,16 +122,19 @@ class SiteMusicController extends ChangeNotifier {
         (trackIndex % _tracks.length + _tracks.length) % _tracks.length;
     _hasActiveSession = true;
     _isPlaying = true;
-    if (!sameAlbum) {
-      _position = Duration.zero;
-      _duration = Duration.zero;
-    }
+    _position = Duration.zero;
+    _duration = Duration.zero;
     notifyListeners();
 
     try {
       final player = _ensurePlayer();
       final track = _tracks[_currentTrackIndex];
       await player.play(AssetSource('$_audioPath$track'));
+      final d = await player.getDuration();
+      if (d != null && d > Duration.zero) {
+        _duration = d;
+        notifyListeners();
+      }
     } catch (e) {
       debugPrint('SiteMusicController play error: $e');
     }
