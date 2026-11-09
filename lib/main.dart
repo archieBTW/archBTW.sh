@@ -9,6 +9,7 @@ import 'package:archbtw_sh/pages/music/music_page.dart';
 import 'package:archbtw_sh/pages/overheat/overheat_page.dart';
 import 'package:archbtw_sh/widgets/floating_music_toast.dart';
 import 'package:archbtw_sh/widgets/header.dart';
+import 'package:archbtw_sh/widgets/holiday_snow_overlay.dart';
 import 'package:archbtw_sh/widgets/loading_waveform.dart';
 import 'package:archbtw_sh/pages/source_code/source_code_page.dart';
 import 'package:flutter/material.dart';
@@ -121,25 +122,32 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
+      body: Stack(
         children: [
-          Header(currentIndex: _currentIndex, onItemTapped: _onItemTapped),
-          Expanded(
-            child: IndexedStack(
-              index: _currentIndex,
-              children: [
-                _homePage,
-                _loadAbout
-                    ? const AboutPage()
-                    : const Center(child: WaveformLoader()),
-                _loadMusic
-                    ? const MusicPage()
-                    : const Center(child: WaveformLoader()),
-                _loadMerch
-                    ? const MerchPage()
-                    : const Center(child: WaveformLoader()),
-              ],
-            ),
+          Column(
+            children: [
+              Header(currentIndex: _currentIndex, onItemTapped: _onItemTapped),
+              Expanded(
+                child: IndexedStack(
+                  index: _currentIndex,
+                  children: [
+                    _homePage,
+                    _loadAbout
+                        ? const AboutPage()
+                        : const Center(child: WaveformLoader()),
+                    _loadMusic
+                        ? const MusicPage()
+                        : const Center(child: WaveformLoader()),
+                    _loadMerch
+                        ? const MerchPage()
+                        : const Center(child: WaveformLoader()),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const Positioned.fill(
+            child: HolidaySnowOverlay(),
           ),
         ],
       ),

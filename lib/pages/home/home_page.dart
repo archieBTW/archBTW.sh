@@ -17,9 +17,18 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage>
     with AutomaticKeepAliveClientMixin {
   static const String _fullText = "hi. i'm archBTW.";
+  static const List<Color> _cursorColors = [
+    kAccentColor,
+    kHolidayRed,
+    kHolidayGreen,
+    kHolidayGold,
+  ];
+
   String _currentText = '';
   int _currentIndex = 0;
   bool _showCursor = true;
+  int _cursorColorIndex = 0;
+  bool _typingComplete = false;
 
   late final Timer _typingTimer;
   Timer? _cursorTimer;
@@ -41,12 +50,21 @@ class _HomePageState extends State<HomePage>
         }
       } else {
         timer.cancel();
+        if (mounted) {
+          setState(() {
+            _typingComplete = true;
+          });
+        }
         _cursorTimer = Timer.periodic(const Duration(milliseconds: 500), (
           timer,
         ) {
           if (mounted) {
             setState(() {
               _showCursor = !_showCursor;
+              if (_showCursor) {
+                _cursorColorIndex =
+                    (_cursorColorIndex + 1) % _cursorColors.length;
+              }
             });
           }
         });
@@ -72,35 +90,77 @@ class _HomePageState extends State<HomePage>
     final double iconSize = isDesktop ? 24 : 18;
     final double socialSpacing = isDesktop ? 24 : 16;
     final double bottomPadding = isDesktop ? 64 : 32;
+    final Color activeCursorColor = _cursorColors[_cursorColorIndex];
 
     return Column(
       children: [
         Expanded(
           child: Center(
-            child: Text.rich(
-              TextSpan(
-                children: [
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text.rich(
                   TextSpan(
-                    text: _currentText,
-                    style: TextStyle(
-                      color: kTextColor,
-                      fontSize: titleFontSize,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.5,
-                      fontFamily: 'JetBrainsMono',
+                    children: [
+                      TextSpan(
+                        text: _currentText,
+                        style: TextStyle(
+                          color: kTextColor,
+                          fontSize: titleFontSize,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.5,
+                          fontFamily: 'JetBrainsMono',
+                        ),
+                      ),
+                      TextSpan(
+                        text: _showCursor ? '|' : ' ',
+                        style: TextStyle(
+                          color: _showCursor
+                              ? activeCursorColor
+                              : Colors.transparent,
+                          fontSize: titleFontSize,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'JetBrainsMono',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 10),
+                AnimatedOpacity(
+                  opacity: _typingComplete ? 1.0 : 0.0,
+                  duration: const Duration(milliseconds: 600),
+                  child: Text.rich(
+                    TextSpan(
+                      style: TextStyle(
+                        fontSize: isDesktop ? 13 : 11,
+                        fontFamily: 'JetBrainsMono',
+                        letterSpacing: 1.2,
+                      ),
+                      children: [
+                        TextSpan(
+                          text: '* ',
+                          style: TextStyle(
+                            color: kHolidayGold.withValues(alpha: 0.75),
+                          ),
+                        ),
+                        TextSpan(
+                          text: 'happy holidays',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.38),
+                          ),
+                        ),
+                        TextSpan(
+                          text: ' *',
+                          style: TextStyle(
+                            color: kHolidayGreen.withValues(alpha: 0.75),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  TextSpan(
-                    text: _showCursor ? '|' : ' ',
-                    style: TextStyle(
-                      color: _showCursor ? kAccentColor : Colors.transparent,
-                      fontSize: titleFontSize,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'JetBrainsMono',
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),

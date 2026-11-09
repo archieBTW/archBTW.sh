@@ -8,13 +8,27 @@ class NavLink extends StatelessWidget {
   final VoidCallback onTap;
   final double fontSize;
 
-  const NavLink({super.key, 
+  const NavLink({
+    super.key,
     required this.title,
     required this.index,
     required this.currentIndex,
     required this.onTap,
     this.fontSize = 14.0,
   });
+
+  Color get _holidayIndicatorColor {
+    switch (index) {
+      case 1:
+        return kHolidayGreen;
+      case 2:
+        return kHolidayRed;
+      case 3:
+        return kHolidayGold;
+      default:
+        return kAccentColor;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,14 +40,28 @@ class NavLink extends StatelessWidget {
         splashFactory: NoSplash.splashFactory,
         overlayColor: Colors.transparent,
         foregroundColor: isActive ? kTextColor : Colors.grey,
-        
         textStyle: TextStyle(
           fontFamily: 'JetBrainsMono',
           fontSize: fontSize,
           fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
         ),
       ),
-      child: Text(title),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(title),
+          const SizedBox(height: 2),
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: isActive ? 14 : 0,
+            height: 2,
+            decoration: BoxDecoration(
+              color: isActive ? _holidayIndicatorColor : Colors.transparent,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
