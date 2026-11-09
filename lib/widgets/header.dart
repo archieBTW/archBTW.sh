@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:archbtw_sh/global/colors.dart';
@@ -26,8 +27,18 @@ class Header extends StatelessWidget {
         final double navLinkFontSize = isDesktop ? 16 : 14;
 
         final EdgeInsets padding = isDesktop
-            ? const EdgeInsets.symmetric(horizontal: 48.0, vertical: 16.0)
-            : const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0);
+            ? const EdgeInsets.only(
+                left: 48.0,
+                right: 64.0,
+                top: 16.0,
+                bottom: 16.0,
+              )
+            : const EdgeInsets.only(
+                left: 16.0,
+                right: 28.0,
+                top: 16.0,
+                bottom: 16.0,
+              );
 
         final headerContent = Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -39,6 +50,8 @@ class Header extends StatelessWidget {
                 splashFactory: NoSplash.splashFactory,
                 overlayColor: Colors.transparent,
                 padding: EdgeInsets.zero,
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 alignment: Alignment.centerLeft,
               ),
               child: Text.rich(
@@ -60,56 +73,55 @@ class Header extends StatelessWidget {
                       text: '.',
                       style: TextStyle(color: kHolidayRed),
                     ),
-                    TextSpan(
-                      text: ' *',
-                      style: TextStyle(
-                        color: kHolidayGold,
-                        fontWeight: FontWeight.normal,
-                      ),
-                    ),
                   ],
                 ),
               ),
             ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                NavLink(
-                  title: 'about',
-                  index: 1,
-                  currentIndex: currentIndex,
-                  onTap: () => onItemTapped(1),
-                  fontSize: navLinkFontSize,
-                ),
-                NavLink(
-                  title: 'music',
-                  index: 2,
-                  currentIndex: currentIndex,
-                  onTap: () => onItemTapped(2),
-                  fontSize: navLinkFontSize,
-                ),
-                NavLink(
-                  title: 'merch',
-                  index: 3,
-                  currentIndex: currentIndex,
-                  onTap: () => onItemTapped(3),
-                  fontSize: navLinkFontSize,
-                ),
-              ],
+            Padding(
+              padding: EdgeInsets.only(right: isDesktop ? 12.0 : 8.0),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  NavLink(
+                    title: 'about',
+                    index: 1,
+                    currentIndex: currentIndex,
+                    onTap: () => onItemTapped(1),
+                    fontSize: navLinkFontSize,
+                  ),
+                  NavLink(
+                    title: 'music',
+                    index: 2,
+                    currentIndex: currentIndex,
+                    onTap: () => onItemTapped(2),
+                    fontSize: navLinkFontSize,
+                  ),
+                  NavLink(
+                    title: 'merch',
+                    index: 3,
+                    currentIndex: currentIndex,
+                    onTap: () => onItemTapped(3),
+                    fontSize: navLinkFontSize,
+                  ),
+                ],
+              ),
             ),
           ],
         );
-        return Container(
-          color: kBackgroundColor,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: padding,
-                child: headerContent,
-              ),
-              const _HolidayStringLights(),
-            ],
+        return RepaintBoundary(
+          child: Container(
+            color: kBackgroundColor,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: padding,
+                  child: headerContent,
+                ),
+                const _HolidayStringLights(),
+              ],
+            ),
           ),
         );
       },
@@ -124,22 +136,24 @@ class _HolidayStringLights extends StatefulWidget {
   State<_HolidayStringLights> createState() => _HolidayStringLightsState();
 }
 
-class _HolidayStringLightsState extends State<_HolidayStringLights>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
+class _HolidayStringLightsState extends State<_HolidayStringLights> {
+  final ValueNotifier<double> _phaseNotifier = ValueNotifier<double>(0.0);
+  Timer? _twinkleTimer;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 3600),
-    )..repeat();
+    // Update twinkle at ~10 FPS instead of 60 FPS for ultra-low mobile overhead
+    _twinkleTimer = Timer.periodic(const Duration(milliseconds: 100), (_) {
+      _phaseNotifier.value =
+          (_phaseNotifier.value + 0.175) % (math.pi * 2);
+    });
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _twinkleTimer?.cancel();
+    _phaseNotifier.dispose();
     super.dispose();
   }
 
@@ -150,7 +164,7 @@ class _HolidayStringLightsState extends State<_HolidayStringLights>
         height: 22,
         width: double.infinity,
         child: CustomPaint(
-          painter: _StringLightsPainter(animation: _controller),
+          painter: _StringLightsPainter(phaseListenable: _phaseNotifier),
         ),
       ),
     );
@@ -158,9 +172,10 @@ class _HolidayStringLightsState extends State<_HolidayStringLights>
 }
 
 class _StringLightsPainter extends CustomPainter {
-  final Animation<double> animation;
+  final ValueNotifier<double> phaseListenable;
 
-  _StringLightsPainter({required this.animation}) : super(repaint: animation);
+  _StringLightsPainter({required this.phaseListenable})
+      : super(repaint: phaseListenable);
 
   static const List<Color> _bulbColors = [
     kHolidayRed,
@@ -170,9 +185,10 @@ class _StringLightsPainter extends CustomPainter {
     kHolidayIce,
   ];
 
-  ///Builds a classic C7 teardrop Christmas bulb contour centered at (0, 0)
-  ///where y=0 is the bottom of the socket and y=height is the pointed tip.
-  Path _buildBulbPath(double width, double height) {
+  // Precomputed C7 teardrop bulb contour so zero Paths are allocated per bulb.
+  static final Path _bulbPath = _createBulbPath(5.6, 9.2);
+
+  static Path _createBulbPath(double width, double height) {
     final double hw = width / 2;
     return Path()
       ..moveTo(-hw * 0.55, 0)
@@ -195,6 +211,29 @@ class _StringLightsPainter extends CustomPainter {
       ..close();
   }
 
+  final Paint _wirePaint = Paint()
+    ..color = const Color(0xFF284232)
+    ..strokeWidth = 1.4
+    ..style = PaintingStyle.stroke;
+
+  final Paint _wireHighlightPaint = Paint()
+    ..color = Colors.white.withValues(alpha: 0.10)
+    ..strokeWidth = 0.6
+    ..style = PaintingStyle.stroke;
+
+  final Paint _socketPaint = Paint()
+    ..color = const Color(0xFF1F3828)
+    ..style = PaintingStyle.fill;
+
+  final Paint _socketCapPaint = Paint()
+    ..color = const Color(0xFF8A795D)
+    ..style = PaintingStyle.fill;
+
+  final Paint _fillPaint = Paint()..style = PaintingStyle.fill;
+
+  Path? _cachedWirePath;
+  double _cachedWidth = -1;
+
   @override
   void paint(Canvas canvas, Size size) {
     if (size.width <= 0) return;
@@ -204,37 +243,23 @@ class _StringLightsPainter extends CustomPainter {
     const double sagControlY = 10.5;
     final int swagCount = (size.width / swagSpan).ceil();
 
-    // Draw dark pine-tinted electrical cord
-    final wirePaint = Paint()
-      ..color = const Color(0xFF284232)
-      ..strokeWidth = 1.4
-      ..style = PaintingStyle.stroke;
-
-    final wireHighlightPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.10)
-      ..strokeWidth = 0.6
-      ..style = PaintingStyle.stroke;
-
-    final Path wirePath = Path()..moveTo(0, topY);
-    for (int s = 0; s < swagCount; s++) {
-      final double x0 = s * swagSpan;
-      final double x1 = (s + 1) * swagSpan;
-      final double midX = (x0 + x1) / 2;
-      wirePath.quadraticBezierTo(midX, sagControlY, x1, topY);
+    if (_cachedWirePath == null || _cachedWidth != size.width) {
+      _cachedWidth = size.width;
+      final Path wirePath = Path()..moveTo(0, topY);
+      for (int s = 0; s < swagCount; s++) {
+        final double x0 = s * swagSpan;
+        final double x1 = (s + 1) * swagSpan;
+        final double midX = (x0 + x1) / 2;
+        wirePath.quadraticBezierTo(midX, sagControlY, x1, topY);
+      }
+      _cachedWirePath = wirePath;
     }
-    canvas.drawPath(wirePath, wirePaint);
-    canvas.drawPath(wirePath, wireHighlightPaint);
 
-    // Place 2 Christmas bulbs per swag (at t = 0.28 and t = 0.72)
-    final double phase = animation.value * math.pi * 2;
+    canvas.drawPath(_cachedWirePath!, _wirePaint);
+    canvas.drawPath(_cachedWirePath!, _wireHighlightPaint);
+
+    final double phase = phaseListenable.value;
     int bulbIndex = 0;
-
-    final socketPaint = Paint()
-      ..color = const Color(0xFF1F3828)
-      ..style = PaintingStyle.fill;
-    final socketCapPaint = Paint()
-      ..color = const Color(0xFF8A795D)
-      ..style = PaintingStyle.fill;
 
     for (int s = 0; s < swagCount; s++) {
       final double x0 = s * swagSpan;
@@ -245,14 +270,12 @@ class _StringLightsPainter extends CustomPainter {
           continue;
         }
 
-        // Exact y on the quadratic Bezier curve: (1-t)^2*y0 + 2(1-t)t*yc + t^2*y1
         final double oneMinusT = 1.0 - t;
         final double by = oneMinusT * oneMinusT * topY +
             2 * oneMinusT * t * sagControlY +
             t * t * topY;
 
-        // Slight alternating tilt so bulbs hang naturally off the curved cord
-        final double tiltAngle = (bulbIndex.isEven ? -0.16 : 0.16);
+        final double tiltAngle = bulbIndex.isEven ? -0.16 : 0.16;
         final Color baseColor = _bulbColors[bulbIndex % _bulbColors.length];
         final double twinkle =
             0.50 + 0.50 * (0.5 + 0.5 * math.sin(phase + bulbIndex * 1.45));
@@ -261,17 +284,16 @@ class _StringLightsPainter extends CustomPainter {
         canvas.translate(bx, by);
         canvas.rotate(tiltAngle);
 
-        // 1. Soft outer ambient halo glow
-        final Paint glowPaint = Paint()
-          ..color = baseColor.withValues(alpha: 0.30 * twinkle)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5.5);
+        // 1. Fast layered halo glow (no expensive GPU MaskFilter.blur needed)
+        _fillPaint.color = baseColor.withValues(alpha: 0.11 * twinkle);
         canvas.drawOval(
-          Rect.fromCenter(
-            center: const Offset(0, 6.8),
-            width: 8.5,
-            height: 11.0,
-          ),
-          glowPaint,
+          const Rect.fromLTWH(-6.2, 0.2, 12.4, 14.5),
+          _fillPaint,
+        );
+        _fillPaint.color = baseColor.withValues(alpha: 0.18 * twinkle);
+        canvas.drawOval(
+          const Rect.fromLTWH(-4.2, 1.5, 8.4, 11.2),
+          _fillPaint,
         );
 
         // 2. Socket base (dark green plastic clip + brass collar)
@@ -280,45 +302,31 @@ class _StringLightsPainter extends CustomPainter {
             const Rect.fromLTWH(-1.8, -0.6, 3.6, 2.4),
             const Radius.circular(0.8),
           ),
-          socketPaint,
+          _socketPaint,
         );
         canvas.drawRect(
           const Rect.fromLTWH(-1.5, 1.4, 3.0, 1.0),
-          socketCapPaint,
+          _socketCapPaint,
         );
 
         // 3. C7 teardrop glass bulb body
-        canvas.save();
         canvas.translate(0, 2.2);
-        final Path bulbPath = _buildBulbPath(5.6, 9.2);
-
-        final Paint glassPaint = Paint()
-          ..color = baseColor.withValues(alpha: 0.72 + 0.26 * twinkle)
-          ..style = PaintingStyle.fill;
-        canvas.drawPath(bulbPath, glassPaint);
+        _fillPaint.color = baseColor.withValues(alpha: 0.74 + 0.24 * twinkle);
+        canvas.drawPath(_bulbPath, _fillPaint);
 
         // 4. Warm inner filament core + specular glass highlight
-        final Paint corePaint = Paint()
-          ..color = Colors.white.withValues(alpha: 0.45 + 0.45 * twinkle)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1.2);
+        _fillPaint.color = Colors.white.withValues(alpha: 0.48 + 0.42 * twinkle);
         canvas.drawOval(
-          Rect.fromCenter(
-            center: const Offset(0, 3.6),
-            width: 2.2,
-            height: 4.2,
-          ),
-          corePaint,
+          const Rect.fromLTWH(-1.1, 1.6, 2.2, 4.2),
+          _fillPaint,
         );
 
-        final Paint specularPaint = Paint()
-          ..color = Colors.white.withValues(alpha: 0.55 * twinkle)
-          ..style = PaintingStyle.fill;
+        _fillPaint.color = Colors.white.withValues(alpha: 0.55 * twinkle);
         canvas.drawOval(
           const Rect.fromLTWH(-1.4, 1.5, 1.0, 2.6),
-          specularPaint,
+          _fillPaint,
         );
 
-        canvas.restore();
         canvas.restore();
         bulbIndex++;
       }

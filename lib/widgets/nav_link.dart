@@ -51,9 +51,8 @@ class NavLink extends StatelessWidget {
         children: [
           Text(title),
           const SizedBox(height: 2),
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            width: isActive ? 14 : 0,
+          Container(
+            width: 14,
             height: 2,
             decoration: BoxDecoration(
               color: isActive ? _holidayIndicatorColor : Colors.transparent,

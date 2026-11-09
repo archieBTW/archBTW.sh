@@ -2,6 +2,7 @@ import 'package:archbtw_sh/global/colors.dart';
 import 'package:archbtw_sh/pages/music/album_art.dart';
 import 'package:archbtw_sh/pages/music/album_details.dart';
 import 'package:archbtw_sh/pages/music/album_item.dart';
+import 'package:archbtw_sh/widgets/holiday_snow_overlay.dart';
 import 'package:flutter/material.dart';
 
 class AlbumDetailPage extends StatefulWidget {
@@ -30,79 +31,86 @@ class _AlbumDetailPageState extends State<AlbumDetailPage> {
         elevation: 0,
         leading: const BackButton(color: kTextColor),
       ),
-      body: SingleChildScrollView(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1200.0),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final bool isDesktop = constraints.maxWidth > 800.0;
-  
-                final albumArt = AlbumArt(item: widget.item);
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1200.0),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final bool isDesktop = constraints.maxWidth > 800.0;
 
-                if (isDesktop) {
-                  return Padding(
-                    padding: const EdgeInsets.all(32.0),
-                    child: Column(
-                      children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                    final albumArt = AlbumArt(item: widget.item);
+
+                    if (isDesktop) {
+                      return Padding(
+                        padding: const EdgeInsets.all(32.0),
+                        child: Column(
                           children: [
-                            Expanded(
-                              flex: 2,
-                              child: Column(
-                                children: [
-                                  albumArt,
-                                  AlbumDetails(
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  flex: 2,
+                                  child: Column(
+                                    children: [
+                                      albumArt,
+                                      AlbumDetails(
+                                        item: widget.item,
+                                        isDesktop: isDesktop,
+                                        showTitle: true,
+                                        showPlayer: false,
+                                        showLyricsButton: false,
+                                        showLyricsContent: false,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 32.0),
+                                Expanded(
+                                  flex: 3,
+                                  child: AlbumDetails(
                                     item: widget.item,
                                     isDesktop: isDesktop,
-                                    showTitle: true,
-                                    showPlayer: false,
-                                    showLyricsButton: false,
-                                    showLyricsContent: false,
+                                    showTitle: false,
+                                    showPlayer: true,
+                                    showLyricsButton: true,
+                                    showLyricsContent: true,
+                                    isLyricsExpanded: _isLyricsExpanded,
+                                    onToggleLyrics: _toggleLyrics,
                                   ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 32.0),
-                            Expanded(
-                              flex: 3,
-                              child: AlbumDetails(
-                                item: widget.item,
-                                isDesktop: isDesktop,
-                                showTitle: false,
-                                showPlayer: true,
-                                showLyricsButton: true,
-                                showLyricsContent: true,
-                                isLyricsExpanded: _isLyricsExpanded,
-                                onToggleLyrics: _toggleLyrics,
-                              ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
-                      ],
-                    ),
-                  );
-                } else {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      albumArt,
-                      AlbumDetails(
-                        item: widget.item,
-                        isDesktop: isDesktop,
-                        showTitle: true,
-                        showPlayer: true,
-                        showLyricsButton: true,
-                        showLyricsContent: true,
-                      ),
-                    ],
-                  );
-                }
-              },
+                      );
+                    } else {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          albumArt,
+                          AlbumDetails(
+                            item: widget.item,
+                            isDesktop: isDesktop,
+                            showTitle: true,
+                            showPlayer: true,
+                            showLyricsButton: true,
+                            showLyricsContent: true,
+                          ),
+                        ],
+                      );
+                    }
+                  },
+                ),
+              ),
             ),
           ),
-        ),
+          const Positioned.fill(
+            child: HolidaySnowOverlay(),
+          ),
+        ],
       ),
     );
   }

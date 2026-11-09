@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:archbtw_sh/global/colors.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 
 class HolidaySnowOverlay extends StatefulWidget {
   final int flakeCount;
@@ -17,9 +18,10 @@ class HolidaySnowOverlay extends StatefulWidget {
 
 class _HolidaySnowOverlayState extends State<HolidaySnowOverlay>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
+  late final Ticker _ticker;
+  final ValueNotifier<int> _frameNotifier = ValueNotifier<int>(0);
   late final List<_Snowflake> _flakes;
-  DateTime? _lastTick;
+  Duration _lastElapsed = Duration.zero;
 
   @override
   void initState() {
@@ -29,32 +31,28 @@ class _HolidaySnowOverlayState extends State<HolidaySnowOverlay>
       widget.flakeCount,
       (i) => _Snowflake.random(rng, index: i),
     );
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 60),
-    )
-      ..addListener(_onTick)
-      ..repeat();
+    _ticker = createTicker(_onTick)..start();
   }
 
-  void _onTick() {
-    final now = DateTime.now();
-    final dt = _lastTick == null
+  void _onTick(Duration elapsed) {
+    final double dt = _lastElapsed == Duration.zero
         ? 0.016
-        : (now.difference(_lastTick!).inMicroseconds / 1000000.0).clamp(
+        : ((elapsed - _lastElapsed).inMicroseconds / 1000000.0).clamp(
             0.0,
             0.05,
           );
-    _lastTick = now;
+    _lastElapsed = elapsed;
 
-    for (final flake in _flakes) {
-      flake.update(dt);
+    for (int i = 0; i < _flakes.length; i++) {
+      _flakes[i].update(dt);
     }
+    _frameNotifier.value++;
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _ticker.dispose();
+    _frameNotifier.dispose();
     super.dispose();
   }
 
@@ -65,7 +63,7 @@ class _HolidaySnowOverlayState extends State<HolidaySnowOverlay>
         child: CustomPaint(
           painter: _SnowPainter(
             flakes: _flakes,
-            repaint: _controller,
+            repaint: _frameNotifier,
           ),
           size: Size.infinite,
         ),
@@ -73,6 +71,8 @@ class _HolidaySnowOverlayState extends State<HolidaySnowOverlay>
     );
   }
 }
+
+enum _FlakeShape { circle, star, plus }
 
 class _Snowflake {
   double x; // Normalized 0..1
@@ -82,9 +82,8 @@ class _Snowflake {
   final double driftAmplitude;
   final double driftFrequency;
   double phase;
-  final double opacity;
-  final String? glyph;
-  final Color tint;
+  final _FlakeShape shape;
+  final Color precomputedColor;
 
   _Snowflake({
     required this.x,
@@ -94,21 +93,20 @@ class _Snowflake {
     required this.driftAmplitude,
     required this.driftFrequency,
     required this.phase,
-    required this.opacity,
-    required this.glyph,
-    required this.tint,
+    required this.shape,
+    required this.precomputedColor,
   });
 
   factory _Snowflake.random(math.Random rng, {required int index}) {
-    // Mix of soft snow particles and terminal ASCII snowflakes ('*', '+', '·')
-    final bool isAscii = index % 4 == 0;
-    final String? glyph = isAscii
-        ? (index % 8 == 0
-            ? '*'
-            : (index % 12 == 0 ? '+' : '·'))
-        : null;
+    final _FlakeShape shape;
+    if (index % 8 == 0) {
+      shape = _FlakeShape.star;
+    } else if (index % 12 == 0) {
+      shape = _FlakeShape.plus;
+    } else {
+      shape = _FlakeShape.circle;
+    }
 
-    // Subtle tint: mostly white/ice, with occasional faint holiday gold or purple
     final Color tint;
     if (index % 9 == 0) {
       tint = kHolidayIce;
@@ -120,17 +118,18 @@ class _Snowflake {
       tint = Colors.white;
     }
 
+    final double opacity = 0.14 + rng.nextDouble() * 0.26;
+
     return _Snowflake(
       x: rng.nextDouble(),
       y: rng.nextDouble(),
-      radius: 1.2 + rng.nextDouble() * 2.1,
+      radius: 1.2 + rng.nextDouble() * 2.0,
       speedY: 0.025 + rng.nextDouble() * 0.045,
       driftAmplitude: 0.0003 + rng.nextDouble() * 0.0007,
       driftFrequency: 0.7 + rng.nextDouble() * 1.6,
       phase: rng.nextDouble() * math.pi * 2,
-      opacity: 0.14 + rng.nextDouble() * 0.26,
-      glyph: glyph,
-      tint: tint,
+      shape: shape,
+      precomputedColor: tint.withValues(alpha: opacity),
     );
   }
 
@@ -150,6 +149,11 @@ class _Snowflake {
 
 class _SnowPainter extends CustomPainter {
   final List<_Snowflake> flakes;
+  final Paint _fillPaint = Paint()..style = PaintingStyle.fill;
+  final Paint _strokePaint = Paint()
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 1.1
+    ..strokeCap = StrokeCap.round;
 
   _SnowPainter({
     required this.flakes,
@@ -160,33 +164,42 @@ class _SnowPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (size.isEmpty) return;
 
-    final paint = Paint()..style = PaintingStyle.fill;
+    // Scale active flake count on smaller mobile viewports so density stays even
+    // and low-end mobile GPUs do less work per frame.
+    final int activeCount = size.width < 600
+        ? (flakes.length * 0.62).round()
+        : flakes.length;
 
-    for (final flake in flakes) {
-      final dx = flake.x * size.width;
-      final dy = flake.y * size.height;
-      final color = flake.tint.withValues(alpha: flake.opacity);
+    for (int i = 0; i < activeCount; i++) {
+      final flake = flakes[i];
+      final double dx = flake.x * size.width;
+      final double dy = flake.y * size.height;
 
-      if (flake.glyph != null) {
-        final textPainter = TextPainter(
-          text: TextSpan(
-            text: flake.glyph,
-            style: TextStyle(
-              color: color,
-              fontSize: flake.radius * 6.0,
-              fontFamily: 'JetBrainsMono',
-              fontWeight: FontWeight.w400,
-            ),
-          ),
-          textDirection: TextDirection.ltr,
-        )..layout();
-        textPainter.paint(
-          canvas,
-          Offset(dx - textPainter.width / 2, dy - textPainter.height / 2),
-        );
-      } else {
-        paint.color = color;
-        canvas.drawCircle(Offset(dx, dy), flake.radius, paint);
+      switch (flake.shape) {
+        case _FlakeShape.circle:
+          _fillPaint.color = flake.precomputedColor;
+          canvas.drawCircle(Offset(dx, dy), flake.radius, _fillPaint);
+        case _FlakeShape.plus:
+          _strokePaint.color = flake.precomputedColor;
+          final double r = flake.radius * 1.7;
+          canvas.drawLine(Offset(dx - r, dy), Offset(dx + r, dy), _strokePaint);
+          canvas.drawLine(Offset(dx, dy - r), Offset(dx, dy + r), _strokePaint);
+        case _FlakeShape.star:
+          _strokePaint.color = flake.precomputedColor;
+          final double r = flake.radius * 1.85;
+          final double d = r * 0.7;
+          canvas.drawLine(Offset(dx - r, dy), Offset(dx + r, dy), _strokePaint);
+          canvas.drawLine(Offset(dx, dy - r), Offset(dx, dy + r), _strokePaint);
+          canvas.drawLine(
+            Offset(dx - d, dy - d),
+            Offset(dx + d, dy + d),
+            _strokePaint,
+          );
+          canvas.drawLine(
+            Offset(dx - d, dy + d),
+            Offset(dx + d, dy - d),
+            _strokePaint,
+          );
       }
     }
   }

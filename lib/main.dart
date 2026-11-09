@@ -94,6 +94,12 @@ class _MainScreenState extends State<MainScreen> {
   bool _loadMerch = false;
 
   final Widget _homePage = const RepaintBoundary(child: HomePage());
+  final Widget _aboutPage = const RepaintBoundary(child: AboutPage());
+  final Widget _musicPage = const RepaintBoundary(child: MusicPage());
+  final Widget _merchPage = const RepaintBoundary(child: MerchPage());
+  final Widget _snowOverlay = const Positioned.fill(
+    child: HolidaySnowOverlay(),
+  );
 
   @override
   void initState() {
@@ -128,27 +134,27 @@ class _MainScreenState extends State<MainScreen> {
             children: [
               Header(currentIndex: _currentIndex, onItemTapped: _onItemTapped),
               Expanded(
-                child: IndexedStack(
-                  index: _currentIndex,
-                  children: [
-                    _homePage,
-                    _loadAbout
-                        ? const AboutPage()
-                        : const Center(child: WaveformLoader()),
-                    _loadMusic
-                        ? const MusicPage()
-                        : const Center(child: WaveformLoader()),
-                    _loadMerch
-                        ? const MerchPage()
-                        : const Center(child: WaveformLoader()),
-                  ],
+                child: RepaintBoundary(
+                  child: IndexedStack(
+                    index: _currentIndex,
+                    children: [
+                      _homePage,
+                      _loadAbout
+                          ? _aboutPage
+                          : const Center(child: WaveformLoader()),
+                      _loadMusic
+                          ? _musicPage
+                          : const Center(child: WaveformLoader()),
+                      _loadMerch
+                          ? _merchPage
+                          : const Center(child: WaveformLoader()),
+                    ],
+                  ),
                 ),
               ),
             ],
           ),
-          const Positioned.fill(
-            child: HolidaySnowOverlay(),
-          ),
+          _snowOverlay,
         ],
       ),
     );
