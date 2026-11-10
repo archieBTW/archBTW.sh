@@ -67,8 +67,12 @@ class _OverheatPageState extends State<OverheatPage>
   int _heatRows = 0;
   List<List<int>> _heat = [];
 
-  // Flame intensity (controlled via Up/Down arrows like fireplace-cli)
-  int _flameHeight = 8; // Range 4..12
+  // Flame height fraction (default: ~33% of screen height)
+  double _flameFraction = 0.33;
+  bool _isDragging = false;
+
+  @visibleForTesting
+  double get flameFraction => _flameFraction;
 
   static const List<String> _fireRamp = [
     ' ',
@@ -223,19 +227,25 @@ class _OverheatPageState extends State<OverheatPage>
       }
     }
 
-    // 2. Propagate upward (fireplace / aafire cellular automaton)
-    // Dynamic decay rate influenced by _flameHeight
-    final double decayProb = (14.0 - _flameHeight) / 10.0;
+    // 2. Propagate upward (cellular automaton scaled to _flameFraction of screen height)
+    final double targetRows = max(4.0, _heatRows * _flameFraction);
+    final double baseDecayProb = (7.0 / targetRows).clamp(0.12, 0.88);
 
     for (int y = 0; y < _heatRows - 2; y++) {
+      final double relativeHeight = (_heatRows - 1 - y) / targetRows;
+      final double decayProb = (baseDecayProb +
+              (relativeHeight > 0.8 ? (relativeHeight - 0.8) * 0.8 : 0.0))
+          .clamp(0.05, 0.95);
+
       for (int x = 0; x < _heatCols; x++) {
         int decay = _rand.nextDouble() < decayProb ? 1 : 0;
-        if (y < _heatRows * 0.45 && _rand.nextBool()) decay += 1;
-        if (y < _heatRows * 0.25) decay += _rand.nextInt(2);
+        if (relativeHeight > 1.2 && _rand.nextBool()) decay += 1;
+        if (relativeHeight > 1.5) decay += _rand.nextInt(2);
 
-        int spread = _rand.nextInt(3) - 1; // -1, 0, or 1
-        int srcX = (x + spread).clamp(0, _heatCols - 1);
-        int srcY = min(_heatRows - 1, y + 1 + (_rand.nextDouble() < 0.2 ? 1 : 0));
+        final int spread = _rand.nextInt(3) - 1; // -1, 0, or 1
+        final int srcX = (x + spread).clamp(0, _heatCols - 1);
+        final int srcY =
+            min(_heatRows - 1, y + 1 + (_rand.nextDouble() < 0.2 ? 1 : 0));
         _heat[y][x] = max(0, _heat[srcY][srcX] - decay);
       }
     }
@@ -247,7 +257,13 @@ class _OverheatPageState extends State<OverheatPage>
 
   void _adjustFlame(int delta) {
     setState(() {
-      _flameHeight = (_flameHeight + delta).clamp(4, 12);
+      _flameFraction = (_flameFraction + (delta * 0.05)).clamp(0.10, 0.85);
+    });
+  }
+
+  void _adjustFlameFraction(double delta) {
+    setState(() {
+      _flameFraction = (_flameFraction + delta).clamp(0.10, 0.85);
     });
   }
 
@@ -284,13 +300,47 @@ class _OverheatPageState extends State<OverheatPage>
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () {
+          if (_isDragging) return;
           // If in fireplace stage or fading stage, click anywhere exits
-          if (_phase == OverheatPhase.fireplace || _phase == OverheatPhase.fading) {
+          if (_phase == OverheatPhase.fireplace ||
+              _phase == OverheatPhase.fading) {
             _exit();
           } else {
             // If user clicks during early overheating, skip directly to fireplace
             _skipToFireplace();
           }
+        },
+        onPanStart: (_) {
+          if (_phase == OverheatPhase.fireplace ||
+              _phase == OverheatPhase.fading) {
+            _isDragging = true;
+          }
+        },
+        onPanUpdate: (details) {
+          if (_phase == OverheatPhase.fireplace ||
+              _phase == OverheatPhase.fading) {
+            _isDragging = true;
+            final double screenHeight = MediaQuery.sizeOf(context).height;
+            final double deltaY = details.delta.dy;
+            final double heightFactor = screenHeight > 0 ? screenHeight : 600.0;
+            // Dragging up (negative deltaY) increases flame size;
+            // dragging down (positive deltaY) decreases flame size.
+            _adjustFlameFraction(-deltaY / heightFactor);
+          }
+        },
+        onPanEnd: (_) {
+          Future.microtask(() {
+            if (mounted) {
+              _isDragging = false;
+            }
+          });
+        },
+        onPanCancel: () {
+          Future.microtask(() {
+            if (mounted) {
+              _isDragging = false;
+            }
+          });
         },
         child: Scaffold(
           backgroundColor: Colors.black,
@@ -329,19 +379,35 @@ class _OverheatPageState extends State<OverheatPage>
               ),
 
               // Instructions / status hint in fireplace mode
-              if (_phase == OverheatPhase.fireplace || _phase == OverheatPhase.fading)
+              if (_phase == OverheatPhase.fireplace ||
+                  _phase == OverheatPhase.fading)
                 Positioned(
                   top: 24,
                   left: 24,
                   child: IgnorePointer(
-                    child: Text(
-                      "[ click anywhere to exit ]",
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.35),
-                        fontFamily: 'JetBrainsMono',
-                        fontSize: 12,
-                        letterSpacing: 1.2,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "[ click anywhere to exit ]",
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.35),
+                            fontFamily: 'JetBrainsMono',
+                            fontSize: 12,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          "[ drag up/down to adjust flames ]",
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.25),
+                            fontFamily: 'JetBrainsMono',
+                            fontSize: 11,
+                            letterSpacing: 1.1,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -585,8 +651,8 @@ class _OverheatPageState extends State<OverheatPage>
         final double charWidth = fontSize * 0.60;
         final double charHeight = fontSize * 1.15;
 
-        final int cols = (width / charWidth).floor().clamp(30, 200);
-        final int rows = (height / charHeight).floor().clamp(15, 90);
+        final int cols = max(30, (width / charWidth).ceil() + 1);
+        final int rows = max(15, (height / charHeight).ceil() + 1);
 
         _ensureGridSize(cols, rows);
 
@@ -639,21 +705,27 @@ class _OverheatPageState extends State<OverheatPage>
           }
         }
 
-        return Align(
-          alignment: Alignment.bottomCenter,
+        return ClipRect(
           child: SizedBox(
-            width: cols * charWidth,
-            height: rows * charHeight,
-            child: Text.rich(
-              TextSpan(children: spans),
-              style: TextStyle(
-                fontFamily: 'JetBrainsMono',
-                fontSize: fontSize,
-                height: 1.15,
-                letterSpacing: 0,
+            width: width,
+            height: height,
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              child: SizedBox(
+                width: cols * charWidth,
+                height: rows * charHeight,
+                child: Text.rich(
+                  TextSpan(children: spans),
+                  style: TextStyle(
+                    fontFamily: 'JetBrainsMono',
+                    fontSize: fontSize,
+                    height: 1.15,
+                    letterSpacing: 0,
+                  ),
+                  softWrap: false,
+                  overflow: TextOverflow.clip,
+                ),
               ),
-              softWrap: false,
-              overflow: TextOverflow.clip,
             ),
           ),
         );
