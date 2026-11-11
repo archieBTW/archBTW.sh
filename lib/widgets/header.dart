@@ -115,11 +115,8 @@ class Header extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Padding(
-                  padding: padding,
-                  child: headerContent,
-                ),
-                const _HolidayStringLights(),
+                Padding(padding: padding, child: headerContent),
+                const HolidayStringLights(),
               ],
             ),
           ),
@@ -129,30 +126,71 @@ class Header extends StatelessWidget {
   }
 }
 
-class _HolidayStringLights extends StatefulWidget {
-  const _HolidayStringLights();
+enum HolidayLightsMode {
+  solid('solid'),
+  twinkle('twinkle'),
+  chase('chase'),
+  pulse('pulse'),
+  off('off');
 
-  @override
-  State<_HolidayStringLights> createState() => _HolidayStringLightsState();
+  final String label;
+  const HolidayLightsMode(this.label);
+
+  HolidayLightsMode get next {
+    final nextIndex = (index + 1) % HolidayLightsMode.values.length;
+    return HolidayLightsMode.values[nextIndex];
+  }
 }
 
-class _HolidayStringLightsState extends State<_HolidayStringLights> {
+class HolidayStringLights extends StatefulWidget {
+  final HolidayLightsMode initialMode;
+
+  const HolidayStringLights({
+    super.key,
+    this.initialMode = HolidayLightsMode.solid,
+  });
+
+  @override
+  State<HolidayStringLights> createState() => HolidayStringLightsState();
+}
+
+class HolidayStringLightsState extends State<HolidayStringLights> {
+  late HolidayLightsMode _mode;
   final ValueNotifier<double> _phaseNotifier = ValueNotifier<double>(0.0);
-  Timer? _twinkleTimer;
+  Timer? _animationTimer;
+
+  HolidayLightsMode get currentMode => _mode;
 
   @override
   void initState() {
     super.initState();
-    // Update twinkle at ~10 FPS instead of 60 FPS for ultra-low mobile overhead
-    _twinkleTimer = Timer.periodic(const Duration(milliseconds: 100), (_) {
-      _phaseNotifier.value =
-          (_phaseNotifier.value + 0.175) % (math.pi * 2);
+    _mode = widget.initialMode;
+    _updateTimer();
+  }
+
+  void _updateTimer() {
+    _animationTimer?.cancel();
+    _animationTimer = null;
+    if (_mode == HolidayLightsMode.solid || _mode == HolidayLightsMode.off) {
+      _phaseNotifier.value = 0.0;
+      return;
+    }
+    // Update animation at ~12.5 FPS (80ms) for low overhead
+    _animationTimer = Timer.periodic(const Duration(milliseconds: 80), (_) {
+      _phaseNotifier.value = (_phaseNotifier.value + 0.16) % (math.pi * 2);
+    });
+  }
+
+  void cycleMode() {
+    setState(() {
+      _mode = _mode.next;
+      _updateTimer();
     });
   }
 
   @override
   void dispose() {
-    _twinkleTimer?.cancel();
+    _animationTimer?.cancel();
     _phaseNotifier.dispose();
     super.dispose();
   }
@@ -160,11 +198,28 @@ class _HolidayStringLightsState extends State<_HolidayStringLights> {
   @override
   Widget build(BuildContext context) {
     return RepaintBoundary(
-      child: SizedBox(
-        height: 22,
-        width: double.infinity,
-        child: CustomPaint(
-          painter: _StringLightsPainter(phaseListenable: _phaseNotifier),
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          key: const Key('holiday_string_lights'),
+          behavior: HitTestBehavior.opaque,
+          onTap: cycleMode,
+          child: Tooltip(
+            message: 'Holiday lights: ${_mode.label} (tap to change)',
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4.0),
+              child: SizedBox(
+                height: 22,
+                width: double.infinity,
+                child: CustomPaint(
+                  painter: _StringLightsPainter(
+                    phaseListenable: _phaseNotifier,
+                    mode: _mode,
+                  ),
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -173,9 +228,10 @@ class _HolidayStringLightsState extends State<_HolidayStringLights> {
 
 class _StringLightsPainter extends CustomPainter {
   final ValueNotifier<double> phaseListenable;
+  final HolidayLightsMode mode;
 
-  _StringLightsPainter({required this.phaseListenable})
-      : super(repaint: phaseListenable);
+  _StringLightsPainter({required this.phaseListenable, required this.mode})
+    : super(repaint: phaseListenable);
 
   static const List<Color> _bulbColors = [
     kHolidayRed,
@@ -192,14 +248,7 @@ class _StringLightsPainter extends CustomPainter {
     final double hw = width / 2;
     return Path()
       ..moveTo(-hw * 0.55, 0)
-      ..cubicTo(
-        -hw * 1.25,
-        height * 0.28,
-        -hw * 0.95,
-        height * 0.72,
-        0,
-        height,
-      )
+      ..cubicTo(-hw * 1.25, height * 0.28, -hw * 0.95, height * 0.72, 0, height)
       ..cubicTo(
         hw * 0.95,
         height * 0.72,
@@ -271,30 +320,54 @@ class _StringLightsPainter extends CustomPainter {
         }
 
         final double oneMinusT = 1.0 - t;
-        final double by = oneMinusT * oneMinusT * topY +
+        final double by =
+            oneMinusT * oneMinusT * topY +
             2 * oneMinusT * t * sagControlY +
             t * t * topY;
 
         final double tiltAngle = bulbIndex.isEven ? -0.16 : 0.16;
         final Color baseColor = _bulbColors[bulbIndex % _bulbColors.length];
-        final double twinkle =
-            0.50 + 0.50 * (0.5 + 0.5 * math.sin(phase + bulbIndex * 1.45));
+
+        final double twinkle;
+        switch (mode) {
+          case HolidayLightsMode.solid:
+            twinkle = 1.0;
+            break;
+          case HolidayLightsMode.twinkle:
+            twinkle =
+                0.50 + 0.50 * (0.5 + 0.5 * math.sin(phase + bulbIndex * 1.45));
+            break;
+          case HolidayLightsMode.chase:
+            final double wave =
+                0.5 + 0.5 * math.sin(phase * 2.2 - bulbIndex * 0.70);
+            twinkle = math.pow(wave, 2.2).toDouble();
+            break;
+          case HolidayLightsMode.pulse:
+            final double wave = 0.5 + 0.5 * math.sin(phase * 1.5);
+            twinkle = 0.20 + 0.80 * (wave * wave);
+            break;
+          case HolidayLightsMode.off:
+            twinkle = 0.0;
+            break;
+        }
 
         canvas.save();
         canvas.translate(bx, by);
         canvas.rotate(tiltAngle);
 
         // 1. Fast layered halo glow (no expensive GPU MaskFilter.blur needed)
-        _fillPaint.color = baseColor.withValues(alpha: 0.11 * twinkle);
-        canvas.drawOval(
-          const Rect.fromLTWH(-6.2, 0.2, 12.4, 14.5),
-          _fillPaint,
-        );
-        _fillPaint.color = baseColor.withValues(alpha: 0.18 * twinkle);
-        canvas.drawOval(
-          const Rect.fromLTWH(-4.2, 1.5, 8.4, 11.2),
-          _fillPaint,
-        );
+        if (twinkle > 0.05) {
+          _fillPaint.color = baseColor.withValues(alpha: 0.11 * twinkle);
+          canvas.drawOval(
+            const Rect.fromLTWH(-6.2, 0.2, 12.4, 14.5),
+            _fillPaint,
+          );
+          _fillPaint.color = baseColor.withValues(alpha: 0.18 * twinkle);
+          canvas.drawOval(
+            const Rect.fromLTWH(-4.2, 1.5, 8.4, 11.2),
+            _fillPaint,
+          );
+        }
 
         // 2. Socket base (dark green plastic clip + brass collar)
         canvas.drawRRect(
@@ -311,21 +384,25 @@ class _StringLightsPainter extends CustomPainter {
 
         // 3. C7 teardrop glass bulb body
         canvas.translate(0, 2.2);
-        _fillPaint.color = baseColor.withValues(alpha: 0.74 + 0.24 * twinkle);
+        final double bulbAlpha = mode == HolidayLightsMode.off
+            ? 0.22
+            : (0.74 + 0.24 * twinkle);
+        _fillPaint.color = baseColor.withValues(alpha: bulbAlpha);
         canvas.drawPath(_bulbPath, _fillPaint);
 
         // 4. Warm inner filament core + specular glass highlight
-        _fillPaint.color = Colors.white.withValues(alpha: 0.48 + 0.42 * twinkle);
-        canvas.drawOval(
-          const Rect.fromLTWH(-1.1, 1.6, 2.2, 4.2),
-          _fillPaint,
-        );
+        if (twinkle > 0.05) {
+          _fillPaint.color = Colors.white.withValues(
+            alpha: 0.48 + 0.42 * twinkle,
+          );
+          canvas.drawOval(const Rect.fromLTWH(-1.1, 1.6, 2.2, 4.2), _fillPaint);
+        }
 
-        _fillPaint.color = Colors.white.withValues(alpha: 0.55 * twinkle);
-        canvas.drawOval(
-          const Rect.fromLTWH(-1.4, 1.5, 1.0, 2.6),
-          _fillPaint,
-        );
+        final double specAlpha = mode == HolidayLightsMode.off
+            ? 0.20
+            : (0.55 * twinkle);
+        _fillPaint.color = Colors.white.withValues(alpha: specAlpha);
+        canvas.drawOval(const Rect.fromLTWH(-1.4, 1.5, 1.0, 2.6), _fillPaint);
 
         canvas.restore();
         bulbIndex++;
@@ -334,5 +411,6 @@ class _StringLightsPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _StringLightsPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _StringLightsPainter oldDelegate) =>
+      oldDelegate.mode != mode;
 }

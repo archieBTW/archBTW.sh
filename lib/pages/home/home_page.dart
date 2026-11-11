@@ -89,7 +89,7 @@ class _HomePageState extends State<HomePage>
 
     final double titleFontSize = isDesktop ? 36 : 24;
     final double iconSize = isDesktop ? 24 : 18;
-    final double socialSpacing = isDesktop ? 24 : 16;
+    final double socialSpacing = isDesktop ? 24 : (screenWidth < 360 ? 10 : 16);
     final double bottomPadding = isDesktop ? 16 : 10;
     final Color activeCursorColor = _cursorColors[_cursorColorIndex];
 
@@ -212,6 +212,15 @@ class _HomePageState extends State<HomePage>
                   ),
                   SizedBox(width: socialSpacing),
                   SocialIcon(
+                    key: const Key('angel_tree_button'),
+                    icon: FontAwesomeIcons.tree,
+                    url: 'https://saangeltree.org',
+                    iconSize: iconSize,
+                    tooltip: 'angel tree — adopt a family',
+                    hoverColor: kHolidayGreen,
+                  ),
+                  SizedBox(width: socialSpacing),
+                  SocialIcon(
                     icon: FontAwesomeIcons.fire,
                     iconSize: iconSize,
                     tooltip: 'overheat',
@@ -221,13 +230,17 @@ class _HomePageState extends State<HomePage>
                         context,
                         PageRouteBuilder(
                           opaque: false,
-                          pageBuilder: (context, animation, secondaryAnimation) {
-                            return const OverheatPage();
-                          },
+                          pageBuilder:
+                              (context, animation, secondaryAnimation) {
+                                return const OverheatPage();
+                              },
                           transitionsBuilder:
                               (context, animation, secondaryAnimation, child) {
-                            return FadeTransition(opacity: animation, child: child);
-                          },
+                                return FadeTransition(
+                                  opacity: animation,
+                                  child: child,
+                                );
+                              },
                         ),
                       );
                     },

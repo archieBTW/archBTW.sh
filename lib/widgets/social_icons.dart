@@ -32,19 +32,21 @@ class SocialIcon extends StatelessWidget {
             color: color ?? Colors.grey,
             size: iconSize,
           )
-        : Icon(
-            icon as IconData,
-            color: color ?? Colors.grey,
-            size: iconSize,
-          );
+        : Icon(icon as IconData, color: color ?? Colors.grey, size: iconSize);
 
     return IconButton(
       tooltip: tooltip,
       icon: iconWidget,
-      onPressed: onPressed ??
+      onPressed:
+          onPressed ??
           () {
             if (url != null) openUrl(url!);
           },
+      style: IconButton.styleFrom(
+        minimumSize: Size.zero,
+        padding: const EdgeInsets.all(6.0),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
       splashColor: effectiveHover.withValues(alpha: 0.3),
       hoverColor: effectiveHover.withValues(alpha: 0.1),
     );
