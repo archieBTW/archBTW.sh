@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:archbtw_sh/global/colors.dart';
 import 'package:archbtw_sh/global/site_music_controller.dart';
 import 'package:archbtw_sh/pages/overheat/overheat_page.dart';
+import 'package:archbtw_sh/widgets/christmas_countdown.dart';
 import 'package:archbtw_sh/widgets/social_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -89,7 +90,7 @@ class _HomePageState extends State<HomePage>
     final double titleFontSize = isDesktop ? 36 : 24;
     final double iconSize = isDesktop ? 24 : 18;
     final double socialSpacing = isDesktop ? 24 : 16;
-    final double bottomPadding = isDesktop ? 64 : 32;
+    final double bottomPadding = isDesktop ? 16 : 10;
     final Color activeCursorColor = _cursorColors[_cursorColorIndex];
 
     return Column(
@@ -178,56 +179,63 @@ class _HomePageState extends State<HomePage>
               child: child,
             );
           },
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              SocialIcon(
-                icon: FontAwesomeIcons.linux,
-                url: 'https://welledumacated.dev',
-                iconSize: iconSize,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SocialIcon(
+                    icon: FontAwesomeIcons.linux,
+                    url: 'https://welledumacated.dev',
+                    iconSize: iconSize,
+                  ),
+                  SizedBox(width: socialSpacing),
+                  SocialIcon(
+                    icon: FontAwesomeIcons.computer,
+                    url: 'https://archerwoods.dev',
+                    iconSize: iconSize,
+                  ),
+                  SizedBox(width: socialSpacing),
+                  SocialIcon(
+                    icon: FontAwesomeIcons.github,
+                    url: 'https://www.github.com/archieBTW',
+                    iconSize: iconSize,
+                  ),
+                  SizedBox(width: socialSpacing),
+                  SocialIcon(
+                    icon: FontAwesomeIcons.code,
+                    iconSize: iconSize,
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/source');
+                    },
+                  ),
+                  SizedBox(width: socialSpacing),
+                  SocialIcon(
+                    icon: FontAwesomeIcons.fire,
+                    iconSize: iconSize,
+                    tooltip: 'overheat',
+                    hoverColor: const Color(0xFFFF6F00),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        PageRouteBuilder(
+                          opaque: false,
+                          pageBuilder: (context, animation, secondaryAnimation) {
+                            return const OverheatPage();
+                          },
+                          transitionsBuilder:
+                              (context, animation, secondaryAnimation, child) {
+                            return FadeTransition(opacity: animation, child: child);
+                          },
+                        ),
+                      );
+                    },
+                  ),
+                ],
               ),
-              SizedBox(width: socialSpacing),
-              SocialIcon(
-                icon: FontAwesomeIcons.computer,
-                url: 'https://archerwoods.dev',
-                iconSize: iconSize,
-              ),
-              SizedBox(width: socialSpacing),
-              SocialIcon(
-                icon: FontAwesomeIcons.github,
-                url: 'https://www.github.com/archieBTW',
-                iconSize: iconSize,
-              ),
-              SizedBox(width: socialSpacing),
-              SocialIcon(
-                icon: FontAwesomeIcons.code,
-                iconSize: iconSize,
-                onPressed: () {
-                  Navigator.pushNamed(context, '/source');
-                },
-              ),
-              SizedBox(width: socialSpacing),
-              SocialIcon(
-                icon: FontAwesomeIcons.fire,
-                iconSize: iconSize,
-                tooltip: 'overheat',
-                hoverColor: const Color(0xFFFF6F00),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    PageRouteBuilder(
-                      opaque: false,
-                      pageBuilder: (context, animation, secondaryAnimation) {
-                        return const OverheatPage();
-                      },
-                      transitionsBuilder:
-                          (context, animation, secondaryAnimation, child) {
-                        return FadeTransition(opacity: animation, child: child);
-                      },
-                    ),
-                  );
-                },
-              ),
+              SizedBox(height: isDesktop ? 10.0 : 6.0),
+              const ChristmasCountdown(),
             ],
           ),
         ),
