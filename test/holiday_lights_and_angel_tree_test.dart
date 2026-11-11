@@ -22,8 +22,11 @@ void main() {
         angelTreeIconFinder,
       );
       expect(iconWidget.icon, equals(FontAwesomeIcons.tree));
-      expect(iconWidget.url, equals('https://saangeltree.org'));
-      expect(iconWidget.tooltip, contains('angel tree'));
+      expect(
+        iconWidget.url,
+        equals('https://www.salvationarmyusa.org/walmart-angel-tree/'),
+      );
+      expect(iconWidget.tooltip, contains('adopt'));
       expect(iconWidget.hoverColor, equals(kHolidayGreen));
     });
 

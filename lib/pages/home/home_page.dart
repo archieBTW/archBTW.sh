@@ -214,9 +214,9 @@ class _HomePageState extends State<HomePage>
                   SocialIcon(
                     key: const Key('angel_tree_button'),
                     icon: FontAwesomeIcons.tree,
-                    url: 'https://saangeltree.org',
+                    url: 'https://www.salvationarmyusa.org/walmart-angel-tree/',
                     iconSize: iconSize,
-                    tooltip: 'angel tree — adopt a family',
+                    tooltip: 'adopt an angel / family',
                     hoverColor: kHolidayGreen,
                   ),
                   SizedBox(width: socialSpacing),
