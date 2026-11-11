@@ -5,6 +5,7 @@ import 'package:archbtw_sh/pages/about/about.dart';
 import 'package:archbtw_sh/pages/error/kernel_panic_page.dart';
 import 'package:archbtw_sh/pages/home/home_page.dart';
 import 'package:archbtw_sh/pages/merch/merch__page.dart';
+import 'package:archbtw_sh/pages/music/album_item_list.dart';
 import 'package:archbtw_sh/pages/music/music_page.dart';
 import 'package:archbtw_sh/pages/overheat/overheat_page.dart';
 import 'package:archbtw_sh/widgets/floating_music_toast.dart';
@@ -43,10 +44,7 @@ class ArchWebsite extends StatelessWidget {
       ),
       builder: (context, child) {
         return Stack(
-          children: [
-            if (child != null) child,
-            const FloatingMusicToast(),
-          ],
+          children: [if (child != null) child, const FloatingMusicToast()],
         );
       },
       initialRoute: '/',
@@ -92,6 +90,11 @@ class _MainScreenState extends State<MainScreen> {
   bool _loadAbout = false;
   bool _loadMusic = false;
   bool _loadMerch = false;
+  bool _didPrecache = false;
+
+  Timer? _staggerTimer1;
+  Timer? _staggerTimer2;
+  Timer? _staggerTimer3;
 
   final Widget _homePage = const RepaintBoundary(child: HomePage());
   final Widget _aboutPage = const RepaintBoundary(child: AboutPage());
@@ -107,21 +110,52 @@ class _MainScreenState extends State<MainScreen> {
     _startStaggeredLoading();
   }
 
-  Future<void> _startStaggeredLoading() async {
-    await Future.delayed(const Duration(milliseconds: 2800));
-    if (!mounted) return;
-    setState(() => _loadAbout = true);
-    await Future.delayed(const Duration(milliseconds: 200));
-    if (!mounted) return;
-    setState(() => _loadMusic = true);
-    await Future.delayed(const Duration(milliseconds: 200));
-    if (!mounted) return;
-    setState(() => _loadMerch = true);
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_didPrecache) {
+      _didPrecache = true;
+      for (final item in albumItems) {
+        precacheImage(AssetImage(item.coverUrl), context);
+      }
+    }
+  }
+
+  void _startStaggeredLoading() {
+    _staggerTimer1 = Timer(const Duration(milliseconds: 300), () {
+      if (mounted) setState(() => _loadAbout = true);
+    });
+    _staggerTimer2 = Timer(const Duration(milliseconds: 400), () {
+      if (mounted) setState(() => _loadMusic = true);
+    });
+    _staggerTimer3 = Timer(const Duration(milliseconds: 500), () {
+      if (mounted) setState(() => _loadMerch = true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _staggerTimer1?.cancel();
+    _staggerTimer2?.cancel();
+    _staggerTimer3?.cancel();
+    super.dispose();
   }
 
   void _onItemTapped(int index) {
     setState(() {
       _currentIndex = index;
+      if (index == 1) {
+        _loadAbout = true;
+        _staggerTimer1?.cancel();
+      }
+      if (index == 2) {
+        _loadMusic = true;
+        _staggerTimer2?.cancel();
+      }
+      if (index == 3) {
+        _loadMerch = true;
+        _staggerTimer3?.cancel();
+      }
     });
   }
 

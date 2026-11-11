@@ -7,7 +7,8 @@ class AlbumSocialIcon extends StatelessWidget {
   final String url;
   final double size;
 
-  const AlbumSocialIcon({super.key, 
+  const AlbumSocialIcon({
+    super.key,
     required this.icon,
     required this.url,
     this.size = 18.0,
@@ -18,8 +19,8 @@ class AlbumSocialIcon extends StatelessWidget {
     return IconButton(
       icon: Icon(icon, color: Colors.grey, size: size),
       onPressed: () => openUrl(url),
-      splashColor: kAccentColor.withOpacity(0.3),
-      hoverColor: kAccentColor.withOpacity(0.1),
+      splashColor: kAccentColor.withValues(alpha: 0.3),
+      hoverColor: kAccentColor.withValues(alpha: 0.1),
     );
   }
 }

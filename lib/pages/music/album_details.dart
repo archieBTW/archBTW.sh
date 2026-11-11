@@ -114,10 +114,7 @@ class _AlbumDetailsState extends State<AlbumDetails> {
                           horizontal: 14,
                           vertical: 10,
                         ),
-                        side: const BorderSide(
-                          color: kAccentColor,
-                          width: 1.6,
-                        ),
+                        side: const BorderSide(color: kAccentColor, width: 1.6),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),

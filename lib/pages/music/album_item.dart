@@ -3,10 +3,10 @@ class AlbumItem {
   final String coverUrl;
   final String spotifyUrl;
   final String appleMusicUrl;
-  final String soundCloudUrl; 
+  final String soundCloudUrl;
   final String youtubeUrl;
-  final bool soundCloudOnly;    
-  final String lyrics;        
+  final bool soundCloudOnly;
+  final String lyrics;
   final List<String> tracks;
   final String audioPath;
   final bool isLocked;
