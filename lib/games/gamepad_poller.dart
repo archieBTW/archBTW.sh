@@ -31,3 +31,6 @@ class GamepadInputState {
 
 GamepadInputState pollGamepadState() => pollBrowserGamepad();
 
+List<GamepadInputState> pollAllGamepads() => pollAllBrowserGamepads();
+
+

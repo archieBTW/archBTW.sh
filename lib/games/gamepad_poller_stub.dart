@@ -4,3 +4,8 @@ GamepadInputState pollBrowserGamepad() {
   return GamepadInputState.disconnected;
 }
 
+List<GamepadInputState> pollAllBrowserGamepads() {
+  return const [];
+}
+
+

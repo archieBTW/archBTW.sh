@@ -75,13 +75,12 @@ void main() {
         // Zombies are spawned
         expect(state.zombies, isNotEmpty);
 
-        // Verify all 4 powerup types exist in the generated map: pill, guitar, spider, pigeon
+        // Verify all 3 powerup types exist in the generated map: pill, guitar, spider
         final Set<OkcPowerupType> spawnedTypes =
             state.powerups.map((p) => p.type).toSet();
         expect(spawnedTypes, contains(OkcPowerupType.pill));
         expect(spawnedTypes, contains(OkcPowerupType.guitar));
         expect(spawnedTypes, contains(OkcPowerupType.spider));
-        expect(spawnedTypes, contains(OkcPowerupType.pigeon));
       },
     );
 
@@ -159,7 +158,7 @@ void main() {
     );
 
     testWidgets(
-      'Powerups work: Pills heal, Guitar equips chord attacks, Spider enables web-swing, Pigeons give +1 life',
+      'Powerups work: Pills heal, Guitar equips chord attacks, Spider enables web-swing',
       (WidgetTester tester) async {
         await tester.pumpWidget(
           const MaterialApp(
@@ -170,13 +169,7 @@ void main() {
         final SuperArchBtwState state =
             tester.state<SuperArchBtwState>(find.byType(SuperArchBtw));
 
-        // 1. Pigeon gives +1 life
-        final int initialLives = state.lives;
-        state.collectPowerup(OkcPowerupType.pigeon);
-        await tester.pump();
-        expect(state.lives, equals(initialLives + 1));
-
-        // 2. Guitar equips as "fireflower" and fires power chords on attack
+        // 1. Guitar equips as "fireflower" and fires power chords on attack
         expect(state.hasGuitar, isFalse);
         state.collectPowerup(OkcPowerupType.guitar);
         await tester.pump();
@@ -187,7 +180,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 50));
         expect(state.chordProjectiles, isNotEmpty);
 
-        // 3. Spider powerup enables swinging from webs
+        // 2. Spider powerup enables swinging from webs
         expect(state.hasSpiderPower, isFalse);
         state.collectPowerup(OkcPowerupType.spider);
         await tester.pump();
@@ -201,7 +194,7 @@ void main() {
         await tester.pump();
         expect(state.isWebSwinging, isFalse);
 
-        // 4. Pill restores health
+        // 3. Pill restores health
         state.collectPowerup(OkcPowerupType.pill);
         await tester.pump();
         expect(state.health, equals(state.maxHealth));
@@ -312,6 +305,153 @@ void main() {
         expect(state.isControllerConnected, isTrue);
         expect(state.playerX, greaterThan(xBeforePad));
 
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'Allows selecting either playable character in 1P mode, greys out 2P unless 2 controllers are connected on desktop, and supports 2-controller co-op',
+      (WidgetTester tester) async {
+        // Use a desktop viewport so 2P mode can unlock once 2 controllers connect
+        tester.view.physicalSize = const Size(1440, 900);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: SuperArchBtw(),
+          ),
+        );
+
+        final SuperArchBtwState state =
+            tester.state<SuperArchBtwState>(find.byType(SuperArchBtw));
+
+        // 1. Default is archBTW in 1-Player mode with 0 controllers connected
+        expect(state.selectedCharacter, equals(OkcCharacterType.archBtw));
+        expect(state.playerCount, equals(1));
+        expect(state.connectedControllerCount, equals(0));
+        expect(state.canPlayTwoPlayers, isFalse);
+
+        // Verify the 2 PLAYER button is greyed out / disabled when < 2 controllers are connected
+        final OutlinedButton mode2pBefore = tester.widget<OutlinedButton>(
+          find.byKey(const Key('mode_2p_button')),
+        );
+        expect(mode2pBefore.onPressed, isNull);
+
+        // Selecting 2P while < 2 controllers are connected stays in 1P mode
+        state.selectPlayerCount(2);
+        await tester.pump();
+        expect(state.playerCount, equals(1));
+
+        // 2. Player can select Pigeon as the playable character on the title screen
+        expect(find.text('PIGEON'), findsOneWidget);
+        await tester.tap(find.byKey(const Key('select_char_pigeon')));
+        await tester.pump();
+        expect(state.selectedCharacter, equals(OkcCharacterType.pigeon));
+
+        await tester.tap(find.byKey(const Key('select_char_archbtw')));
+        await tester.pump();
+        expect(state.selectedCharacter, equals(OkcCharacterType.archBtw));
+
+        // 3. Connect only 1 controller -> 2P button remains disabled
+        state.applyControllerInput(
+          const GamepadInputState(
+            connected: true,
+            id: 'Controller 1',
+          ),
+        );
+        await tester.pump();
+        expect(state.connectedControllerCount, equals(1));
+        expect(state.canPlayTwoPlayers, isFalse);
+        expect(
+          tester
+              .widget<OutlinedButton>(find.byKey(const Key('mode_2p_button')))
+              .onPressed,
+          isNull,
+        );
+
+        // 4. Connect a second controller on desktop -> 2P button becomes enabled!
+        state.applySecondControllerInput(
+          const GamepadInputState(
+            connected: true,
+            id: 'Controller 2',
+          ),
+        );
+        await tester.pump();
+        expect(state.connectedControllerCount, equals(2));
+        expect(state.canPlayTwoPlayers, isTrue);
+        expect(
+          tester
+              .widget<OutlinedButton>(find.byKey(const Key('mode_2p_button')))
+              .onPressed,
+          isNotNull,
+        );
+
+        // Tap the 2P mode button and start the game
+        await tester.tap(find.byKey(const Key('mode_2p_button')));
+        await tester.pump();
+        expect(state.playerCount, equals(2));
+
+        await tester.tap(find.byKey(const Key('start_game_button')));
+        await tester.pump();
+        expect(state.isTitleScreenShowing, isFalse);
+
+        // 5. Controller 1 moves Player 1 right while Controller 2 moves Player 2 right & punches
+        final double p1StartX = state.playerX;
+        final double p2StartX = state.player2X;
+
+        state.applyTwoPlayerControllerInput(
+          const GamepadInputState(
+            connected: true,
+            id: 'Controller 1',
+            axisX: 1.0,
+          ),
+          const GamepadInputState(
+            connected: true,
+            id: 'Controller 2',
+            axisX: 1.0,
+            punchPressed: true,
+          ),
+        );
+        for (int i = 0; i < 8; i++) {
+          await tester.pump(const Duration(milliseconds: 30));
+        }
+
+        expect(state.playerX, greaterThan(p1StartX));
+        expect(state.player2X, greaterThan(p2StartX));
+
+        // 6. Releasing movement and jumping then landing resets walkCycle back to 0.0 (two-legged idle)
+        state.applyTwoPlayerControllerInput(
+          const GamepadInputState(
+            connected: true,
+            id: 'Controller 1',
+            jumpPressed: true,
+          ),
+          const GamepadInputState(
+            connected: true,
+            id: 'Controller 2',
+            jumpPressed: true,
+          ),
+        );
+        for (int i = 0; i < 6; i++) {
+          await tester.pump(const Duration(milliseconds: 30));
+        }
+        expect(state.playerY, greaterThan(0.0));
+        expect(state.player2Y, greaterThan(0.0));
+
+        // Let both characters fall back to the ground with no horizontal input
+        state.applyTwoPlayerControllerInput(
+          const GamepadInputState(connected: true, id: 'Controller 1'),
+          const GamepadInputState(connected: true, id: 'Controller 2'),
+        );
+        for (int i = 0; i < 40; i++) {
+          await tester.pump(const Duration(milliseconds: 30));
+        }
+        expect(state.isGrounded, isTrue);
+        expect(state.player2IsGrounded, isTrue);
+        expect(state.walkCycle, equals(0.0));
+        expect(state.player2WalkCycle, equals(0.0));
         expect(tester.takeException(), isNull);
       },
     );

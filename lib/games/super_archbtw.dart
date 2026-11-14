@@ -10,11 +10,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 
+enum OkcCharacterType {
+  archBtw,
+  pigeon,
+}
+
 enum OkcPowerupType {
   pill,
   guitar,
   spider,
-  pigeon,
 }
 
 enum OkcZombieKind {
@@ -288,7 +292,12 @@ class SuperArchBtwState extends State<SuperArchBtw>
   int _mapGenerationCount = 0;
   late OkcLevelMap _currentMap;
 
-  // Player (archBTW) state
+  // Character & Mode Selection (1P vs 2P Controller Co-Op)
+  OkcCharacterType _selectedCharacter = OkcCharacterType.archBtw;
+  int _playerCount = 1; // 1 = Single Player, 2 = 2-Player Co-Op (requires 2 controllers on desktop)
+  bool _isCompactViewport = false;
+
+  // Player 1 state
   double _playerX = 160.0;
   double _playerY = 0.0;
   double _playerVx = 0.0;
@@ -297,6 +306,29 @@ class SuperArchBtwState extends State<SuperArchBtw>
   bool _isGrounded = true;
   int _jumpsRemaining = 2;
   double _walkCycle = 0.0;
+
+  // Player 2 state (active when _playerCount == 2)
+  double _player2X = 192.0;
+  double _player2Y = 0.0;
+  double _player2Vx = 0.0;
+  double _player2Vy = 0.0;
+  bool _player2FacingRight = true;
+  bool _player2IsGrounded = true;
+  int _player2JumpsRemaining = 2;
+  double _player2WalkCycle = 0.0;
+  int _player2Health = 100;
+  double _player2InvulnerableTimer = 0.0;
+  OkcAttackKind _player2CurrentAttack = OkcAttackKind.none;
+  double _player2AttackTimer = 0.0;
+  double _player2AttackCooldown = 0.0;
+  bool _player2HasGuitar = false;
+  bool _player2HasSpiderPower = false;
+  bool _player2IsWebSwinging = false;
+  Offset? _player2ActiveWebAnchor;
+  double _player2WebRopeLength = 135.0;
+  double _player2WebAngle = 0.0;
+  double _player2WebAngularVel = 0.0;
+  double _player2WebSwingTimer = 0.0;
 
   int _health = 100;
   static const int _maxHealth = 100;
@@ -363,7 +395,7 @@ class SuperArchBtwState extends State<SuperArchBtw>
   double _cameraX = 0.0;
   double _lastWorldScale = 1.0;
 
-  // Input state: Keyboard + Touch Joystick/Buttons + Gamepad Controller
+  // Input state: Keyboard + Touch Joystick/Buttons + Gamepad Controllers (1 & 2)
   final Set<LogicalKeyboardKey> _keysPressed = {};
   int? _joystickPointerId;
   Offset _joystickCenter = Offset.zero;
@@ -378,6 +410,10 @@ class SuperArchBtwState extends State<SuperArchBtw>
   GamepadInputState _gamepadState = GamepadInputState.disconnected;
   GamepadInputState _prevGamepadState = GamepadInputState.disconnected;
   GamepadInputState? _injectedGamepadState;
+
+  GamepadInputState _gamepad2State = GamepadInputState.disconnected;
+  GamepadInputState _prevGamepad2State = GamepadInputState.disconnected;
+  GamepadInputState? _injectedGamepad2State;
 
   // Public getters for inspection and testing
   int get level => _level;
@@ -400,6 +436,40 @@ class SuperArchBtwState extends State<SuperArchBtw>
   bool get isTitleScreenShowing => _showTitleScreen;
   double get playerX => _playerX;
   double get playerY => _playerY;
+  bool get isGrounded => _isGrounded;
+  double get walkCycle => _walkCycle;
+  double get player2X => _player2X;
+  double get player2Y => _player2Y;
+  bool get player2IsGrounded => _player2IsGrounded;
+  double get player2WalkCycle => _player2WalkCycle;
+  int get player2Health => _player2Health;
+  bool get player2FacingRight => _player2FacingRight;
+  OkcAttackKind get player2CurrentAttack => _player2CurrentAttack;
+  bool get player2HasGuitar => _player2HasGuitar;
+  bool get player2HasSpiderPower => _player2HasSpiderPower;
+  bool get player2IsWebSwinging => _player2IsWebSwinging;
+  OkcCharacterType get selectedCharacter => _selectedCharacter;
+  OkcCharacterType get player2Character =>
+      _selectedCharacter == OkcCharacterType.archBtw
+          ? OkcCharacterType.pigeon
+          : OkcCharacterType.archBtw;
+  int get playerCount => _playerCount;
+  int get connectedControllerCount {
+    if (_injectedGamepadState != null || _injectedGamepad2State != null) {
+      int cnt = 0;
+      if (_injectedGamepadState?.connected ?? false) cnt++;
+      if (_injectedGamepad2State?.connected ?? false) cnt++;
+      return cnt;
+    }
+    int cnt = 0;
+    if (_gamepadState.connected) cnt++;
+    if (_gamepad2State.connected) cnt++;
+    return cnt;
+  }
+
+  bool get canPlayTwoPlayers =>
+      !_isCompactViewport && connectedControllerCount >= 2;
+
   double get gooseX => _gooseX;
   double get gooseY => _gooseY;
   double get tortieCatX => _currentMap.tortieCatX;
@@ -413,6 +483,7 @@ class SuperArchBtwState extends State<SuperArchBtw>
   List<OkcPowerupItem> get powerups => _powerups;
   List<OkcChordProjectile> get chordProjectiles => _chordProjectiles;
   bool get isControllerConnected => _gamepadState.connected;
+  bool get isSecondControllerConnected => _gamepad2State.connected;
 
   @override
   void initState() {
@@ -682,6 +753,17 @@ class SuperArchBtwState extends State<SuperArchBtw>
     _jumpsRemaining = 2;
     _isWebSwinging = false;
     _activeWebAnchor = null;
+
+    _player2X = 190.0;
+    _player2Y = 0.0;
+    _player2Vx = 0.0;
+    _player2Vy = 0.0;
+    _player2FacingRight = true;
+    _player2IsGrounded = true;
+    _player2JumpsRemaining = 2;
+    _player2IsWebSwinging = false;
+    _player2ActiveWebAnchor = null;
+
     _hasCatFood = false;
     _tortieCatFed = false;
     _cameraX = 0.0;
@@ -736,22 +818,6 @@ class SuperArchBtwState extends State<SuperArchBtw>
           type: OkcPowerupType.pill,
           x: pillX,
           y: _elevationAt(pillX, platforms) + 24.0,
-          bobPhase: rng.nextDouble() * pi * 2,
-        ),
-      );
-    }
-
-    // 4. Pigeons (+1 Life)
-    for (int i = 0; i < 2; i++) {
-      final double pigeonX =
-          640.0 + i * ((levelLength - 900.0) / 2.0) + rng.nextDouble() * 110.0;
-      final double baseElev = _elevationAt(pigeonX, platforms);
-      _powerups.add(
-        OkcPowerupItem(
-          id: _nextEntityId++,
-          type: OkcPowerupType.pigeon,
-          x: pigeonX,
-          y: max(84.0, baseElev + 36.0),
           bobPhase: rng.nextDouble() * pi * 2,
         ),
       );
@@ -834,6 +900,7 @@ class SuperArchBtwState extends State<SuperArchBtw>
   void resetFullGame() {
     setState(() {
       _health = _maxHealth;
+      _player2Health = _maxHealth;
       _lives = 3;
       _score = 0;
       _zombiesDefeated = 0;
@@ -841,10 +908,27 @@ class SuperArchBtwState extends State<SuperArchBtw>
       _comboTimer = 0.0;
       _hasGuitar = false;
       _hasSpiderPower = false;
+      _player2HasGuitar = false;
+      _player2HasSpiderPower = false;
       _isRidingGoose = false;
       _isGameOver = false;
       _playlist.shuffle(_masterRng);
       _generateAndLoadLevel(1);
+    });
+  }
+
+  // --- Character & Player Count Selection ---
+
+  void selectCharacter(OkcCharacterType character) {
+    setState(() {
+      _selectedCharacter = character;
+    });
+  }
+
+  void selectPlayerCount(int count) {
+    if (count == 2 && !canPlayTwoPlayers) return;
+    setState(() {
+      _playerCount = count.clamp(1, 2);
     });
   }
 
@@ -853,6 +937,9 @@ class SuperArchBtwState extends State<SuperArchBtw>
   void dismissTitleScreen() {
     if (_showTitleScreen) {
       setState(() {
+        if (!canPlayTwoPlayers) {
+          _playerCount = 1;
+        }
         _showTitleScreen = false;
       });
     }
@@ -1063,15 +1150,24 @@ class SuperArchBtwState extends State<SuperArchBtw>
     });
   }
 
-  void collectPowerup(OkcPowerupType type, {double? atX, double? atY}) {
-    final double px = atX ?? _playerX;
-    final double py = (atY ?? _playerY) + 64.0;
+  void collectPowerup(
+    OkcPowerupType type, {
+    double? atX,
+    double? atY,
+    bool forPlayer2 = false,
+  }) {
+    final double px = atX ?? (forPlayer2 ? _player2X : _playerX);
+    final double py = (atY ?? (forPlayer2 ? _player2Y : _playerY)) + 64.0;
 
     setState(() {
       _showTitleScreen = false;
       switch (type) {
         case OkcPowerupType.pill:
-          _health = min(_maxHealth, _health + 30);
+          if (forPlayer2) {
+            _player2Health = min(_maxHealth, _player2Health + 30);
+          } else {
+            _health = min(_maxHealth, _health + 30);
+          }
           _score += 100;
           _popups.add(
             OkcFloatingPopup(
@@ -1084,6 +1180,7 @@ class SuperArchBtwState extends State<SuperArchBtw>
           break;
         case OkcPowerupType.guitar:
           _hasGuitar = true;
+          _player2HasGuitar = true;
           _score += 250;
           _popups.add(
             OkcFloatingPopup(
@@ -1096,6 +1193,7 @@ class SuperArchBtwState extends State<SuperArchBtw>
           break;
         case OkcPowerupType.spider:
           _hasSpiderPower = true;
+          _player2HasSpiderPower = true;
           _score += 250;
           _popups.add(
             OkcFloatingPopup(
@@ -1103,18 +1201,6 @@ class SuperArchBtwState extends State<SuperArchBtw>
               y: py,
               text: 'SPIDER POWER! WEB SWING!',
               color: const Color(0xFF3CBCFC),
-            ),
-          );
-          break;
-        case OkcPowerupType.pigeon:
-          _lives += 1;
-          _score += 300;
-          _popups.add(
-            OkcFloatingPopup(
-              x: px,
-              y: py,
-              text: '1-UP! PIGEON +1 LIFE!',
-              color: const Color(0xFFF8B800),
             ),
           );
           break;
@@ -1130,6 +1216,7 @@ class SuperArchBtwState extends State<SuperArchBtw>
       _tortieCatFed = true;
       _score += 500 * _level;
       _health = min(_maxHealth, _health + 25);
+      _player2Health = min(_maxHealth, _player2Health + 25);
       _levelClearBannerTimer = 1.8;
       _generateAndLoadLevel(_level + 1);
     });
@@ -1147,7 +1234,35 @@ class SuperArchBtwState extends State<SuperArchBtw>
       _showTitleScreen = false;
     }
     _injectedGamepadState = gamepad;
+    _gamepadState = gamepad;
     _processGamepadEdges(gamepad);
+  }
+
+  void applySecondControllerInput(GamepadInputState gamepad2) {
+    _injectedGamepad2State = gamepad2;
+    _gamepad2State = gamepad2;
+    if (_playerCount == 2) {
+      _processGamepad2Edges(gamepad2);
+    }
+  }
+
+  void applyTwoPlayerControllerInput(
+    GamepadInputState gamepad1,
+    GamepadInputState gamepad2,
+  ) {
+    setState(() {
+      _injectedGamepadState = gamepad1;
+      _injectedGamepad2State = gamepad2;
+      _gamepadState = gamepad1;
+      _gamepad2State = gamepad2;
+      if (!canPlayTwoPlayers && _playerCount == 2) {
+        _playerCount = 1;
+      }
+      _processGamepadEdges(gamepad1);
+      if (_playerCount == 2) {
+        _processGamepad2Edges(gamepad2);
+      }
+    });
   }
 
   void _processGamepadEdges(GamepadInputState pad) {
@@ -1184,6 +1299,200 @@ class SuperArchBtwState extends State<SuperArchBtw>
     _prevGamepadState = pad;
   }
 
+  void _processGamepad2Edges(GamepadInputState pad2) {
+    if (!pad2.connected || _playerCount < 2) {
+      _prevGamepad2State = pad2;
+      return;
+    }
+    if (pad2.jumpPressed && !_prevGamepad2State.jumpPressed) {
+      triggerPlayer2Jump();
+    }
+    if (pad2.punchPressed && !_prevGamepad2State.punchPressed) {
+      triggerPlayer2Punch();
+    }
+    if (pad2.kickPressed && !_prevGamepad2State.kickPressed) {
+      triggerPlayer2Kick();
+    }
+    if (pad2.chordPressed && !_prevGamepad2State.chordPressed) {
+      triggerPlayer2ChordAttack();
+    }
+    if (pad2.webPressed && !_prevGamepad2State.webPressed) {
+      triggerPlayer2WebSwing();
+    } else if (!pad2.webPressed &&
+        _prevGamepad2State.webPressed &&
+        _player2IsWebSwinging) {
+      releasePlayer2WebSwing();
+    }
+    _prevGamepad2State = pad2;
+  }
+
+  void triggerPlayer2Jump() {
+    if (_isGameOver || _playerCount < 2) return;
+    _showTitleScreen = false;
+    if (_player2IsWebSwinging) {
+      releasePlayer2WebSwing(launchBoost: true);
+      return;
+    }
+    if (_player2IsGrounded || _player2JumpsRemaining > 0) {
+      setState(() {
+        _player2Vy = _baseJumpVelocity;
+        _player2IsGrounded = false;
+        if (_player2JumpsRemaining > 0) _player2JumpsRemaining--;
+      });
+    }
+  }
+
+  void triggerPlayer2Punch() {
+    if (_isGameOver || _playerCount < 2 || _player2AttackCooldown > 0.0) return;
+    _showTitleScreen = false;
+    setState(() {
+      _player2CurrentAttack = OkcAttackKind.punch;
+      _player2AttackTimer = 0.22;
+      _player2AttackCooldown = 0.16;
+      _performMeleeStrikeAt(
+        originX: _player2X,
+        originY: _player2Y,
+        isFacingRight: _player2FacingRight,
+        reach: 72.0,
+        damage: 25,
+        knockbackX: 165.0,
+        knockbackY: 140.0,
+        hitLabel: 'P2 POW!',
+      );
+      if (_player2HasGuitar) {
+        _spawnChordProjectileFrom(
+          originX: _player2X,
+          originY: _player2Y + 38.0,
+          isFacingRight: _player2FacingRight,
+        );
+      }
+    });
+  }
+
+  void triggerPlayer2Kick() {
+    if (_isGameOver || _playerCount < 2) return;
+    _showTitleScreen = false;
+    if (_player2CurrentAttack == OkcAttackKind.kick &&
+        _player2AttackCooldown > 0.0) {
+      return;
+    }
+    setState(() {
+      _player2CurrentAttack = OkcAttackKind.kick;
+      _player2AttackTimer = 0.30;
+      _player2AttackCooldown = 0.24;
+      _player2Vx = (_player2FacingRight ? 1.0 : -1.0) * 140.0;
+      _performMeleeStrikeAt(
+        originX: _player2X,
+        originY: _player2Y,
+        isFacingRight: _player2FacingRight,
+        reach: 88.0,
+        damage: 40,
+        knockbackX: 280.0,
+        knockbackY: 220.0,
+        hitLabel: 'P2 BOOT KICK!',
+      );
+    });
+  }
+
+  void triggerPlayer2ChordAttack() {
+    if (_isGameOver || _playerCount < 2) return;
+    _showTitleScreen = false;
+    if (!_player2HasGuitar) {
+      triggerPlayer2Punch();
+      return;
+    }
+    if (_player2AttackCooldown > 0.0) return;
+    setState(() {
+      _player2CurrentAttack = OkcAttackKind.chord;
+      _player2AttackTimer = 0.26;
+      _player2AttackCooldown = 0.20;
+      _spawnChordProjectileFrom(
+        originX: _player2X,
+        originY: _player2Y + 38.0,
+        isFacingRight: _player2FacingRight,
+      );
+    });
+  }
+
+  void _spawnChordProjectileFrom({
+    required double originX,
+    required double originY,
+    required bool isFacingRight,
+  }) {
+    final String chordName =
+        _powerChords[(_chordCycleIndex++) % _powerChords.length];
+    final double dir = isFacingRight ? 1.0 : -1.0;
+    final List<Color> chordColors = const [
+      Color(0xFFB878F8),
+      Color(0xFF3CBCFC),
+      Color(0xFFF83870),
+      Color(0xFFF8B800),
+    ];
+    final Color cColor = chordColors[_chordCycleIndex % chordColors.length];
+
+    _chordProjectiles.add(
+      OkcChordProjectile(
+        x: originX + dir * 28.0,
+        y: originY,
+        vx: dir * 480.0,
+        chordName: chordName,
+        color: cColor,
+      ),
+    );
+  }
+
+  void triggerPlayer2WebSwing() {
+    if (_isGameOver || _playerCount < 2 || !_player2HasSpiderPower) return;
+    if (_player2IsWebSwinging) return;
+
+    final double dir = _player2FacingRight ? 1.0 : -1.0;
+    Offset? bestAnchor;
+    double bestScore = double.infinity;
+
+    for (final anchor in _currentMap.webAnchors) {
+      final double dx = anchor.dx - _player2X;
+      if (dx * dir >= -30.0 && dx.abs() <= 260.0) {
+        final double score = (dx - dir * 95.0).abs();
+        if (score < bestScore) {
+          bestScore = score;
+          bestAnchor = anchor;
+        }
+      }
+    }
+
+    bestAnchor ??= Offset(
+      (_player2X + dir * 95.0).clamp(60.0, _currentMap.levelLength - 60.0),
+      max(245.0, _player2Y + 140.0),
+    );
+
+    setState(() {
+      _player2IsWebSwinging = true;
+      _player2ActiveWebAnchor = bestAnchor;
+      _player2IsGrounded = false;
+      _player2WebSwingTimer = 0.0;
+      if (_player2Y < 45.0) {
+        _player2Y = 45.0;
+      }
+      final double dx = _player2X - bestAnchor!.dx;
+      final double dy = bestAnchor.dy - _player2Y;
+      _player2WebRopeLength = sqrt(dx * dx + dy * dy).clamp(90.0, 175.0);
+      _player2WebAngle = atan2(dx, max(20.0, dy));
+      _player2WebAngularVel = dir * 3.35;
+    });
+  }
+
+  void releasePlayer2WebSwing({bool launchBoost = false}) {
+    if (!_player2IsWebSwinging) return;
+    final double dir = _player2FacingRight ? 1.0 : -1.0;
+    setState(() {
+      _player2IsWebSwinging = false;
+      _player2ActiveWebAnchor = null;
+      _player2Vx = dir * (launchBoost ? 390.0 : 320.0);
+      _player2Vy = launchBoost ? 450.0 : 280.0;
+      _player2JumpsRemaining = 1;
+    });
+  }
+
   void _performMeleeStrike({
     required double reach,
     required int damage,
@@ -1191,15 +1500,37 @@ class SuperArchBtwState extends State<SuperArchBtw>
     required double knockbackY,
     required String hitLabel,
   }) {
-    final double dir = _facingRight ? 1.0 : -1.0;
-    final double hitMinX = _facingRight ? _playerX - 18.0 : _playerX - reach;
-    final double hitMaxX = _facingRight ? _playerX + reach : _playerX + 18.0;
+    _performMeleeStrikeAt(
+      originX: _playerX,
+      originY: _playerY,
+      isFacingRight: _facingRight,
+      reach: reach,
+      damage: damage,
+      knockbackX: knockbackX,
+      knockbackY: knockbackY,
+      hitLabel: hitLabel,
+    );
+  }
+
+  void _performMeleeStrikeAt({
+    required double originX,
+    required double originY,
+    required bool isFacingRight,
+    required double reach,
+    required int damage,
+    required double knockbackX,
+    required double knockbackY,
+    required String hitLabel,
+  }) {
+    final double dir = isFacingRight ? 1.0 : -1.0;
+    final double hitMinX = isFacingRight ? originX - 18.0 : originX - reach;
+    final double hitMaxX = isFacingRight ? originX + reach : originX + 18.0;
 
     bool hitAny = false;
     for (final z in _zombies) {
       if (z.hp <= 0) continue;
       final bool inX = z.x >= hitMinX && z.x <= hitMaxX;
-      final bool inY = (z.y - _playerY).abs() <= 72.0;
+      final bool inY = (z.y - originY).abs() <= 72.0;
       if (inX && inY) {
         _damageZombie(
           z,
@@ -1215,8 +1546,8 @@ class SuperArchBtwState extends State<SuperArchBtw>
       _screenShakeTimer = 0.12;
       _popups.add(
         OkcFloatingPopup(
-          x: _playerX + dir * 42.0,
-          y: _playerY + 72.0,
+          x: originX + dir * 42.0,
+          y: originY + 72.0,
           text: hitLabel,
           color: const Color(0xFFF8B800),
           life: 0.65,
@@ -1350,6 +1681,47 @@ class SuperArchBtwState extends State<SuperArchBtw>
     }
   }
 
+  void _onPlayer2Damaged(int dmg, double sourceX) {
+    if (_player2InvulnerableTimer > 0.0 || _isGameOver || _playerCount < 2) {
+      return;
+    }
+    if (_showTitleScreen) return;
+
+    _player2Health -= dmg;
+    _player2InvulnerableTimer = 1.05;
+    _screenShakeTimer = 0.18;
+    _player2Vx = (_player2X >= sourceX ? 1.0 : -1.0) * 210.0;
+    _player2Vy = 250.0;
+    _player2IsGrounded = false;
+    _spawnBurstParticles(
+      _player2X,
+      _player2Y + 36.0,
+      const Color(0xFFF83870),
+      count: 12,
+    );
+
+    if (_player2Health <= 0) {
+      if (_lives > 1) {
+        _lives--;
+        _player2Health = _maxHealth;
+        _player2InvulnerableTimer = 2.0;
+        _player2Vy = 340.0;
+        _popups.add(
+          OkcFloatingPopup(
+            x: _player2X,
+            y: _player2Y + 88.0,
+            text: 'P2 LIFE LOST! ($_lives LEFT)',
+            color: const Color(0xFFF8B800),
+          ),
+        );
+      } else {
+        _player2Health = 0;
+        _lives = 0;
+        _isGameOver = true;
+      }
+    }
+  }
+
   // --- Main Game Loop ---
   void _onTick(Duration elapsed) {
     final double rawDt = _lastElapsed == Duration.zero
@@ -1372,6 +1744,9 @@ class SuperArchBtwState extends State<SuperArchBtw>
       if (_invulnerableTimer > 0) {
         _invulnerableTimer = max(0.0, _invulnerableTimer - dt);
       }
+      if (_player2InvulnerableTimer > 0) {
+        _player2InvulnerableTimer = max(0.0, _player2InvulnerableTimer - dt);
+      }
       if (_attackTimer > 0) {
         _attackTimer = max(0.0, _attackTimer - dt);
         if (_attackTimer <= 0) {
@@ -1380,6 +1755,15 @@ class SuperArchBtwState extends State<SuperArchBtw>
       }
       if (_attackCooldown > 0) {
         _attackCooldown = max(0.0, _attackCooldown - dt);
+      }
+      if (_player2AttackTimer > 0) {
+        _player2AttackTimer = max(0.0, _player2AttackTimer - dt);
+        if (_player2AttackTimer <= 0) {
+          _player2CurrentAttack = OkcAttackKind.none;
+        }
+      }
+      if (_player2AttackCooldown > 0) {
+        _player2AttackCooldown = max(0.0, _player2AttackCooldown - dt);
       }
       if (_gooseChompTimer > 0) {
         _gooseChompTimer = max(0.0, _gooseChompTimer - dt);
@@ -1394,12 +1778,27 @@ class SuperArchBtwState extends State<SuperArchBtw>
 
       if (_isGameOver) return;
 
-      final GamepadInputState livePad =
-          _injectedGamepadState ?? pollGamepadState();
-      _gamepadState = livePad;
-      _processGamepadEdges(livePad);
+      final List<GamepadInputState> livePads = pollAllGamepads();
+      final GamepadInputState livePad1 = _injectedGamepadState ??
+          (livePads.isNotEmpty ? livePads[0] : GamepadInputState.disconnected);
+      final GamepadInputState livePad2 = _injectedGamepad2State ??
+          (livePads.length >= 2 ? livePads[1] : GamepadInputState.disconnected);
+      _gamepadState = livePad1;
+      _gamepad2State = livePad2;
+
+      if (!canPlayTwoPlayers && _playerCount == 2) {
+        _playerCount = 1;
+      }
+
+      _processGamepadEdges(livePad1);
+      if (_playerCount == 2) {
+        _processGamepad2Edges(livePad2);
+      }
 
       _updatePlayerPhysics(dt);
+      if (_playerCount == 2) {
+        _updatePlayer2Physics(dt);
+      }
       _updateGoose(dt);
       _updateChordProjectiles(dt);
       _updatePowerups(dt);
@@ -1527,6 +1926,101 @@ class SuperArchBtwState extends State<SuperArchBtw>
       _walkCycle += dt * (11.0 * speedMult);
     } else if (!_isGrounded) {
       _walkCycle += dt * 4.0;
+    } else {
+      _walkCycle = 0.0;
+    }
+  }
+
+  void _updatePlayer2Physics(double dt) {
+    double moveAxisX = 0.0;
+    if (_gamepad2State.connected && _gamepad2State.axisX.abs() > 0.18) {
+      moveAxisX = _gamepad2State.axisX;
+    }
+    moveAxisX = moveAxisX.clamp(-1.0, 1.0);
+
+    if (moveAxisX.abs() > 0.05) {
+      _player2FacingRight = moveAxisX > 0;
+    }
+
+    if (_player2IsWebSwinging && _player2ActiveWebAnchor != null) {
+      _player2WebSwingTimer += dt;
+      final Offset anchor = _player2ActiveWebAnchor!;
+      final double gravityTorque = -6.8 * sin(_player2WebAngle);
+      final double pumpTorque =
+          (moveAxisX != 0 ? moveAxisX : (_player2FacingRight ? 1.0 : -1.0)) *
+              4.2;
+      _player2WebAngularVel += (gravityTorque + pumpTorque) * dt;
+      _player2WebAngularVel *= 0.992;
+      _player2WebAngle += _player2WebAngularVel * dt;
+
+      _player2X = (anchor.dx + sin(_player2WebAngle) * _player2WebRopeLength)
+          .clamp(35.0, _currentMap.levelLength - 35.0);
+      _player2Y =
+          max(22.0, anchor.dy - cos(_player2WebAngle) * _player2WebRopeLength);
+      _player2WalkCycle += dt * 10.0;
+
+      for (final z in _zombies) {
+        if (z.hp > 0 &&
+            (z.x - _player2X).abs() < 44.0 &&
+            (z.y - _player2Y).abs() < 54.0) {
+          _damageZombie(
+            z,
+            damage: 30,
+            knockVx: (_player2FacingRight ? 1.0 : -1.0) * 240.0,
+            knockVy: 180.0,
+          );
+        }
+      }
+
+      final bool holdingWeb =
+          _gamepad2State.connected && _gamepad2State.webPressed;
+      if (_player2WebSwingTimer > 0.62 && !holdingWeb) {
+        releasePlayer2WebSwing(launchBoost: true);
+      } else if (_player2WebSwingTimer > 1.45) {
+        releasePlayer2WebSwing(launchBoost: true);
+      }
+      return;
+    }
+
+    final double targetVx = moveAxisX * _baseMoveSpeed;
+    _player2Vx = _player2Vx * 0.72 + targetVx * 0.28;
+
+    final double prevY = _player2Y;
+    _player2X = (_player2X + _player2Vx * dt)
+        .clamp(35.0, _currentMap.levelLength - 35.0);
+    _player2Vy -= _gravity * dt;
+    _player2Y += _player2Vy * dt;
+
+    bool landed = false;
+    if (_player2Vy <= 0.0) {
+      for (final plat in _currentMap.platforms) {
+        if (_player2X >= plat.xMin - 12.0 &&
+            _player2X <= plat.xMax + 12.0 &&
+            prevY >= plat.elevation - 4.0 &&
+            _player2Y <= plat.elevation) {
+          _player2Y = plat.elevation;
+          _player2Vy = 0.0;
+          _player2IsGrounded = true;
+          _player2JumpsRemaining = 2;
+          landed = true;
+          break;
+        }
+      }
+    }
+
+    if (!landed && _player2Y <= 0.0) {
+      _player2Y = 0.0;
+      _player2Vy = 0.0;
+      _player2IsGrounded = true;
+      _player2JumpsRemaining = 2;
+    }
+
+    if (moveAxisX.abs() > 0.05 && _player2IsGrounded) {
+      _player2WalkCycle += dt * 11.0;
+    } else if (!_player2IsGrounded) {
+      _player2WalkCycle += dt * 4.0;
+    } else {
+      _player2WalkCycle = 0.0;
     }
   }
 
@@ -1604,14 +2098,15 @@ class SuperArchBtwState extends State<SuperArchBtw>
       item.bobPhase += dt * 3.8;
       item.y = item.baseY + sin(item.bobPhase) * 6.0;
 
-      if (item.type == OkcPowerupType.pigeon) {
-        item.x += cos(item.bobPhase * 0.7) * 14.0 * dt;
-      }
-
       if ((_playerX - item.x).abs() < 44.0 &&
           ((_playerY + 28.0) - item.y).abs() < 50.0) {
         item.collected = true;
         collectPowerup(item.type, atX: item.x, atY: item.y);
+      } else if (_playerCount == 2 &&
+          (_player2X - item.x).abs() < 44.0 &&
+          ((_player2Y + 28.0) - item.y).abs() < 50.0) {
+        item.collected = true;
+        collectPowerup(item.type, atX: item.x, atY: item.y, forPlayer2: true);
       }
     }
     _powerups.removeWhere((p) => p.collected);
@@ -1641,11 +2136,18 @@ class SuperArchBtwState extends State<SuperArchBtw>
       }
 
       if (z.hurtTimer <= 0.0) {
-        final double distToPlayer = _playerX - z.x;
+        double targetX = _playerX;
+        double targetY = _playerY;
+        if (_playerCount == 2 &&
+            (_player2X - z.x).abs() < (_playerX - z.x).abs()) {
+          targetX = _player2X;
+          targetY = _player2Y;
+        }
+        final double distToPlayer = targetX - z.x;
         final double baseSpeed = z.kind == OkcZombieKind.walker
             ? 52.0
             : (z.kind == OkcZombieKind.runner ? 98.0 : 38.0);
-        if (distToPlayer.abs() < 260.0 && (z.y - _playerY).abs() < 65.0) {
+        if (distToPlayer.abs() < 260.0 && (z.y - targetY).abs() < 65.0) {
           z.vx = distToPlayer.sign * baseSpeed * 1.15;
         } else {
           if (z.vx.abs() < 10.0) {
@@ -1694,6 +2196,41 @@ class SuperArchBtwState extends State<SuperArchBtw>
         final int zDmg = z.kind == OkcZombieKind.brute ? 22 : 14;
         _onPlayerDamaged(zDmg, z.x);
       }
+
+      if (_playerCount == 2) {
+        final bool x2Overlap = (_player2X - z.x).abs() < 36.0;
+        if (x2Overlap &&
+            _player2Vy < -60.0 &&
+            _player2Y >= z.y + 18.0 &&
+            _player2Y <= z.y + 56.0) {
+          _damageZombie(
+            z,
+            damage: 35,
+            knockVx: (_player2FacingRight ? 1.0 : -1.0) * 120.0,
+            knockVy: 90.0,
+          );
+          _player2Vy = 410.0;
+          _popups.add(
+            OkcFloatingPopup(
+              x: z.x,
+              y: z.y + 68.0,
+              text: 'P2 STOMP!',
+              color: const Color(0xFFF8B800),
+            ),
+          );
+          continue;
+        }
+
+        if (x2Overlap &&
+            (_player2Y - z.y).abs() < 38.0 &&
+            z.hurtTimer <= 0.0 &&
+            z.attackCooldown <= 0.0 &&
+            _player2AttackTimer <= 0.0) {
+          z.attackCooldown = 0.85;
+          final int zDmg = z.kind == OkcZombieKind.brute ? 22 : 14;
+          _onPlayer2Damaged(zDmg, z.x);
+        }
+      }
     }
 
     _zombies.removeWhere((z) => z.hp <= 0);
@@ -1715,6 +2252,10 @@ class SuperArchBtwState extends State<SuperArchBtw>
     }
 
     if ((_playerX - _currentMap.catFoodX).abs() < 52.0 && _playerY < 90.0) {
+      completeCurrentLevel();
+    } else if (_playerCount == 2 &&
+        (_player2X - _currentMap.catFoodX).abs() < 52.0 &&
+        _player2Y < 90.0) {
       completeCurrentLevel();
     }
   }
@@ -1845,6 +2386,10 @@ class SuperArchBtwState extends State<SuperArchBtw>
         child: LayoutBuilder(
           builder: (context, constraints) {
             final bool isCompact = constraints.maxWidth < 700;
+            _isCompactViewport = isCompact;
+            if (isCompact && _playerCount == 2) {
+              _playerCount = 1;
+            }
             final double joystickSize = isCompact ? 112.0 : 142.0;
             final double joystickRadius = joystickSize / 2;
 
@@ -1857,7 +2402,10 @@ class SuperArchBtwState extends State<SuperArchBtw>
             final double virtualWidth = constraints.maxWidth / worldScale;
 
             // Update camera smoothly in virtual world coordinates
-            final double targetCam = (_playerX - virtualWidth * 0.34).clamp(
+            final double focusX = _playerCount == 2
+                ? (_playerX + _player2X) * 0.5
+                : _playerX;
+            final double targetCam = (focusX - virtualWidth * 0.34).clamp(
               0.0,
               max(0.0, _currentMap.levelLength - virtualWidth),
             );
@@ -1885,6 +2433,8 @@ class SuperArchBtwState extends State<SuperArchBtw>
                         worldScale: worldScale,
                         map: _currentMap,
                         cameraX: _cameraX,
+                        selectedCharacter: _selectedCharacter,
+                        playerCount: _playerCount,
                         playerX: _playerX,
                         playerY: _playerY,
                         facingRight: _facingRight,
@@ -1897,6 +2447,18 @@ class SuperArchBtwState extends State<SuperArchBtw>
                         hasSpiderPower: _hasSpiderPower,
                         isWebSwinging: _isWebSwinging,
                         activeWebAnchor: _activeWebAnchor,
+                        player2X: _player2X,
+                        player2Y: _player2Y,
+                        player2FacingRight: _player2FacingRight,
+                        player2WalkCycle: _player2WalkCycle,
+                        player2IsGrounded: _player2IsGrounded,
+                        player2InvulnerableTimer: _player2InvulnerableTimer,
+                        player2CurrentAttack: _player2CurrentAttack,
+                        player2AttackTimer: _player2AttackTimer,
+                        player2HasGuitar: _player2HasGuitar,
+                        player2HasSpiderPower: _player2HasSpiderPower,
+                        player2IsWebSwinging: _player2IsWebSwinging,
+                        player2ActiveWebAnchor: _player2ActiveWebAnchor,
                         isRidingGoose: _isRidingGoose,
                         gooseX: _gooseX,
                         gooseY: _gooseY,
@@ -2050,6 +2612,10 @@ class SuperArchBtwState extends State<SuperArchBtw>
     final Color hpColor = hpFraction > 0.4
         ? const Color(0xFF58F898)
         : const Color(0xFFF83870);
+    final double p2HpFraction = (_player2Health / _maxHealth).clamp(0.0, 1.0);
+    final Color p2HpColor = p2HpFraction > 0.4
+        ? const Color(0xFF3CBCFC)
+        : const Color(0xFFF83870);
     final double fontSize = isCompact ? 11.0 : 12.0;
     final double barWidth = isCompact ? 100.0 : 136.0;
 
@@ -2064,7 +2630,7 @@ class SuperArchBtwState extends State<SuperArchBtw>
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'HP',
+                _playerCount == 2 ? 'P1 HP' : 'HP',
                 style: TextStyle(
                   color: Colors.white,
                   fontFamily: 'JetBrainsMono',
@@ -2089,6 +2655,35 @@ class SuperArchBtwState extends State<SuperArchBtw>
                   child: Container(color: hpColor),
                 ),
               ),
+              if (_playerCount == 2) ...[
+                const SizedBox(width: 10),
+                Text(
+                  'P2 HP',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontFamily: 'JetBrainsMono',
+                    fontWeight: FontWeight.bold,
+                    fontSize: fontSize,
+                    shadows: const [
+                      Shadow(color: Colors.black, offset: Offset(1.5, 1.5)),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Container(
+                  width: barWidth,
+                  height: isCompact ? 10 : 12,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.55),
+                    border: Border.all(color: Colors.white, width: 1.4),
+                  ),
+                  alignment: Alignment.centerLeft,
+                  child: FractionallySizedBox(
+                    widthFactor: p2HpFraction,
+                    child: Container(color: p2HpColor),
+                  ),
+                ),
+              ],
               const SizedBox(width: 10),
               Text(
                 '${_lives}UP',
@@ -2319,103 +2914,265 @@ class SuperArchBtwState extends State<SuperArchBtw>
 
   Widget _buildTitleScreenOverlay(bool isCompact) {
     final bool blink = ((_worldTime * 3.0).floor() % 2) == 0;
-    return GestureDetector(
+    final bool twoPlayerAvailable = !isCompact && connectedControllerCount >= 2;
+
+    return Container(
       key: const Key('super_archbtw_title_screen'),
-      behavior: HitTestBehavior.translucent,
-      onTap: dismissTitleScreen,
-      child: Container(
-        color: Colors.black.withValues(alpha: 0.72),
-        alignment: Alignment.center,
-        padding: EdgeInsets.symmetric(
-          horizontal: isCompact ? 12 : 24,
-          vertical: isCompact ? 6 : 12,
-        ),
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 620),
-            padding: EdgeInsets.symmetric(
-              horizontal: isCompact ? 18 : 32,
-              vertical: isCompact ? 12 : 20,
+      color: Colors.black.withValues(alpha: 0.72),
+      alignment: Alignment.center,
+      padding: EdgeInsets.symmetric(
+        horizontal: isCompact ? 12 : 24,
+        vertical: isCompact ? 6 : 12,
+      ),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 640),
+          padding: EdgeInsets.symmetric(
+            horizontal: isCompact ? 18 : 30,
+            vertical: isCompact ? 12 : 18,
+          ),
+          decoration: BoxDecoration(
+            color: const Color(0xFF090514).withValues(alpha: 0.96),
+            border: Border.all(
+              color: const Color(0xFFB878F8),
+              width: 3.5,
             ),
-            decoration: BoxDecoration(
-              color: const Color(0xFF090514).withValues(alpha: 0.96),
-              border: Border.all(
-                color: const Color(0xFFB878F8),
-                width: 3.5,
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0xFF5E117C),
+                offset: Offset(6, 6),
               ),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0xFF5E117C),
-                  offset: Offset(6, 6),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(height: isCompact ? 6 : 10),
+              Text(
+                'super archBTW',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontFamily: 'JetBrainsMono',
+                  fontSize: isCompact ? 26 : 40,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 2.0,
+                  shadows: const [
+                    Shadow(
+                      color: Color(0xFF8B3DD6),
+                      offset: Offset(4, 4),
+                      blurRadius: 0,
+                    ),
+                    Shadow(
+                      color: Color(0xFF3CBCFC),
+                      offset: Offset(-2, -2),
+                      blurRadius: 0,
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(height: isCompact ? 10 : 14),
-                Text(
-                  'super archBTW',
-                  textAlign: TextAlign.center,
+              ),
+              SizedBox(height: isCompact ? 8 : 12),
+              SizedBox(
+                width: isCompact ? 270 : 340,
+                height: isCompact ? 116 : 144,
+                child: CustomPaint(
+                  painter: _SuperArchBtwTitleHeroPainter(
+                    worldTime: _worldTime,
+                    selectedCharacter: _selectedCharacter,
+                    playerCount: _playerCount,
+                  ),
+                ),
+              ),
+              SizedBox(height: isCompact ? 8 : 10),
+              // Character Selection Row (Select who Player 1 controls!)
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildCharacterOptionButton(
+                    buttonKey: const Key('select_char_archbtw'),
+                    label: 'archBTW.',
+                    isSelected:
+                        _selectedCharacter == OkcCharacterType.archBtw,
+                    accentColor: const Color(0xFFB878F8),
+                    isCompact: isCompact,
+                    onTap: () => selectCharacter(OkcCharacterType.archBtw),
+                  ),
+                  const SizedBox(width: 10),
+                  _buildCharacterOptionButton(
+                    buttonKey: const Key('select_char_pigeon'),
+                    label: 'PIGEON',
+                    isSelected:
+                        _selectedCharacter == OkcCharacterType.pigeon,
+                    accentColor: const Color(0xFF3CBCFC),
+                    isCompact: isCompact,
+                    onTap: () => selectCharacter(OkcCharacterType.pigeon),
+                  ),
+                ],
+              ),
+              SizedBox(height: isCompact ? 8 : 10),
+              // Mode Selection Row: 1 PLAYER vs 2 PLAYERS (2P greyed out unless 2 controllers connected on desktop)
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  OutlinedButton(
+                    key: const Key('mode_1p_button'),
+                    style: OutlinedButton.styleFrom(
+                      backgroundColor: _playerCount == 1
+                          ? const Color(0xFF58F898).withValues(alpha: 0.20)
+                          : Colors.black,
+                      foregroundColor: _playerCount == 1
+                          ? const Color(0xFF58F898)
+                          : Colors.white70,
+                      side: BorderSide(
+                        color: _playerCount == 1
+                            ? const Color(0xFF58F898)
+                            : Colors.white38,
+                        width: 2.0,
+                      ),
+                      shape: const RoundedRectangleBorder(),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isCompact ? 12 : 16,
+                        vertical: isCompact ? 6 : 8,
+                      ),
+                    ),
+                    onPressed: () => selectPlayerCount(1),
+                    child: Text(
+                      '1 PLAYER',
+                      style: TextStyle(
+                        fontFamily: 'JetBrainsMono',
+                        fontWeight: FontWeight.bold,
+                        fontSize: isCompact ? 11 : 12,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  OutlinedButton(
+                    key: const Key('mode_2p_button'),
+                    style: OutlinedButton.styleFrom(
+                      backgroundColor: !twoPlayerAvailable
+                          ? const Color(0xFF1E293B).withValues(alpha: 0.35)
+                          : (_playerCount == 2
+                              ? const Color(0xFF3CBCFC).withValues(alpha: 0.22)
+                              : Colors.black),
+                      foregroundColor: !twoPlayerAvailable
+                          ? const Color(0xFF64748B)
+                          : (_playerCount == 2
+                              ? const Color(0xFF3CBCFC)
+                              : Colors.white),
+                      disabledForegroundColor: const Color(0xFF64748B),
+                      disabledBackgroundColor:
+                          const Color(0xFF1E293B).withValues(alpha: 0.35),
+                      side: BorderSide(
+                        color: !twoPlayerAvailable
+                            ? const Color(0xFF475569)
+                            : (_playerCount == 2
+                                ? const Color(0xFF3CBCFC)
+                                : Colors.white54),
+                        width: 2.0,
+                      ),
+                      shape: const RoundedRectangleBorder(),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isCompact ? 12 : 16,
+                        vertical: isCompact ? 6 : 8,
+                      ),
+                    ),
+                    onPressed: twoPlayerAvailable
+                        ? () => selectPlayerCount(2)
+                        : null,
+                    child: Text(
+                      '2 PLAYERS',
+                      style: TextStyle(
+                        fontFamily: 'JetBrainsMono',
+                        fontWeight: FontWeight.bold,
+                        fontSize: isCompact ? 11 : 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                twoPlayerAvailable
+                    ? '2 CONTROLLERS CONNECTED • 2P CO-OP READY!'
+                    : (isCompact
+                        ? 'SINGLE PLAYER MODE (MOBILE)'
+                        : '2P REQUIRES 2 CONTROLLERS CONNECTED'),
+                style: TextStyle(
+                  color: twoPlayerAvailable
+                      ? const Color(0xFF58F898)
+                      : const Color(0xFF64748B),
+                  fontFamily: 'JetBrainsMono',
+                  fontSize: isCompact ? 9 : 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              SizedBox(height: isCompact ? 10 : 14),
+              ElevatedButton(
+                key: const Key('start_game_button'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: blink
+                      ? const Color(0xFFB878F8)
+                      : const Color(0xFFF8B800),
+                  foregroundColor: Colors.black,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isCompact ? 20 : 28,
+                    vertical: isCompact ? 10 : 14,
+                  ),
+                  shape: const RoundedRectangleBorder(
+                    side: BorderSide(color: Colors.white, width: 2.5),
+                  ),
+                ),
+                onPressed: dismissTitleScreen,
+                child: Text(
+                  '[ PRESS START ]',
                   style: TextStyle(
-                    color: Colors.white,
                     fontFamily: 'JetBrainsMono',
-                    fontSize: isCompact ? 28 : 44,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 2.0,
-                    shadows: const [
-                      Shadow(
-                        color: Color(0xFF8B3DD6),
-                        offset: Offset(4, 4),
-                        blurRadius: 0,
-                      ),
-                      Shadow(
-                        color: Color(0xFF3CBCFC),
-                        offset: Offset(-2, -2),
-                        blurRadius: 0,
-                      ),
-                    ],
+                    fontWeight: FontWeight.bold,
+                    fontSize: isCompact ? 13 : 16,
                   ),
                 ),
-                SizedBox(height: isCompact ? 10 : 16),
-                SizedBox(
-                  width: isCompact ? 240 : 300,
-                  height: isCompact ? 120 : 152,
-                  child: CustomPaint(
-                    painter: _SuperArchBtwTitleHeroPainter(
-                      worldTime: _worldTime,
-                    ),
-                  ),
-                ),
-                SizedBox(height: isCompact ? 12 : 18),
-                ElevatedButton(
-                  key: const Key('start_game_button'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: blink
-                        ? const Color(0xFFB878F8)
-                        : const Color(0xFFF8B800),
-                    foregroundColor: Colors.black,
-                    padding: EdgeInsets.symmetric(
-                      horizontal: isCompact ? 20 : 28,
-                      vertical: isCompact ? 10 : 14,
-                    ),
-                    shape: const RoundedRectangleBorder(
-                      side: BorderSide(color: Colors.white, width: 2.5),
-                    ),
-                  ),
-                  onPressed: dismissTitleScreen,
-                  child: Text(
-                    '[ PRESS START ]',
-                    style: TextStyle(
-                      fontFamily: 'JetBrainsMono',
-                      fontWeight: FontWeight.bold,
-                      fontSize: isCompact ? 13 : 16,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCharacterOptionButton({
+    required Key buttonKey,
+    required String label,
+    required bool isSelected,
+    required Color accentColor,
+    required bool isCompact,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      key: buttonKey,
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: isCompact ? 12 : 16,
+          vertical: isCompact ? 5 : 7,
+        ),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? accentColor.withValues(alpha: 0.22)
+              : Colors.black.withValues(alpha: 0.7),
+          border: Border.all(
+            color: isSelected ? accentColor : const Color(0xFF475569),
+            width: 2.0,
+          ),
+        ),
+        child: Text(
+          isSelected ? '► $label' : label,
+          style: TextStyle(
+            color: isSelected ? accentColor : Colors.white70,
+            fontFamily: 'JetBrainsMono',
+            fontWeight: FontWeight.bold,
+            fontSize: isCompact ? 10 : 12,
           ),
         ),
       ),
@@ -2559,6 +3316,8 @@ class _OkcRetroGamePainter extends CustomPainter {
   final double worldScale;
   final OkcLevelMap map;
   final double cameraX;
+  final OkcCharacterType selectedCharacter;
+  final int playerCount;
   final double playerX;
   final double playerY;
   final bool facingRight;
@@ -2571,6 +3330,18 @@ class _OkcRetroGamePainter extends CustomPainter {
   final bool hasSpiderPower;
   final bool isWebSwinging;
   final Offset? activeWebAnchor;
+  final double player2X;
+  final double player2Y;
+  final bool player2FacingRight;
+  final double player2WalkCycle;
+  final bool player2IsGrounded;
+  final double player2InvulnerableTimer;
+  final OkcAttackKind player2CurrentAttack;
+  final double player2AttackTimer;
+  final bool player2HasGuitar;
+  final bool player2HasSpiderPower;
+  final bool player2IsWebSwinging;
+  final Offset? player2ActiveWebAnchor;
   final bool isRidingGoose;
   final double gooseX;
   final double gooseY;
@@ -2588,6 +3359,8 @@ class _OkcRetroGamePainter extends CustomPainter {
     required this.worldScale,
     required this.map,
     required this.cameraX,
+    required this.selectedCharacter,
+    required this.playerCount,
     required this.playerX,
     required this.playerY,
     required this.facingRight,
@@ -2600,6 +3373,18 @@ class _OkcRetroGamePainter extends CustomPainter {
     required this.hasSpiderPower,
     required this.isWebSwinging,
     required this.activeWebAnchor,
+    required this.player2X,
+    required this.player2Y,
+    required this.player2FacingRight,
+    required this.player2WalkCycle,
+    required this.player2IsGrounded,
+    required this.player2InvulnerableTimer,
+    required this.player2CurrentAttack,
+    required this.player2AttackTimer,
+    required this.player2HasGuitar,
+    required this.player2HasSpiderPower,
+    required this.player2IsWebSwinging,
+    required this.player2ActiveWebAnchor,
     required this.isRidingGoose,
     required this.gooseX,
     required this.gooseY,
@@ -2725,7 +3510,7 @@ class _OkcRetroGamePainter extends CustomPainter {
       _drawZombie(canvas, z, zsx, zsy);
     }
 
-    // 12. 8-Bit Segmented Pixel Spider-Web Chain when swinging
+    // 12. 8-Bit Segmented Pixel Spider-Web Chain when swinging (Player 1 & Player 2)
     if (isWebSwinging && activeWebAnchor != null) {
       final double ax = activeWebAnchor!.dx - cameraX;
       final double ay = groundScreenY - activeWebAnchor!.dy;
@@ -2743,8 +3528,62 @@ class _OkcRetroGamePainter extends CustomPainter {
         Paint()..color = const Color(0xFF3CBCFC),
       );
     }
+    if (playerCount == 2 &&
+        player2IsWebSwinging &&
+        player2ActiveWebAnchor != null) {
+      final double ax = player2ActiveWebAnchor!.dx - cameraX;
+      final double ay = groundScreenY - player2ActiveWebAnchor!.dy;
+      final double px = player2X - cameraX;
+      final double py = groundScreenY - player2Y - 44.0;
+      _drawPixelLine(
+        canvas,
+        Offset(px, py),
+        Offset(ax, ay),
+        pixelSize: 3.0,
+        color: Colors.white,
+      );
+      canvas.drawRect(
+        Rect.fromCenter(center: Offset(ax, ay), width: 10, height: 10),
+        Paint()..color = const Color(0xFF58F898),
+      );
+    }
 
-    // 13. Player (archBTW 8-Bit Sprite) + Mounted Goose
+    // 13a. Player 2 (when in 2-Player co-op mode)
+    if (playerCount == 2) {
+      final OkcCharacterType p2Char =
+          selectedCharacter == OkcCharacterType.archBtw
+              ? OkcCharacterType.pigeon
+              : OkcCharacterType.archBtw;
+      final bool p2FlashHide = player2InvulnerableTimer > 0 &&
+          ((worldTime * 18).floor() % 2 == 0);
+      if (!p2FlashHide) {
+        final double p2sx = player2X - cameraX;
+        final double p2sy = groundScreenY - player2Y;
+        _drawCharacterSprite(
+          canvas,
+          p2Char,
+          p2sx,
+          p2sy,
+          charFacingRight: player2FacingRight,
+          charWalkCycle: player2WalkCycle,
+          charIsGrounded: player2IsGrounded,
+          charAttack: player2CurrentAttack,
+          charAttackTimer: player2AttackTimer,
+          charHasGuitar: player2HasGuitar,
+          charHasSpiderPower: player2HasSpiderPower,
+        );
+        _drawLabel(
+          canvas,
+          'P2',
+          Offset(p2sx, p2sy - (p2Char == OkcCharacterType.archBtw ? 92 : 86)),
+          const Color(0xFF3CBCFC),
+          fontSize: 9,
+          bold: true,
+        );
+      }
+    }
+
+    // 13b. Player 1 + Mounted Goose
     final bool flashHide =
         invulnerableTimer > 0 && ((worldTime * 18).floor() % 2 == 0);
     if (!flashHide) {
@@ -2760,9 +3599,46 @@ class _OkcRetroGamePainter extends CustomPainter {
           gooseChompTimer > 0,
           showRidePrompt: false,
         );
-        _drawArchBtwPlayer(canvas, psx, psy - 24.0);
+        _drawCharacterSprite(
+          canvas,
+          selectedCharacter,
+          psx,
+          psy - 24.0,
+          charFacingRight: facingRight,
+          charWalkCycle: walkCycle,
+          charIsGrounded: isGrounded,
+          charAttack: currentAttack,
+          charAttackTimer: attackTimer,
+          charHasGuitar: hasGuitar,
+          charHasSpiderPower: hasSpiderPower,
+        );
       } else {
-        _drawArchBtwPlayer(canvas, psx, psy);
+        _drawCharacterSprite(
+          canvas,
+          selectedCharacter,
+          psx,
+          psy,
+          charFacingRight: facingRight,
+          charWalkCycle: walkCycle,
+          charIsGrounded: isGrounded,
+          charAttack: currentAttack,
+          charAttackTimer: attackTimer,
+          charHasGuitar: hasGuitar,
+          charHasSpiderPower: hasSpiderPower,
+        );
+      }
+      if (playerCount == 2) {
+        final double p1TopOffset =
+            (selectedCharacter == OkcCharacterType.archBtw ? 92.0 : 86.0) +
+                (isRidingGoose ? 24.0 : 0.0);
+        _drawLabel(
+          canvas,
+          'P1',
+          Offset(psx, psy - p1TopOffset),
+          const Color(0xFFB878F8),
+          fontSize: 9,
+          bold: true,
+        );
       }
     }
 
@@ -4439,92 +5315,342 @@ class _OkcRetroGamePainter extends CustomPainter {
     canvas.restore();
   }
 
-  void _drawArchBtwPlayer(Canvas canvas, double sx, double sy) {
-    const double px = 1.05; // Crisp 28x80 high-detail pixel scale (~84 world units tall)
-    final double spriteW = 28 * px;
-    final double upperH = 58 * px;
-    final double legH = 22 * px;
+  // ===========================================================================
+  // SECOND PLAYABLE CHARACTER (34x74 Pixel-Art Sprite — slightly shorter than
+  // the 28x80 archBTW sprite at the exact same pixel density px = 1.05):
+  // - Voluminous wavy black/charcoal hair cascading over both shoulders with
+  //   side-swept bangs over the right eye, visible left eyebrow & eye, warm
+  //   peach/rose-tan cheeks & gentle smile
+  // - Oversized light-grey/oatmeal open cardigan with wide front lapels,
+  //   patch pocket on the right hip, flared long sleeves, and relaxed hands
+  // - Dark navy/charcoal graphic band tee with silver/slate triangular chest print
+  // - Ripped black denim jeans with exposed knees (narrow left knee slit,
+  //   wider oval right knee patch)
+  // - Tall black lace-up Doc Martens combat boots with horizontal lace bars,
+  //   slate-highlighted rounded toe boxes, and chunky black lug soles
+  // ===========================================================================
+  static const Map<String, Color> player2CharacterPalette = {
+    'K': Color(0xFF050406), // Pure black hair, outlines, boot soles & laces
+    'H': Color(0xFF15121A), // Dark charcoal-brown hair wave highlights
+    'W': Color(0xFFF8F4F0), // Eye sclera highlight
+    'S': Color(0xFFF6BBA2), // Light peach skin highlight (forehead, cheek, nose, knee)
+    's': Color(0xFFE0967C), // Mid warm peach-tan skin
+    'c': Color(0xFFB36852), // Terracotta skin contour / smile / neck / knee shadow
+    'L': Color(0xFFC8C2BC), // Light oatmeal-grey cardigan lapel & shoulder highlight
+    'C': Color(0xFFA8A29C), // Mid heather-grey cardigan body & sleeves
+    'g': Color(0xFF86807B), // Darker grey cardigan fold, pocket & cuff shadow
+    'T': Color(0xFF161722), // Dark navy-charcoal band tee
+    'G': Color(0xFF8A8E9B), // Silver-grey graphic print highlight on tee
+    'd': Color(0xFF525664), // Muted slate graphic print midtone on tee
+    'J': Color(0xFF1A1C23), // Washed charcoal-black denim highlight
+    'B': Color(0xFF2E313B), // Combat boot leather sheen & horizontal lace detail
+  };
+
+  // Rows 00..44 (34 cols x 45 rows): Head, wavy hair, graphic tee & open grey cardigan
+  // Oriented facing RIGHT (when charFacingRight == true) so eye, nose, smile, and boots
+  // look in the direction of movement, with natural sloped shoulders and solid pelvis/hips!
+  static const List<String> player2UpperBodyMatrix = [
+    '..............KKKKKKKK............', // 00: Top crown of wavy black hair
+    '............KKKKKKKKKKKK..........', // 01
+    '...........KKKKKKKKKHKKKK.........', // 02
+    '..........KKKKKKKKKKKHKKKK........', // 03
+    '..........KKKKKKKKKKsKKKKK........', // 04: Forehead peek at hair part
+    '.........KKKKKKKKKKsSSKKKKK.......', // 05
+    '........KKKKKKKKKKKssKcKKKK.......', // 06: Side-swept bangs + right eyebrow
+    '........KKKKKKKKKKsSSKWKKKKK......', // 07: Bangs + visible eye (W+K) looking right
+    '........KKKKKKKKKKsSSSSKKKKK......', // 08: Peach cheeks & nose bridge
+    '.......KKKKKKKccKsSScSSKKKKKK.....', // 09: Nose tip & cheek
+    '.......KKKKKKKKsSScccSSKKKKK......', // 10: Gentle smile line
+    '.......KKKKKKKKcsSSSSsKKKKKK......', // 11: Rounded chin
+    '.......KKKKKKKKKcssscKKKKKKK......', // 12: Chin shadow
+    '.......KKKKKKKKKKcsKKKKKHKKKK.....', // 13: Neck & thick shoulder-length curls
+    '......KKKKKKKKKKKcsKKKKKHKKKK.....', // 14
+    '......KKKKKKKKKKKccKKKKKKKKKK.....', // 15
+    '......KKKKKKKKKKKKcKKKKKKKKKK.....', // 16
+    '......KKKKKKKKKKKKKKKKKKKKKKK.....', // 17: Voluminous hair over narrow shoulders
+    '......KLCKKKKKKKKKKKKKKKKCLKK.....', // 18: Gentle sloped cardigan shoulders (23 cols)
+    '.....KKLCCCKKKKKKKKKKKKCCCLKK.....', // 19: Narrow cardigan shoulder slope (24 cols)
+    '.....KLCCCCKKKKKKKKTGGKCCCCLK.....', // 20: Upper chest tee & hair tips (24 cols)
+    '....KLCCCCCKKKKKKKTGGGGTCCCCLK....', // 21: Graphic band tee print top (26 cols)
+    '....KCCCCCCKKKKKKdGGGGdTCCCCCCK...', // 22: Arms slope naturally downward (27 cols)
+    '....KCCCCCCLKKKKKdGddGdTKLCCCCK...', // 23
+    '...KCCCCCCCLKKKTGGddGGTKKLCCCCCK..', // 24: Hair tips end over grey cardigan lapels
+    '...KCCCCCCCLKKTTdGGGGdTTKLCCCCCK..', // 25
+    '...KCCCCCCKLLKTTdGddGdTTKLLKCCCK..', // 26: Wide light-grey lapels (L) framing tee
+    '...KCCCCCCKLLKTTddGGddTTKLLKCCCK..', // 27
+    '..KCCCCCCgKLLKTTTdGGdTTTKLLKgCCCK.', // 28: Sleeves flare gently toward cuffs
+    '..KCCCCCCgKLLKTTTdGGdTTTKLLKgCCCK.', // 29
+    '..KCCCCCCgKLLKTTTTddTTTTKLLKgCCCK.', // 30
+    '..KCCCCCgKLLKTTTTTdTTTTTKLLKgCCCK.', // 31: Triangular bottom tip of tee graphic
+    '..KCCCCKKKLLKTTTTTTTTTTKLLKKKCCCK.', // 32: Cardigan pocket top seam
+    '.KCCCCKggKLLKTTTTTTTTTTKLLKCCKCCK.', // 33: Patch pocket on cardigan side
+    '.KCCCCKggKLLKTTTTTTTTTTKLLKCCKCCK.', // 34
+    '.KCCCgKggKLLKTTTTTTTTTTKLLKgCKgCCK', // 35
+    '.KCCCgKggKLLKTTTTTTTTTTKLLKgCKgCCK', // 36
+    '.KggggKggKLLKTTTTTTTTTTKLLKgKKgggK', // 37: Flared sleeve cuffs & pocket base
+    '..KKKKKggKLLKKKKTTTTKKKKLLKKKKKK..', // 38: Solid waist & cuffs
+    '..KSsKggKLLKJJJJJJJJJJJJKLLK.KsSK.', // 39: Hands emerging from cuffs + solid denim hips
+    '..KSScCCCLLKJJJJJJJJJJJJKLLK.KsSSK', // 40: Relaxed hands + connected black denim pelvis
+    '..KSSc.KKLLKJJJJJJJJJJJJKLLK.KcSsK', // 41
+    '...KsK..KLLKJJJJJJJJJJJJKLLK..KsK.', // 42: Fingers + lower pelvis + lapels
+    '........KLLKJJJJJKKJJJJJKLLK......', // 43: Connected upper thighs & cardigan front
+    '........KLLKJJJJJK.KJJJJKLLK......', // 44: Thighs seamlessly overlap legs below!
+  ];
+
+  // Rows 00..44 when punching (42 cols wide):
+  // Proportional narrow sloped shoulders + forward oatmeal-grey cardigan sleeve
+  // extending horizontally with a clenched peach-tan fist at cols 36..41!
+  static const List<String> player2PunchingUpperBodyMatrix = [
+    '..............KKKKKKKK....................', // 00
+    '............KKKKKKKKKKKK..................', // 01
+    '...........KKKKKKKKKHKKKK.................', // 02
+    '..........KKKKKKKKKKKHKKKK................', // 03
+    '..........KKKKKKKKKKsKKKKK................', // 04
+    '.........KKKKKKKKKKsSSKKKKK...............', // 05
+    '........KKKKKKKKKKKssKcKKKK...............', // 06
+    '........KKKKKKKKKKsSSKWKKKKK..............', // 07
+    '........KKKKKKKKKKsSSSSKKKKK..............', // 08
+    '.......KKKKKKKccKsSScSSKKKKKK.............', // 09
+    '.......KKKKKKKKsSScccSSKKKKK..............', // 10
+    '.......KKKKKKKKcsSSSSsKKKKKK..............', // 11
+    '.......KKKKKKKKKcssscKKKKKKK..............', // 12
+    '.......KKKKKKKKKKcsKKKKKHKKKK.............', // 13
+    '......KKKKKKKKKKKcsKKKKKHKKKK.............', // 14
+    '......KKKKKKKKKKKccKKKKKKKKKK.............', // 15
+    '......KKKKKKKKKKKKcKKKKKKKKKK.............', // 16
+    '......KKKKKKKKKKKKKKKKKKKKKKK.............', // 17
+    '......KLCKKKKKKKKKKKKKKKKCLKK.............', // 18
+    '.....KKLCCCKKKKKKKKKKKKCCCLKKK............', // 19
+    '.....KLCCCCKKKKKKKKTGGKCCCCLLKKKKKKKK.....', // 20: Extended punching grey sleeve
+    '....KLCCCCCKKKKKKKTGGGGTCCCCLLCCCCCCgK....', // 21
+    '....KCCCCCCKKKKKKdGGGGdTCCCCCCCCCCCCgSSK..', // 22: Fist emerging from sleeve cuff
+    '....KCCCCCCLKKKKKdGddGdTKLCCCCCCCCCCgSSSK.', // 23
+    '...KCCCCCCCLKKKTGGddGGTKKLgggggggggggKSSK.', // 24
+    '...KCCCCCCCLKKTTdGGGGdTTKLKKKKKKKKKKKcscK.', // 25
+    '...KCCCCCCKLLKTTdGddGdTTKLLK..........KK..', // 26
+    '...KCCCCCCKLLKTTddGGddTTKLLK..............', // 27
+    '..KCCCCCCgKLLKTTTdGGdTTTKLLKgK............', // 28
+    '..KCCCCCCgKLLKTTTdGGdTTTKLLKgCK...........', // 29
+    '..KCCCCCCgKLLKTTTTddTTTTKLLKgCK...........', // 30
+    '..KCCCCCgKLLKTTTTTdTTTTTKLLKgCK...........', // 31
+    '..KCCCCKKKLLKTTTTTTTTTTKLLKKKCK...........', // 32
+    '.KCCCCKggKLLKTTTTTTTTTTKLLKCCK............', // 33
+    '.KCCCCKggKLLKTTTTTTTTTTKLLKCCK............', // 34
+    '.KCCCgKggKLLKTTTTTTTTTTKLLKgCK............', // 35
+    '.KCCCgKggKLLKTTTTTTTTTTKLLKgCK............', // 36
+    '.KggggKggKLLKTTTTTTTTTTKLLKgK.............', // 37
+    '..KKKKKggKLLKKKKTTTTKKKKLLKKK.............', // 38
+    '..KSsKggKLLKJJJJJJJJJJJJKLLK..............', // 39
+    '..KSScCCCLLKJJJJJJJJJJJJKLLK..............', // 40
+    '..KSSc.KKLLKJJJJJJJJJJJJKLLK..............', // 41
+    '...KsK..KLLKJJJJJJJJJJJJKLLK..............', // 42
+    '........KLLKJJJJJKKJJJJJKLLK..............', // 43
+    '........KLLKJJJJJK.KJJJJJKLL..............', // 44
+  ];
+
+  // Rows 42..73 (32 rows tall x 34 cols wide) split into Left & Right Legs:
+  // Includes 3 overlap rows (42..44) tucked behind the torso hips/pelvis so torso
+  // and legs ALWAYS stay solidly connected during idle, walking, jumping, and landing!
+  // Left leg (cols 10..17, center 13.5) and Right leg (cols 18..25, center 21.5) are 8 cols
+  // apart with rounded black Doc Martens combat boots pointing RIGHT down to row 73.
+  static const List<String> player2LeftLegMatrix = [
+    '...........KJJJJK.................', // 42: Upper thigh overlap inside pelvis
+    '...........KJJJJK.................', // 43
+    '...........KJJJJK.................', // 44
+    '..........KKJJJJK.................', // 45: Ripped black denim jeans
+    '..........KJJJJJK.................', // 46
+    '..........KJJJJJK.................', // 47
+    '..........KJJJJJK.................', // 48
+    '..........KJJJJJK.................', // 49
+    '..........KJJJJJK.................', // 50
+    '..........KJJJJJK.................', // 51
+    '..........KSSSSsK.................', // 52: Exposed oval peach knee rip
+    '..........KSSsssK.................', // 53
+    '..........KcccccK.................', // 54: Knee shadow above combat boot top
+    '..........KJJJJJK.................', // 55: Upper Doc Martens boot shaft
+    '..........KJJJJJK.................', // 56
+    '..........KJJJJJK.................', // 57
+    '..........KJJJJJK.................', // 58
+    '..........KJJJJJK.................', // 59
+    '..........KJJJJJK.................', // 60
+    '..........KJJJJJK.................', // 61
+    '..........KJJJBKK.................', // 62: Boot ankle & horizontal lace bars
+    '..........KJJJBKK.................', // 63
+    '..........KJJKBBK.................', // 64
+    '..........KJJJBKK.................', // 65
+    '..........KJJBBKK.................', // 66
+    '..........KKBBBBKK................', // 67: Rounded Doc Martens toe box pointing right
+    '..........KKKBBBBK................', // 68
+    '..........KKKKKKKK................', // 69
+    '..........KKKKKKKK................', // 70: Chunky black lug sole
+    '...........KKKKKK.................', // 71
+    '...........KKKKKK.................', // 72
+    '............KKKK..................', // 73: Bottom sole flush with ground y=0
+  ];
+
+  static const List<String> player2RightLegMatrix = [
+    '...................KJJJJK.........', // 42: Upper thigh overlap inside pelvis
+    '...................KJJJJK.........', // 43
+    '...................KJJJJK.........', // 44
+    '...................KJJJJKK........', // 45: Ripped black denim jeans
+    '...................KJJJJJK........', // 46
+    '...................KJJJJJK........', // 47
+    '...................KJJJJJK........', // 48
+    '...................KJJJJJK........', // 49
+    '...................KJJJJJK........', // 50
+    '...................KJJJJJK........', // 51
+    '...................KccssKK........', // 52: Ripped knee slit
+    '...................KJJJJJK........', // 53
+    '...................KKKKKKK........', // 54
+    '...................KJJJJJK........', // 55: Upper Doc Martens boot shaft
+    '...................KJJJJJK........', // 56
+    '...................KJJJJJK........', // 57
+    '...................KJJJJJK........', // 58
+    '...................KJJJJJK........', // 59
+    '...................KJJJJJK........', // 60
+    '...................KJJJJJK........', // 61
+    '...................KBJJJKK........', // 62: Boot ankle & horizontal laces
+    '...................KBJJJKK........', // 63
+    '...................KBKJJKK........', // 64
+    '...................KBJJJKK........', // 65
+    '...................KBJJBBK........', // 66: Rounded Doc Martens toe box pointing right
+    '...................KKBBBBKK.......', // 67
+    '...................KKKBBBBK.......', // 68
+    '...................KKKKKKKK.......', // 69
+    '...................KKKKKKKK.......', // 70: Chunky black lug sole
+    '....................KKKKKK........', // 71
+    '....................KKKKKK........', // 72
+    '.....................KKKK.........', // 73: Bottom sole flush with ground y=0
+  ];
+
+  // Extended kicking right leg with ripped knee + black Doc Martens combat boot (25x7)
+  static const List<String> player2KickingRightLegMatrix = [
+    '................KKKKKK...', // 00: Combat boot collar & laces
+    'KKKKKKKKKKKKKKKKBJJBBKK..', // 01: Extended black jeans anchored to hip + boot shaft
+    'KJJJJJJSSsJJJJJKBKBBBBKK.', // 02: Black denim + exposed knee rip + boot toe highlight
+    'KJJJJJJSSsJJJJJKBKBBBBBK.', // 03: Black denim + knee rip + rounded Doc Martens toe
+    'KJJJJJJcccJJJJJKKKKKKKKK.', // 04: Jeans + chunky black lug outsole
+    '.KKKKKKKKKKKKKKK.........', // 05
+    '.........................', // 06
+  ];
+
+  void _drawCharacterSprite(
+    Canvas canvas,
+    OkcCharacterType character,
+    double sx,
+    double sy, {
+    required bool charFacingRight,
+    required double charWalkCycle,
+    required bool charIsGrounded,
+    required OkcAttackKind charAttack,
+    required double charAttackTimer,
+    required bool charHasGuitar,
+    required bool charHasSpiderPower,
+  }) {
+    const double px = 1.05; // Unified pixel density across all playable characters
+    final bool isPigeon = character == OkcCharacterType.pigeon;
+
+    // archBTW is 28x80 (~84 world units tall); Pigeon is 34x74 (~77.7 world units tall, slightly shorter)
+    final double spriteW = (isPigeon ? 34 : 28) * px;
+    final double upperH = (isPigeon ? 45 : 58) * px;
+    final double legH = (isPigeon ? 29 : 22) * px;
     final double totalH = upperH + legH;
 
-    final bool isMoving = walkCycle > 0 &&
-        ((walkCycle * 3.0).floor() % 4 == 1 ||
-            (walkCycle * 3.0).floor() % 4 == 3);
-    final int walkFrame = (walkCycle * 2.2).floor() % 4;
+    final Map<String, Color> palette =
+        isPigeon ? player2CharacterPalette : archBtwCharacterPalette;
+    final List<String> leftLeg =
+        isPigeon ? player2LeftLegMatrix : archBtwLeftLegMatrix;
+    final List<String> rightLeg =
+        isPigeon ? player2RightLegMatrix : archBtwRightLegMatrix;
+    final List<String> kickingLeg =
+        isPigeon ? player2KickingRightLegMatrix : archBtwKickingRightLegMatrix;
+    final List<String> upperBody =
+        isPigeon ? player2UpperBodyMatrix : archBtwUpperBodyMatrix;
+    final List<String> punchingUpperBody = isPigeon
+        ? player2PunchingUpperBodyMatrix
+        : archBtwPunchingUpperBodyMatrix;
+
+    final bool isMoving = charWalkCycle > 0 &&
+        ((charWalkCycle * 3.0).floor() % 4 == 1 ||
+            (charWalkCycle * 3.0).floor() % 4 == 3);
+    final int walkFrame = (charWalkCycle * 2.2).floor() % 4;
     final bool isKicking =
-        currentAttack == OkcAttackKind.kick && attackTimer > 0;
+        charAttack == OkcAttackKind.kick && charAttackTimer > 0;
     final bool isPunching =
-        currentAttack == OkcAttackKind.punch && attackTimer > 0;
+        charAttack == OkcAttackKind.punch && charAttackTimer > 0;
 
     final double walkBob =
-        (isGrounded && isMoving) ? -px * 1.2 : 0.0;
+        (charIsGrounded && isMoving) ? -px * 1.2 : 0.0;
 
     canvas.save();
     canvas.translate(sx, sy);
-    if (!facingRight) {
+    if (!charFacingRight) {
       canvas.scale(-1.0, 1.0);
     }
 
     final Paint p = Paint()..isAntiAlias = false;
 
-    // 1. Draw Left & Right Legs (Rows 58..79 of the 28x80 character matrix)
-    final double leftLegDx = !isGrounded
-        ? -px * 2.0
-        : (walkFrame == 1 ? -px * 2.5 : (walkFrame == 3 ? px * 2.5 : 0.0));
-    final double leftLegDy = !isGrounded
-        ? -px * 2.0
+    // 1. Draw Left & Right Legs (Pigeon's leg matrices include 3 overlap rows anchored into pelvis)
+    final double legStride = isPigeon ? px * 1.5 : px * 2.5;
+    final double legCross = isPigeon ? px * 0.9 : px * 2.5;
+    final double leftLegDx = !charIsGrounded
+        ? -px * 1.5
+        : (walkFrame == 1 ? -legStride : (walkFrame == 3 ? legCross : 0.0));
+    final double leftLegDy = !charIsGrounded
+        ? -px * 1.5
         : (walkFrame == 1 ? -px * 1.5 : 0.0);
-    final double rightLegDx = !isGrounded
-        ? px * 2.0
-        : (walkFrame == 1 ? px * 2.5 : (walkFrame == 3 ? -px * 2.5 : 0.0));
-    final double rightLegDy = !isGrounded
+    final double rightLegDx = !charIsGrounded
+        ? px * 1.5
+        : (walkFrame == 1 ? legStride : (walkFrame == 3 ? -legCross : 0.0));
+    final double rightLegDy = !charIsGrounded
         ? -px * 1.0
         : (walkFrame == 3 ? -px * 1.5 : 0.0);
+    final double legMatrixTopY = -leftLeg.length * px;
 
     _drawPixelMatrix(
       canvas,
-      archBtwLeftLegMatrix,
-      archBtwCharacterPalette,
+      leftLeg,
+      palette,
       pixelSize: px,
-      origin: Offset(-spriteW / 2 + leftLegDx, -legH + leftLegDy),
+      origin: Offset(-spriteW / 2 + leftLegDx, legMatrixTopY + leftLegDy),
     );
 
     if (isKicking) {
-      // Extended Roundhouse Kick using crisp pixel-art jeans + black/white sneaker matrix
       _drawPixelMatrix(
         canvas,
-        archBtwKickingRightLegMatrix,
-        archBtwCharacterPalette,
+        kickingLeg,
+        palette,
         pixelSize: px,
-        origin: Offset(px * 1, -legH + px * 1),
+        origin: Offset(isPigeon ? 0.0 : px * 1, -legH + px * 1.5),
       );
     } else {
       _drawPixelMatrix(
         canvas,
-        archBtwRightLegMatrix,
-        archBtwCharacterPalette,
+        rightLeg,
+        palette,
         pixelSize: px,
-        origin: Offset(-spriteW / 2 + rightLegDx, -legH + rightLegDy),
+        origin: Offset(-spriteW / 2 + rightLegDx, legMatrixTopY + rightLegDy),
       );
     }
 
-    // 2. Draw Upper Body (Rows 00..57: switches to raised-arm punching pose when punching!)
+    // 2. Draw Upper Body (switches to raised-arm punching pose when punching!)
     _drawPixelMatrix(
       canvas,
-      isPunching ? archBtwPunchingUpperBodyMatrix : archBtwUpperBodyMatrix,
-      archBtwCharacterPalette,
+      isPunching ? punchingUpperBody : upperBody,
+      palette,
       pixelSize: px,
       origin: Offset(-spriteW / 2, -totalH + walkBob),
     );
 
-    // 4. Draw Equipped Detailed Purple PRS Custom 24 Electric Guitar ("Fireflower" mode!)
-    if (hasGuitar) {
+    // 3. Draw Equipped Detailed Purple PRS Custom 24 Electric Guitar
+    if (charHasGuitar) {
       final bool isStrumming =
-          currentAttack == OkcAttackKind.chord && attackTimer > 0;
-      final double gy = -totalH + px * 44 + walkBob;
-      // Guitar strap across shoulder
+          charAttack == OkcAttackKind.chord && charAttackTimer > 0;
+      final double gy =
+          -totalH + px * (isPigeon ? 36 : 44) + walkBob;
       _drawPixelLine(
         canvas,
-        Offset(-px * 3, -totalH + px * 27 + walkBob),
+        Offset(-px * 3, -totalH + px * (isPigeon ? 21 : 27) + walkBob),
         Offset(px * 4, gy),
         pixelSize: px * 1.6,
         color: Colors.black,
@@ -4537,11 +5663,16 @@ class _OkcRetroGamePainter extends CustomPainter {
       );
     }
 
-    // 5. Spider Web-Shooter Wrist Pixel Glow
-    if (hasSpiderPower) {
+    // 4. Spider Web-Shooter Wrist Pixel Glow
+    if (charHasSpiderPower) {
       p.color = const Color(0xFF3CBCFC);
       canvas.drawRect(
-        Rect.fromLTWH(px * 9, -totalH + px * 48 + walkBob, px * 3, px * 3),
+        Rect.fromLTWH(
+          px * 9,
+          -totalH + px * (isPigeon ? 40 : 48) + walkBob,
+          px * 3,
+          px * 3,
+        ),
         p,
       );
     }
@@ -4617,7 +5748,7 @@ class _OkcRetroGamePainter extends CustomPainter {
     }
   }
 
-  // --- Detailed 8-Bit Powerups: Pills, Guitar, Spider, Pigeons ---
+  // --- Detailed 8-Bit Powerups: Pills, Guitar, Spider ---
   static const List<String> _pillMatrix = [
     '..KKKKKKKKKK..',
     '.KRRRRRWWWWWK.',
@@ -4635,18 +5766,6 @@ class _OkcRetroGamePainter extends CustomPainter {
     '..KKKRRRRRRKKK..',
     '.K.K.KRRRRK.K.K.',
     'K..K..KKKK..K..K',
-  ];
-
-  static const List<String> _pigeonMatrix = [
-    '........KKKK....',
-    '.......KGGGGK...',
-    '......KGGWKGGKK.',
-    '.KKKK.KGGGGGGYYK',
-    'KSSSSKKSSSSSSSSK',
-    'KSSSSWWSSSSSSSSK',
-    '.KSSSSSSSSSSSSK.',
-    '..KKKKKKKKKKKK..',
-    '....K.K...K.K...',
   ];
 
   void _drawPowerupItem(
@@ -4713,30 +5832,6 @@ class _OkcRetroGamePainter extends CustomPainter {
           'SPIDER [WEB]',
           Offset(sx, sy - 22),
           const Color(0xFF3CBCFC),
-          fontSize: 10,
-          bold: true,
-        );
-        break;
-
-      case OkcPowerupType.pigeon:
-        _drawPixelMatrix(
-          canvas,
-          _pigeonMatrix,
-          const {
-            'K': Colors.black,
-            'S': Color(0xFF94A3B8), // Slate pigeon feathers
-            'W': Colors.white,
-            'G': Color(0xFF58F898), // Iridescent green neck
-            'Y': Color(0xFFF8B800), // Beak
-          },
-          pixelSize: px,
-          origin: Offset(sx - 8 * px, sy - 4.5 * px),
-        );
-        _drawLabel(
-          canvas,
-          'PIGEON [+1 UP]',
-          Offset(sx, sy - 22),
-          const Color(0xFFF8B800),
           fontSize: 10,
           bold: true,
         );
@@ -4894,11 +5989,17 @@ class _OkcRetroGamePainter extends CustomPainter {
   bool shouldRepaint(covariant _OkcRetroGamePainter oldDelegate) => true;
 }
 
-// --- Title Screen Hero Showcase Painter (archBTW + Purple PRS Custom 24) ---
+// --- Title Screen Hero Showcase Painter (archBTW + Player 2 + Purple PRS Custom 24) ---
 class _SuperArchBtwTitleHeroPainter extends CustomPainter {
   final double worldTime;
+  final OkcCharacterType selectedCharacter;
+  final int playerCount;
 
-  _SuperArchBtwTitleHeroPainter({required this.worldTime});
+  _SuperArchBtwTitleHeroPainter({
+    required this.worldTime,
+    required this.selectedCharacter,
+    required this.playerCount,
+  });
 
   void _drawMatrix(
     Canvas canvas,
@@ -4948,48 +6049,98 @@ class _SuperArchBtwTitleHeroPainter extends CustomPainter {
     p.color = const Color(0xFFB878F8);
     canvas.drawRect(Rect.fromLTWH(24, floorY, size.width - 48, 2), p);
 
-    // 1. Draw the identical 28x80 archBTW character sprite on the left-center of the stage
-    final double charPx = (size.height - 16) / 80.0;
-    final double charW = 28 * charPx;
-    final double charX = size.width * 0.34 - charW / 2;
-    final double charTopY = floorY - 80 * charPx;
+    final double charPx = (size.height - 20) / 80.0;
+
+    // 1. Draw the 28x80 archBTW character sprite on the left side of the stage
+    final double archW = 28 * charPx;
+    final double archX = size.width * 0.23 - archW / 2;
+    final double archTopY = floorY - 80 * charPx;
+    final bool archActive =
+        playerCount == 2 || selectedCharacter == OkcCharacterType.archBtw;
+
+    if (archActive) {
+      p.color = const Color(0xFFB878F8).withValues(alpha: 0.28);
+      canvas.drawRect(
+        Rect.fromLTWH(archX - 4, floorY - 4, archW + 8, 6),
+        p,
+      );
+    }
 
     _drawMatrix(
       canvas,
       _OkcRetroGamePainter.archBtwLeftLegMatrix,
       _OkcRetroGamePainter.archBtwCharacterPalette,
       pixelSize: charPx,
-      origin: Offset(charX, charTopY + 58 * charPx),
+      origin: Offset(archX, archTopY + 58 * charPx),
     );
     _drawMatrix(
       canvas,
       _OkcRetroGamePainter.archBtwRightLegMatrix,
       _OkcRetroGamePainter.archBtwCharacterPalette,
       pixelSize: charPx,
-      origin: Offset(charX, charTopY + 58 * charPx),
+      origin: Offset(archX, archTopY + 58 * charPx),
     );
     _drawMatrix(
       canvas,
       _OkcRetroGamePainter.archBtwUpperBodyMatrix,
       _OkcRetroGamePainter.archBtwCharacterPalette,
       pixelSize: charPx,
-      origin: Offset(charX, charTopY),
+      origin: Offset(archX, archTopY),
     );
 
-    // 2. Draw the detailed Purple PRS Custom 24 showcase on the right side of the stage
+    // 2. Draw the 34x74 Pigeon playable character (slightly shorter than archBTW!) in the center
+    final double p2W = 34 * charPx;
+    final double p2X = size.width * 0.50 - p2W / 2;
+    final double p2TopY = floorY - 74 * charPx;
+    final bool p2Active =
+        playerCount == 2 || selectedCharacter == OkcCharacterType.pigeon;
+
+    if (p2Active) {
+      p.color = const Color(0xFF3CBCFC).withValues(alpha: 0.28);
+      canvas.drawRect(
+        Rect.fromLTWH(p2X - 4, floorY - 4, p2W + 8, 6),
+        p,
+      );
+    }
+
+    _drawMatrix(
+      canvas,
+      _OkcRetroGamePainter.player2LeftLegMatrix,
+      _OkcRetroGamePainter.player2CharacterPalette,
+      pixelSize: charPx,
+      origin: Offset(p2X, p2TopY + 42 * charPx),
+    );
+    _drawMatrix(
+      canvas,
+      _OkcRetroGamePainter.player2RightLegMatrix,
+      _OkcRetroGamePainter.player2CharacterPalette,
+      pixelSize: charPx,
+      origin: Offset(p2X, p2TopY + 42 * charPx),
+    );
+    _drawMatrix(
+      canvas,
+      _OkcRetroGamePainter.player2UpperBodyMatrix,
+      _OkcRetroGamePainter.player2CharacterPalette,
+      pixelSize: charPx,
+      origin: Offset(p2X, p2TopY),
+    );
+
+    // 3. Draw the detailed Purple PRS Custom 24 showcase on the right side of the stage
     final double bob = sin(worldTime * 3.5) * 3.5;
-    final double gx = size.width * 0.64;
+    final double gx = size.width * 0.78;
     final double gy = size.height * 0.54 + bob;
 
     _OkcRetroGamePainter.drawPurplePrsGuitar(
       canvas,
       Offset(gx, gy),
-      scale: charPx * 1.25,
+      scale: charPx * 1.15,
       angle: -0.62,
     );
   }
 
   @override
   bool shouldRepaint(covariant _SuperArchBtwTitleHeroPainter oldDelegate) =>
-      oldDelegate.worldTime != worldTime;
+      oldDelegate.worldTime != worldTime ||
+      oldDelegate.selectedCharacter != selectedCharacter ||
+      oldDelegate.playerCount != playerCount;
 }
