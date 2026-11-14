@@ -1,5 +1,5 @@
 import 'package:archbtw_sh/games/gamepad_poller.dart';
-import 'package:archbtw_sh/games/okc_beat_em_up_game.dart';
+import 'package:archbtw_sh/games/super_archbtw.dart';
 import 'package:archbtw_sh/pages/home/home_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,7 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   group('HomePage Game Link', () {
     testWidgets(
-      'Bottom row of HomePage displays link to start OkcBeatEmUpGame and navigates on tap',
+      'Bottom row of HomePage displays link to start SuperArchBtw and navigates on tap',
       (WidgetTester tester) async {
         await tester.pumpWidget(
           const MaterialApp(
@@ -23,24 +23,48 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
 
-        expect(find.byType(OkcBeatEmUpGame), findsOneWidget);
-        expect(find.text('okc_dead_chord.sh'), findsOneWidget);
+        expect(find.byType(SuperArchBtw), findsOneWidget);
+        expect(find.text('super_archbtw.sh'), findsOneWidget);
+        expect(find.text('super archBTW'), findsOneWidget);
       },
     );
   });
 
   group('Downtown OKC 8-Bit NES Beat-Em-Up / Platformer Gameplay', () {
     testWidgets(
+      'Displays "super archBTW" title screen on launch and dismisses on Press Start',
+      (WidgetTester tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: SuperArchBtw(),
+          ),
+        );
+
+        final SuperArchBtwState state =
+            tester.state<SuperArchBtwState>(find.byType(SuperArchBtw));
+
+        expect(state.isTitleScreenShowing, isTrue);
+        expect(find.text('super archBTW'), findsOneWidget);
+        expect(find.byKey(const Key('start_game_button')), findsOneWidget);
+
+        await tester.tap(find.byKey(const Key('start_game_button')));
+        await tester.pump();
+
+        expect(state.isTitleScreenShowing, isFalse);
+        expect(find.text('super archBTW'), findsNothing);
+      },
+    );
+    testWidgets(
       'Initializes Downtown OKC level with Tortie Cat at start, Cat Food at end, Goose, Zombies, and all 4 Powerups',
       (WidgetTester tester) async {
         await tester.pumpWidget(
           const MaterialApp(
-            home: OkcBeatEmUpGame(),
+            home: SuperArchBtw(),
           ),
         );
 
-        final OkcBeatEmUpGameState state =
-            tester.state<OkcBeatEmUpGameState>(find.byType(OkcBeatEmUpGame));
+        final SuperArchBtwState state =
+            tester.state<SuperArchBtwState>(find.byType(SuperArchBtw));
 
         expect(state.level, equals(1));
         expect(state.currentDistrict, contains('OKC'));
@@ -71,12 +95,12 @@ void main() {
 
         await tester.pumpWidget(
           const MaterialApp(
-            home: OkcBeatEmUpGame(),
+            home: SuperArchBtw(),
           ),
         );
 
-        final OkcBeatEmUpGameState state =
-            tester.state<OkcBeatEmUpGameState>(find.byType(OkcBeatEmUpGame));
+        final SuperArchBtwState state =
+            tester.state<SuperArchBtwState>(find.byType(SuperArchBtw));
 
         // Verify playlist has all 13 life's lemons + 15 blubber tracks (28 total) and no interject tracks
         expect(state.playlist.length, equals(28));
@@ -106,12 +130,12 @@ void main() {
       (WidgetTester tester) async {
         await tester.pumpWidget(
           const MaterialApp(
-            home: OkcBeatEmUpGame(),
+            home: SuperArchBtw(),
           ),
         );
 
-        final OkcBeatEmUpGameState state =
-            tester.state<OkcBeatEmUpGameState>(find.byType(OkcBeatEmUpGame));
+        final SuperArchBtwState state =
+            tester.state<SuperArchBtwState>(find.byType(SuperArchBtw));
 
         expect(state.isRidingGoose, isFalse);
         state.mountGoose();
@@ -139,12 +163,12 @@ void main() {
       (WidgetTester tester) async {
         await tester.pumpWidget(
           const MaterialApp(
-            home: OkcBeatEmUpGame(),
+            home: SuperArchBtw(),
           ),
         );
 
-        final OkcBeatEmUpGameState state =
-            tester.state<OkcBeatEmUpGameState>(find.byType(OkcBeatEmUpGame));
+        final SuperArchBtwState state =
+            tester.state<SuperArchBtwState>(find.byType(SuperArchBtw));
 
         // 1. Pigeon gives +1 life
         final int initialLives = state.lives;
@@ -189,12 +213,12 @@ void main() {
       (WidgetTester tester) async {
         await tester.pumpWidget(
           const MaterialApp(
-            home: OkcBeatEmUpGame(),
+            home: SuperArchBtw(),
           ),
         );
 
-        final OkcBeatEmUpGameState state =
-            tester.state<OkcBeatEmUpGameState>(find.byType(OkcBeatEmUpGame));
+        final SuperArchBtwState state =
+            tester.state<SuperArchBtwState>(find.byType(SuperArchBtw));
 
         // Position a zombie in front of archBTW and test Punch & Kick
         final OkcZombie targetZombie = state.zombies.first;
@@ -231,12 +255,12 @@ void main() {
       (WidgetTester tester) async {
         await tester.pumpWidget(
           const MaterialApp(
-            home: OkcBeatEmUpGame(),
+            home: SuperArchBtw(),
           ),
         );
 
-        final OkcBeatEmUpGameState state =
-            tester.state<OkcBeatEmUpGameState>(find.byType(OkcBeatEmUpGame));
+        final SuperArchBtwState state =
+            tester.state<SuperArchBtwState>(find.byType(SuperArchBtw));
 
         // Verify touch controls exist and respond cleanly
         expect(find.byKey(const Key('virtual_joystick')), findsOneWidget);

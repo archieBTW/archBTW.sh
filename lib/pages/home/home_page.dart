@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:archbtw_sh/games/okc_beat_em_up_game.dart';
+import 'package:archbtw_sh/games/super_archbtw.dart';
 import 'package:archbtw_sh/global/colors.dart';
 import 'package:archbtw_sh/global/site_music_controller.dart';
 import 'package:archbtw_sh/pages/overheat/overheat_page.dart';
@@ -251,13 +251,13 @@ class _HomePageState extends State<HomePage>
                     key: const Key('okc_game_button'),
                     icon: FontAwesomeIcons.gamepad,
                     iconSize: iconSize,
-                    tooltip: 'play okc_dead_chord.sh',
+                    tooltip: 'play super_archbtw.sh',
                     hoverColor: kAccentColor,
                     onPressed: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const OkcBeatEmUpGame(),
+                          builder: (context) => const SuperArchBtw(),
                         ),
                       );
                     },

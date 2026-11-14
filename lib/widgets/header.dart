@@ -84,7 +84,7 @@ class Header extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   NavLink(
-                    title: 'about',
+                    title: 'whoami',
                     index: 1,
                     currentIndex: currentIndex,
                     onTap: () => onItemTapped(1),

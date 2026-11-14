@@ -215,14 +215,17 @@ class OkcLevelMap {
   });
 }
 
-class OkcBeatEmUpGame extends StatefulWidget {
-  const OkcBeatEmUpGame({super.key});
+typedef OkcBeatEmUpGame = SuperArchBtw;
+typedef OkcBeatEmUpGameState = SuperArchBtwState;
+
+class SuperArchBtw extends StatefulWidget {
+  const SuperArchBtw({super.key});
 
   @override
-  State<OkcBeatEmUpGame> createState() => OkcBeatEmUpGameState();
+  State<SuperArchBtw> createState() => SuperArchBtwState();
 }
 
-class OkcBeatEmUpGameState extends State<OkcBeatEmUpGame>
+class SuperArchBtwState extends State<SuperArchBtw>
     with SingleTickerProviderStateMixin {
   final FocusNode _focusNode = FocusNode();
   final AudioPlayer _audioPlayer = AudioPlayer();
@@ -305,6 +308,7 @@ class OkcBeatEmUpGameState extends State<OkcBeatEmUpGame>
   double _invulnerableTimer = 0.0;
   double _screenShakeTimer = 0.0;
   bool _isGameOver = false;
+  bool _showTitleScreen = true;
 
   // Combat state (Punch, Kick, Guitar Chords)
   OkcAttackKind _currentAttack = OkcAttackKind.none;
@@ -393,11 +397,14 @@ class OkcBeatEmUpGameState extends State<OkcBeatEmUpGame>
   bool get hasCatFood => _hasCatFood;
   bool get tortieCatFed => _tortieCatFed;
   bool get isGameOver => _isGameOver;
+  bool get isTitleScreenShowing => _showTitleScreen;
   double get playerX => _playerX;
   double get playerY => _playerY;
   double get gooseX => _gooseX;
   double get gooseY => _gooseY;
   double get tortieCatX => _currentMap.tortieCatX;
+  double get duchessX => _currentMap.tortieCatX;
+  bool get duchessFed => _tortieCatFed;
   double get catFoodX => _currentMap.catFoodX;
   double get worldScale => _lastWorldScale;
   List<String> get playlist => List.unmodifiable(_playlist);
@@ -567,7 +574,7 @@ class OkcBeatEmUpGameState extends State<OkcBeatEmUpGame>
     ];
 
     final double levelLength = 2400.0 + (newLevel - 1) * 200.0;
-    const double tortieCatX = 95.0;
+    const double tortieCatX = 122.0;
     final double catFoodX = levelLength - 150.0;
     final double gooseSpawnX = 275.0 + rng.nextDouble() * 55.0;
 
@@ -645,7 +652,7 @@ class OkcBeatEmUpGameState extends State<OkcBeatEmUpGame>
           isBrick: isBrick,
         ),
       );
-      bx += bw + 12.0 + (rng.nextInt(3) * 8.0);
+      bx += bw + 68.0 + (rng.nextInt(4) * 22.0);
     }
 
     _currentMap = OkcLevelMap(
@@ -843,8 +850,17 @@ class OkcBeatEmUpGameState extends State<OkcBeatEmUpGame>
 
   // --- Player Combat & Powerup Actions ---
 
+  void dismissTitleScreen() {
+    if (_showTitleScreen) {
+      setState(() {
+        _showTitleScreen = false;
+      });
+    }
+  }
+
   void triggerJump() {
     if (_isGameOver) return;
+    _showTitleScreen = false;
     if (_isWebSwinging) {
       releaseWebSwing(launchBoost: true);
       return;
@@ -861,6 +877,7 @@ class OkcBeatEmUpGameState extends State<OkcBeatEmUpGame>
 
   void triggerPunch() {
     if (_isGameOver || _attackCooldown > 0.0) return;
+    _showTitleScreen = false;
     setState(() {
       _currentAttack = OkcAttackKind.punch;
       _attackTimer = 0.22;
@@ -883,6 +900,7 @@ class OkcBeatEmUpGameState extends State<OkcBeatEmUpGame>
 
   void triggerKick() {
     if (_isGameOver) return;
+    _showTitleScreen = false;
     if (_currentAttack == OkcAttackKind.kick && _attackCooldown > 0.0) return;
     setState(() {
       _currentAttack = OkcAttackKind.kick;
@@ -904,6 +922,7 @@ class OkcBeatEmUpGameState extends State<OkcBeatEmUpGame>
 
   void triggerChordAttack() {
     if (_isGameOver) return;
+    _showTitleScreen = false;
     if (!_hasGuitar) {
       triggerPunch();
       return;
@@ -1016,6 +1035,7 @@ class OkcBeatEmUpGameState extends State<OkcBeatEmUpGame>
 
   void mountGoose() {
     setState(() {
+      _showTitleScreen = false;
       _isRidingGoose = true;
       _gooseX = _playerX;
       _gooseY = _playerY;
@@ -1048,6 +1068,7 @@ class OkcBeatEmUpGameState extends State<OkcBeatEmUpGame>
     final double py = (atY ?? _playerY) + 64.0;
 
     setState(() {
+      _showTitleScreen = false;
       switch (type) {
         case OkcPowerupType.pill:
           _health = min(_maxHealth, _health + 30);
@@ -1068,7 +1089,7 @@ class OkcBeatEmUpGameState extends State<OkcBeatEmUpGame>
             OkcFloatingPopup(
               x: px,
               y: py,
-              text: 'GUITAR EQUIPPED! POWER CHORDS!',
+              text: 'PURPLE PRS EQUIPPED! POWER CHORDS!',
               color: const Color(0xFFB878F8),
             ),
           );
@@ -1104,6 +1125,7 @@ class OkcBeatEmUpGameState extends State<OkcBeatEmUpGame>
 
   void completeCurrentLevel() {
     setState(() {
+      _showTitleScreen = false;
       _hasCatFood = true;
       _tortieCatFed = true;
       _score += 500 * _level;
@@ -1114,6 +1136,16 @@ class OkcBeatEmUpGameState extends State<OkcBeatEmUpGame>
   }
 
   void applyControllerInput(GamepadInputState gamepad) {
+    if (gamepad.connected &&
+        (gamepad.axisX.abs() > 0.1 ||
+            gamepad.jumpPressed ||
+            gamepad.punchPressed ||
+            gamepad.kickPressed ||
+            gamepad.chordPressed ||
+            gamepad.webPressed ||
+            gamepad.mountPressed)) {
+      _showTitleScreen = false;
+    }
     _injectedGamepadState = gamepad;
     _processGamepadEdges(gamepad);
   }
@@ -1259,6 +1291,7 @@ class OkcBeatEmUpGameState extends State<OkcBeatEmUpGame>
 
   void _onPlayerDamaged(int dmg, double sourceX) {
     if (_invulnerableTimer > 0.0 || _isGameOver) return;
+    if (_showTitleScreen && !_isRidingGoose) return;
 
     // Yoshi-style Goose protection!
     if (_isRidingGoose) {
@@ -1674,7 +1707,7 @@ class OkcBeatEmUpGameState extends State<OkcBeatEmUpGame>
         OkcFloatingPopup(
           x: _currentMap.tortieCatX,
           y: 78.0,
-          text: 'TORTIE CAT: MEOW! FOOD IS AT THE END! ->',
+          text: 'DUCHESS: MEOW! FOOD IS AT THE END! ->',
           color: const Color(0xFFF8B800),
           life: 1.1,
         ),
@@ -1705,6 +1738,11 @@ class OkcBeatEmUpGameState extends State<OkcBeatEmUpGame>
   void _handleKeyEvent(KeyEvent event) {
     final LogicalKeyboardKey key = event.logicalKey;
     if (event is KeyDownEvent) {
+      if (_showTitleScreen) {
+        setState(() {
+          _showTitleScreen = false;
+        });
+      }
       final bool isNewPress = _keysPressed.add(key);
       if (isNewPress) {
         if (key == LogicalKeyboardKey.space ||
@@ -1772,7 +1810,7 @@ class OkcBeatEmUpGameState extends State<OkcBeatEmUpGame>
         elevation: 0,
         leading: const BackButton(color: Colors.white),
         title: const Text(
-          'okc_dead_chord.sh',
+          'super_archbtw.sh',
           style: TextStyle(
             color: Colors.white,
             fontFamily: 'JetBrainsMono',
@@ -1875,11 +1913,11 @@ class OkcBeatEmUpGameState extends State<OkcBeatEmUpGame>
                   ),
                 ),
 
-                // Top 8-Bit NES Arcade HUD
+                // Minimal Top HUD (Health Bar, Lives, Score, Active Powerups)
                 Positioned(
-                  top: 10,
-                  left: 12,
-                  right: 12,
+                  top: 8,
+                  left: 10,
+                  right: 10,
                   child: IgnorePointer(
                     child: _buildTopHud(isCompact),
                   ),
@@ -1888,36 +1926,42 @@ class OkcBeatEmUpGameState extends State<OkcBeatEmUpGame>
                 // Level Clear 8-Bit Banner
                 if (_levelClearBannerTimer > 0)
                   Positioned(
-                    top: isCompact ? 96 : 118,
+                    top: isCompact ? 50 : 58,
                     left: 20,
                     right: 20,
                     child: IgnorePointer(
                       child: Center(
                         child: Container(
                           padding: EdgeInsets.symmetric(
-                            horizontal: isCompact ? 16 : 24,
-                            vertical: isCompact ? 10 : 14,
+                            horizontal: isCompact ? 14 : 20,
+                            vertical: isCompact ? 8 : 10,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.black,
+                            color: Colors.black.withValues(alpha: 0.78),
                             border: Border.all(
                               color: const Color(0xFFF8B800),
-                              width: 3,
+                              width: 2,
                             ),
                           ),
                           child: Text(
-                            'TORTIE CAT FED! NEW DOWNTOWN OKC MAP: LVL $_level',
+                            'DUCHESS FED! NEW DOWNTOWN OKC MAP: LVL $_level',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: const Color(0xFFF8B800),
                               fontFamily: 'JetBrainsMono',
                               fontWeight: FontWeight.bold,
-                              fontSize: isCompact ? 13 : 18,
+                              fontSize: isCompact ? 12 : 15,
                             ),
                           ),
                         ),
                       ),
                     ),
+                  ),
+
+                // 'super archBTW' 8-Bit Arcade Title Screen Overlay
+                if (_showTitleScreen && !_isGameOver)
+                  Positioned.fill(
+                    child: _buildTitleScreenOverlay(isCompact),
                   ),
 
                 // Touch Joystick (Bottom-Left)
@@ -1930,6 +1974,7 @@ class OkcBeatEmUpGameState extends State<OkcBeatEmUpGame>
                     onPointerDown: (event) {
                       if (_joystickPointerId == null) {
                         setState(() {
+                          _showTitleScreen = false;
                           _joystickPointerId = event.pointer;
                           _joystickCenter =
                               Offset(joystickRadius, joystickRadius);
@@ -2001,172 +2046,97 @@ class OkcBeatEmUpGameState extends State<OkcBeatEmUpGame>
   }
 
   Widget _buildTopHud(bool isCompact) {
-    final int filledBlocks = ((_health / _maxHealth) * 10).round().clamp(0, 10);
-    final String nesHpBar =
-        '█' * filledBlocks + '░' * (10 - filledBlocks);
-    final double mainFont = isCompact ? 12.0 : 16.0;
-    final double subFont = isCompact ? 10.0 : 13.0;
+    final double hpFraction = (_health / _maxHealth).clamp(0.0, 1.0);
+    final Color hpColor = hpFraction > 0.4
+        ? const Color(0xFF58F898)
+        : const Color(0xFFF83870);
+    final double fontSize = isCompact ? 11.0 : 12.0;
+    final double barWidth = isCompact ? 100.0 : 136.0;
 
-    return Wrap(
-      alignment: WrapAlignment.spaceBetween,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      spacing: 10,
-      runSpacing: 8,
-      children: [
-        // 8-Bit NES Double-Bordered Player Status Box
-        Container(
-          padding: EdgeInsets.symmetric(
-            horizontal: isCompact ? 10 : 14,
-            vertical: isCompact ? 8 : 10,
-          ),
-          decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.90),
-            border: Border.all(
-              color: Colors.white,
-              width: 2.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: _currentMap.neonAccent.withValues(alpha: 0.45),
-                offset: const Offset(4, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return Align(
+      alignment: Alignment.topLeft,
+      child: Wrap(
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: 10,
+        runSpacing: 6,
+        children: [
+          Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    '1P: archBTW',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontFamily: 'JetBrainsMono',
-                      fontWeight: FontWeight.bold,
-                      fontSize: mainFont,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'LIVES: $_lives',
-                    style: TextStyle(
-                      color: const Color(0xFFF8B800),
-                      fontFamily: 'JetBrainsMono',
-                      fontWeight: FontWeight.bold,
-                      fontSize: mainFont,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'SCORE: $_score',
-                    style: TextStyle(
-                      color: const Color(0xFF3CBCFC),
-                      fontFamily: 'JetBrainsMono',
-                      fontWeight: FontWeight.bold,
-                      fontSize: mainFont,
-                    ),
-                  ),
-                ],
+              Text(
+                'HP',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontFamily: 'JetBrainsMono',
+                  fontWeight: FontWeight.bold,
+                  fontSize: fontSize,
+                  shadows: const [
+                    Shadow(color: Colors.black, offset: Offset(1.5, 1.5)),
+                  ],
+                ),
               ),
-              const SizedBox(height: 6),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'HP: $_health/$_maxHealth ',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontFamily: 'JetBrainsMono',
-                      fontWeight: FontWeight.bold,
-                      fontSize: subFont,
-                    ),
-                  ),
-                  Text(
-                    '[$nesHpBar]',
-                    style: TextStyle(
-                      color: filledBlocks > 4
-                          ? const Color(0xFF58F898)
-                          : const Color(0xFFF83870),
-                      fontFamily: 'JetBrainsMono',
-                      fontWeight: FontWeight.bold,
-                      fontSize: subFont,
-                    ),
-                  ),
-                ],
+              const SizedBox(width: 6),
+              Container(
+                width: barWidth,
+                height: isCompact ? 10 : 12,
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.55),
+                  border: Border.all(color: Colors.white, width: 1.4),
+                ),
+                alignment: Alignment.centerLeft,
+                child: FractionallySizedBox(
+                  widthFactor: hpFraction,
+                  child: Container(color: hpColor),
+                ),
               ),
-              const SizedBox(height: 6),
-              Wrap(
-                spacing: 8,
-                runSpacing: 4,
-                children: [
-                  _buildStatusBadge(
-                    label: 'LVL $_level: ${_currentMap.districtName}',
-                    color: _currentMap.neonAccent,
-                    fontSize: subFont,
-                  ),
-                  if (_isRidingGoose)
-                    _buildStatusBadge(
-                      label: 'MOUNT: GOOSE',
-                      color: const Color(0xFFF8B800),
-                      fontSize: subFont,
-                    ),
-                  if (_hasGuitar)
-                    _buildStatusBadge(
-                      label: 'GUITAR: CHORDS',
-                      color: const Color(0xFFB878F8),
-                      fontSize: subFont,
-                    ),
-                  if (_hasSpiderPower)
-                    _buildStatusBadge(
-                      label: 'SPIDER: WEB',
-                      color: const Color(0xFF3CBCFC),
-                      fontSize: subFont,
-                    ),
-                ],
+              const SizedBox(width: 10),
+              Text(
+                '${_lives}UP',
+                style: TextStyle(
+                  color: const Color(0xFFF8B800),
+                  fontFamily: 'JetBrainsMono',
+                  fontWeight: FontWeight.bold,
+                  fontSize: fontSize,
+                  shadows: const [
+                    Shadow(color: Colors.black, offset: Offset(1.5, 1.5)),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                '$_score',
+                style: TextStyle(
+                  color: const Color(0xFF3CBCFC),
+                  fontFamily: 'JetBrainsMono',
+                  fontWeight: FontWeight.bold,
+                  fontSize: fontSize,
+                  shadows: const [
+                    Shadow(color: Colors.black, offset: Offset(1.5, 1.5)),
+                  ],
+                ),
               ),
             ],
           ),
-        ),
-
-        // Desktop Controls & Quest Box
-        if (!isCompact)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.90),
-              border: Border.all(color: Colors.white, width: 2.5),
+          if (_isRidingGoose)
+            _buildStatusBadge(
+              label: 'MOUNT: GOOSE',
+              color: const Color(0xFFF8B800),
+              fontSize: fontSize - 1,
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  _gamepadState.connected
-                      ? 'CONTROLLER CONNECTED // STICK: Move | A: Jump | X: Punch | B: Kick | Y: Chord | RB: Web'
-                      : 'WASD/ARROWS: Move | SPACE: Jump | J/Z: Punch | K/X: Kick | L/C: Chord | E/SHIFT: Web',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontFamily: 'JetBrainsMono',
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                const Text(
-                  'QUEST: Tortie Cat is begging! Grab the Cat Food at the end of Downtown OKC!',
-                  style: TextStyle(
-                    color: Color(0xFFF8B800),
-                    fontFamily: 'JetBrainsMono',
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
+          if (_hasGuitar)
+            _buildStatusBadge(
+              label: 'GUITAR: CHORDS',
+              color: const Color(0xFFB878F8),
+              fontSize: fontSize - 1,
             ),
-          ),
-      ],
+          if (_hasSpiderPower)
+            _buildStatusBadge(
+              label: 'SPIDER: WEB',
+              color: const Color(0xFF3CBCFC),
+              fontSize: fontSize - 1,
+            ),
+        ],
+      ),
     );
   }
 
@@ -2176,10 +2146,11 @@ class OkcBeatEmUpGameState extends State<OkcBeatEmUpGame>
     required double fontSize,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.black,
-        border: Border.all(color: color, width: 1.8),
+        color: Colors.black.withValues(alpha: 0.48),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: color, width: 1.5),
       ),
       child: Text(
         label,
@@ -2340,6 +2311,111 @@ class OkcBeatEmUpGameState extends State<OkcBeatEmUpGame>
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTitleScreenOverlay(bool isCompact) {
+    final bool blink = ((_worldTime * 3.0).floor() % 2) == 0;
+    return GestureDetector(
+      key: const Key('super_archbtw_title_screen'),
+      behavior: HitTestBehavior.translucent,
+      onTap: dismissTitleScreen,
+      child: Container(
+        color: Colors.black.withValues(alpha: 0.72),
+        alignment: Alignment.center,
+        padding: EdgeInsets.symmetric(
+          horizontal: isCompact ? 12 : 24,
+          vertical: isCompact ? 6 : 12,
+        ),
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 620),
+            padding: EdgeInsets.symmetric(
+              horizontal: isCompact ? 18 : 32,
+              vertical: isCompact ? 12 : 20,
+            ),
+            decoration: BoxDecoration(
+              color: const Color(0xFF090514).withValues(alpha: 0.96),
+              border: Border.all(
+                color: const Color(0xFFB878F8),
+                width: 3.5,
+              ),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0xFF5E117C),
+                  offset: Offset(6, 6),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(height: isCompact ? 10 : 14),
+                Text(
+                  'super archBTW',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontFamily: 'JetBrainsMono',
+                    fontSize: isCompact ? 28 : 44,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 2.0,
+                    shadows: const [
+                      Shadow(
+                        color: Color(0xFF8B3DD6),
+                        offset: Offset(4, 4),
+                        blurRadius: 0,
+                      ),
+                      Shadow(
+                        color: Color(0xFF3CBCFC),
+                        offset: Offset(-2, -2),
+                        blurRadius: 0,
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: isCompact ? 10 : 16),
+                SizedBox(
+                  width: isCompact ? 240 : 300,
+                  height: isCompact ? 120 : 152,
+                  child: CustomPaint(
+                    painter: _SuperArchBtwTitleHeroPainter(
+                      worldTime: _worldTime,
+                    ),
+                  ),
+                ),
+                SizedBox(height: isCompact ? 12 : 18),
+                ElevatedButton(
+                  key: const Key('start_game_button'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: blink
+                        ? const Color(0xFFB878F8)
+                        : const Color(0xFFF8B800),
+                    foregroundColor: Colors.black,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isCompact ? 20 : 28,
+                      vertical: isCompact ? 10 : 14,
+                    ),
+                    shape: const RoundedRectangleBorder(
+                      side: BorderSide(color: Colors.white, width: 2.5),
+                    ),
+                  ),
+                  onPressed: dismissTitleScreen,
+                  child: Text(
+                    '[ PRESS START ]',
+                    style: TextStyle(
+                      fontFamily: 'JetBrainsMono',
+                      fontWeight: FontWeight.bold,
+                      fontSize: isCompact ? 13 : 16,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -2780,6 +2856,27 @@ class _OkcRetroGamePainter extends CustomPainter {
     }
   }
 
+  void _drawPixelCircle(
+    Canvas canvas,
+    Offset center,
+    double radius, {
+    required double pixelSize,
+    required Color color,
+  }) {
+    final int steps = max(24, (radius * 2 * pi / pixelSize).ceil());
+    final Paint paint = Paint()
+      ..color = color
+      ..isAntiAlias = false;
+    for (int i = 0; i < steps; i++) {
+      final double a = (i / steps) * 2 * pi;
+      final double x =
+          ((center.dx + cos(a) * radius) / pixelSize).floor() * pixelSize;
+      final double y =
+          ((center.dy + sin(a) * radius) / pixelSize).floor() * pixelSize;
+      canvas.drawRect(Rect.fromLTWH(x, y, pixelSize, pixelSize), paint);
+    }
+  }
+
   void _drawOkcSkylineParallax(
     Canvas canvas,
     Size size,
@@ -2787,8 +2884,14 @@ class _OkcRetroGamePainter extends CustomPainter {
   ) {
     final double parallaxX = cameraX * 0.22;
     final Paint p = Paint()..isAntiAlias = false;
+    const double spanW = 760.0;
 
-    // 8-Bit Pixel Stars & Cross Twinkles
+    double wrapX(double baseOffset, double factor) {
+      final double raw = (baseOffset - parallaxX * factor) % spanW;
+      return ((raw < 0 ? raw + spanW : raw) - 80.0).floorToDouble();
+    }
+
+    // 1. 8-Bit Pixel Stars & Cross Twinkles
     for (int i = 0; i < 28; i++) {
       final double sx =
           (((i * 137.0 - parallaxX * 0.3) % size.width + size.width) %
@@ -2797,7 +2900,7 @@ class _OkcRetroGamePainter extends CustomPainter {
               .floor() *
               3.0;
       final double sy =
-          (((i * 43.0) % (groundScreenY * 0.52)) / 3.0).floor() * 3.0;
+          (((i * 43.0) % (groundScreenY * 0.50)) / 3.0).floor() * 3.0;
       final bool twinkle = ((worldTime * 3.0 + i).floor() % 4) == 0;
       p.color = twinkle ? const Color(0xFFF8B800) : Colors.white70;
       canvas.drawRect(Rect.fromLTWH(sx, sy, 3, 3), p);
@@ -2807,85 +2910,307 @@ class _OkcRetroGamePainter extends CustomPainter {
       }
     }
 
-    // 8-Bit Stepped Devon Energy Center Skyscraper (OKC's tallest landmark!)
-    final double devonX =
-        (((size.width * 0.54 - parallaxX * 0.45) % (size.width + 320)) - 80)
-            .floorToDouble();
-    final double towerW = 64.0;
-    final double towerH = 220.0;
-    final double topY = groundScreenY - towerH;
+    // 2. Distant Horizon Silhouette Band & Oklahoma State Capitol Dome (far background)
+    p.color = const Color(0xFF090D1E);
+    canvas.drawRect(Rect.fromLTWH(0, groundScreenY - 36, size.width, 36), p);
 
-    // Main stepped glass tower body
-    p.color = const Color(0xFF102040);
-    canvas.drawRect(Rect.fromLTWH(devonX, topY + 24, towerW, towerH - 24), p);
-    // Stepped 8-bit triangular crown of Devon Tower
-    for (int step = 0; step < 6; step++) {
-      canvas.drawRect(
-        Rect.fromLTWH(
-          devonX + step * 4.0,
-          topY + (5 - step) * 4.0,
-          towerW - step * 8.0,
-          4.0,
-        ),
-        p,
-      );
+    final double capitolX = wrapX(780.0, 0.25);
+    final double capBaseY = groundScreenY - 36;
+    // Classical colonnade base + ribbed neoclassical dome + lantern cupola
+    p.color = const Color(0xFF1E293B);
+    canvas.drawRect(Rect.fromLTWH(capitolX - 38, capBaseY - 26, 76, 26), p);
+    p.color = const Color(0xFF334155);
+    canvas.drawRect(Rect.fromLTWH(capitolX - 24, capBaseY - 42, 48, 16), p);
+    // Colonnade pillars
+    p.color = const Color(0xFF94A3B8);
+    for (double cx = capitolX - 20; cx <= capitolX + 18; cx += 6) {
+      canvas.drawRect(Rect.fromLTWH(cx, capBaseY - 38, 2, 12), p);
     }
-    // Pixel border & vertical window columns on Devon Tower
-    p.color = const Color(0xFF3CBCFC);
-    canvas.drawRect(Rect.fromLTWH(devonX, topY + 24, 3, towerH - 24), p);
+    // Illuminated white/gold Capitol dome steps
+    p.color = const Color(0xFFE2E8F0);
+    canvas.drawRect(Rect.fromLTWH(capitolX - 18, capBaseY - 52, 36, 10), p);
+    canvas.drawRect(Rect.fromLTWH(capitolX - 13, capBaseY - 60, 26, 8), p);
+    canvas.drawRect(Rect.fromLTWH(capitolX - 7, capBaseY - 66, 14, 6), p);
+    p.color = const Color(0xFFF8B800); // Guardian statue & lantern top
+    canvas.drawRect(Rect.fromLTWH(capitolX - 2, capBaseY - 74, 4, 8), p);
+
+    // 3. Historic Oklahoma Lattice Oil Derrick & Animated Pumpjack (Nodding Donkey)
+    final double oilX = wrapX(90.0, 0.30);
+    // Tapered steel lattice derrick tower
+    _drawPixelLine(
+      canvas,
+      Offset(oilX - 14, groundScreenY),
+      Offset(oilX - 3, groundScreenY - 78),
+      pixelSize: 2.0,
+      color: const Color(0xFF475569),
+    );
+    _drawPixelLine(
+      canvas,
+      Offset(oilX + 14, groundScreenY),
+      Offset(oilX + 3, groundScreenY - 78),
+      pixelSize: 2.0,
+      color: const Color(0xFF475569),
+    );
+    p.color = const Color(0xFF64748B);
+    canvas.drawRect(Rect.fromLTWH(oilX - 5, groundScreenY - 82, 10, 5), p);
+    for (int g = 1; g <= 5; g++) {
+      final double gy = groundScreenY - g * 14.0;
+      final double hw = 14.0 - g * 2.0;
+      canvas.drawRect(Rect.fromLTWH(oilX - hw, gy, hw * 2, 2), p);
+    }
+    // Animated rocking pumpjack ("horsehead") beside the derrick
+    final double pumpTilt = sin(worldTime * 2.6) * 6.0;
+    final double pjX = oilX + 28.0;
+    p.color = const Color(0xFF1E293B);
+    canvas.drawRect(Rect.fromLTWH(pjX - 6, groundScreenY - 22, 12, 22), p);
+    _drawPixelLine(
+      canvas,
+      Offset(pjX - 14, groundScreenY - 22 - pumpTilt),
+      Offset(pjX + 14, groundScreenY - 22 + pumpTilt),
+      pixelSize: 3.0,
+      color: const Color(0xFF94A3B8),
+    );
+    // Horsehead arc at right end of walking beam
+    p.color = const Color(0xFFF8B800);
     canvas.drawRect(
-      Rect.fromLTWH(devonX + towerW - 3, topY + 24, 3, towerH - 24),
+      Rect.fromLTWH(pjX + 12, groundScreenY - 26 + pumpTilt, 6, 10),
       p,
     );
-    for (double wy = topY + 32; wy < groundScreenY - 12; wy += 10) {
-      for (double wx = devonX + 8; wx < devonX + towerW - 10; wx += 10) {
-        canvas.drawRect(
-          Rect.fromLTWH(wx, wy, 5, 5),
-          Paint()..color = const Color(0xFF3CBCFC).withValues(alpha: 0.45),
-        );
+
+    // 4. Scissortail Park Skydance Bridge (Soaring Scissortail Flycatcher Bird Wings!)
+    final double bridgeX = wrapX(255.0, 0.36);
+    // Illuminated pedestrian bridge deck & support piers
+    p.color = const Color(0xFF1E293B);
+    canvas.drawRect(Rect.fromLTWH(bridgeX - 56, groundScreenY - 38, 112, 7), p);
+    p.color = const Color(0xFF38BDF8);
+    canvas.drawRect(Rect.fromLTWH(bridgeX - 56, groundScreenY - 39, 112, 2), p);
+    p.color = const Color(0xFF334155);
+    canvas.drawRect(Rect.fromLTWH(bridgeX - 38, groundScreenY - 32, 6, 32), p);
+    canvas.drawRect(Rect.fromLTWH(bridgeX + 32, groundScreenY - 32, 6, 32), p);
+    // Iconic soaring asymmetrical white steel scissor-tail wings
+    // Tall main tail feather sweeping up-left
+    _drawPixelLine(
+      canvas,
+      Offset(bridgeX - 8, groundScreenY - 38),
+      Offset(bridgeX - 36, groundScreenY - 128),
+      pixelSize: 2.5,
+      color: const Color(0xFFE2E8F0),
+    );
+    _drawPixelLine(
+      canvas,
+      Offset(bridgeX + 6, groundScreenY - 38),
+      Offset(bridgeX - 36, groundScreenY - 128),
+      pixelSize: 2.0,
+      color: const Color(0xFF94A3B8),
+    );
+    // Secondary forked scissor-tail feather sweeping up-right
+    _drawPixelLine(
+      canvas,
+      Offset(bridgeX - 4, groundScreenY - 38),
+      Offset(bridgeX + 28, groundScreenY - 114),
+      pixelSize: 2.5,
+      color: const Color(0xFFE2E8F0),
+    );
+    _drawPixelLine(
+      canvas,
+      Offset(bridgeX + 10, groundScreenY - 38),
+      Offset(bridgeX + 28, groundScreenY - 114),
+      pixelSize: 2.0,
+      color: const Color(0xFF94A3B8),
+    );
+    // Lower third wing strut
+    _drawPixelLine(
+      canvas,
+      Offset(bridgeX + 4, groundScreenY - 38),
+      Offset(bridgeX + 42, groundScreenY - 82),
+      pixelSize: 2.0,
+      color: const Color(0xFFCBD5E1),
+    );
+    // Warm sunset/neon uplighting glow at base of Skydance wings
+    p.color = map.neonAccent.withValues(alpha: 0.75);
+    canvas.drawRect(Rect.fromLTWH(bridgeX - 10, groundScreenY - 46, 22, 8), p);
+
+    // 5. Downtown OKC Skyscraper Cluster:
+    //    (a) BancFirst Tower (dark bronze modernist tower)
+    //    (b) Devon Energy Center (844 ft glass diagrid tower with V-notch twin peaks)
+    //    (c) First National Center (1931 Art Deco stepped limestone skyscraper + pyramid spire)
+    final double clusterX = wrapX(490.0, 0.45);
+
+    // (a) BancFirst Tower (left of Devon)
+    final double bancX = clusterX - 78.0;
+    const double bancW = 54.0;
+    const double bancH = 168.0;
+    final double bancTopY = groundScreenY - bancH;
+    p.color = const Color(0xFF1C1917); // Dark bronze-espresso facade
+    canvas.drawRect(Rect.fromLTWH(bancX, bancTopY, bancW, bancH), p);
+    p.color = const Color(0xFF44403C);
+    canvas.drawRect(Rect.fromLTWH(bancX, bancTopY, bancW, 8), p);
+    // Illuminated white mechanical penthouse crown
+    p.color = const Color(0xFFFDE68A);
+    canvas.drawRect(Rect.fromLTWH(bancX + 8, bancTopY + 3, bancW - 16, 4), p);
+    // Vertical bronze mullion pinstripes & warm office windows
+    for (double wx = bancX + 5; wx < bancX + bancW - 4; wx += 6) {
+      p.color = const Color(0xFF292524);
+      canvas.drawRect(Rect.fromLTWH(wx, bancTopY + 10, 2, bancH - 14), p);
+      for (double wy = bancTopY + 14; wy < groundScreenY - 12; wy += 12) {
+        if (((wx.toInt() + wy.toInt()) % 3) != 0) {
+          p.color = const Color(0xFFFDE68A).withValues(alpha: 0.45);
+          canvas.drawRect(Rect.fromLTWH(wx + 2, wy, 3, 6), p);
+        }
       }
     }
-    // Blinking 8-bit beacon on Devon spire
+
+    // (b) Devon Energy Center (OKC's 50-story flagship glass tower!)
+    final double devonX = clusterX;
+    const double towerW = 68.0;
+    const double towerH = 236.0;
+    final double topY = groundScreenY - towerH;
+
+    // Main tapered blue-glass tower shaft
+    p.color = const Color(0xFF0F2442);
+    canvas.drawRect(Rect.fromLTWH(devonX, topY + 26, towerW, towerH - 26), p);
+    // Chamfered lighter cyan-glass center facet
+    p.color = const Color(0xFF16355D);
+    canvas.drawRect(
+      Rect.fromLTWH(devonX + 10, topY + 22, towerW - 20, towerH - 22),
+      p,
+    );
+    // Iconic twin peaked parapet fins with V-notch crown at top of Devon Tower
+    for (int step = 0; step < 7; step++) {
+      final double y = topY + step * 4.0;
+      final double w = 6.0 + step * 3.5;
+      p.color = const Color(0xFF1E40AF);
+      // Left peak fin
+      canvas.drawRect(Rect.fromLTWH(devonX + 4, y, w, 4.0), p);
+      // Right peak fin
+      canvas.drawRect(Rect.fromLTWH(devonX + towerW - 4 - w, y, w, 4.0), p);
+    }
+    // Bright cyan glass curtain-wall edges & horizontal sky-lobby bands
+    p.color = const Color(0xFF38BDF8);
+    canvas.drawRect(Rect.fromLTWH(devonX, topY + 26, 2, towerH - 26), p);
+    canvas.drawRect(
+      Rect.fromLTWH(devonX + towerW - 2, topY + 26, 2, towerH - 26),
+      p,
+    );
+    canvas.drawRect(Rect.fromLTWH(devonX + 10, topY + 22, 2, towerH - 22), p);
+    canvas.drawRect(
+      Rect.fromLTWH(devonX + towerW - 12, topY + 22, 2, towerH - 22),
+      p,
+    );
+    // Glass window grid & diagonal X-bracing highlights
+    for (double wy = topY + 32; wy < groundScreenY - 12; wy += 9) {
+      p.color = const Color(0xFF0284C7).withValues(alpha: 0.35);
+      canvas.drawRect(Rect.fromLTWH(devonX + 4, wy, towerW - 8, 2), p);
+      for (double wx = devonX + 14; wx < devonX + towerW - 14; wx += 9) {
+        p.color = const Color(0xFF7DD3FC).withValues(alpha: 0.55);
+        canvas.drawRect(Rect.fromLTWH(wx, wy + 2, 5, 4), p);
+      }
+    }
+    // Blinking red aviation beacons on Devon's twin peaks
     if ((worldTime * 4).floor().isEven) {
-      canvas.drawRect(
-        Rect.fromLTWH(devonX + towerW / 2 - 3, topY - 6, 6, 6),
-        Paint()..color = const Color(0xFFF83870),
-      );
+      p.color = const Color(0xFFF83870);
+      canvas.drawRect(Rect.fromLTWH(devonX + 4, topY - 4, 4, 4), p);
+      canvas.drawRect(Rect.fromLTWH(devonX + towerW - 8, topY - 4, 4, 4), p);
     }
 
-    // 8-Bit Pixel Wheeler District Ferris Wheel
-    final double wheelCenterX =
-        (((size.width * 0.22 - parallaxX * 0.35) % (size.width + 280)) - 50)
-            .floorToDouble();
-    final Offset wc = Offset(wheelCenterX, groundScreenY - 64);
+    // (c) First National Center (1931 Art Deco stepped-setback limestone tower + spire)
+    final double fncX = clusterX + 82.0;
+    const double fncW = 60.0;
+    const double fncH = 182.0;
+    final double fncTopY = groundScreenY - fncH;
+    // Lower wide limestone base
+    p.color = const Color(0xFF57534E);
+    canvas.drawRect(Rect.fromLTWH(fncX, fncTopY + 56, fncW, fncH - 56), p);
+    // Middle Art Deco setback shaft
+    p.color = const Color(0xFF78716C);
+    canvas.drawRect(Rect.fromLTWH(fncX + 8, fncTopY + 24, fncW - 16, 32), p);
+    // Upper Art Deco tower lantern
+    p.color = const Color(0xFFA8A29E);
+    canvas.drawRect(Rect.fromLTWH(fncX + 16, fncTopY + 8, fncW - 32, 16), p);
+    // Sloped pyramid crown & tall silver Art Deco spire
+    p.color = const Color(0xFF14B8A6); // Aged copper pyramid roof
+    canvas.drawRect(Rect.fromLTWH(fncX + 18, fncTopY + 2, fncW - 36, 6), p);
+    canvas.drawRect(Rect.fromLTWH(fncX + 22, fncTopY - 4, fncW - 44, 6), p);
+    p.color = const Color(0xFFF8FAFC);
+    canvas.drawRect(Rect.fromLTWH(fncX + fncW / 2 - 1, fncTopY - 28, 3, 24), p);
+    p.color = const Color(0xFFF8B800);
+    canvas.drawRect(Rect.fromLTWH(fncX + fncW / 2 - 2, fncTopY - 32, 5, 5), p);
+    // Vertical Art Deco recessed window spandrels
+    for (double wx = fncX + 6; wx < fncX + fncW - 6; wx += 8) {
+      p.color = const Color(0xFF292524);
+      canvas.drawRect(Rect.fromLTWH(wx, fncTopY + 62, 4, fncH - 68), p);
+      p.color = const Color(0xFFFDE68A).withValues(alpha: 0.55);
+      for (double wy = fncTopY + 66; wy < groundScreenY - 12; wy += 10) {
+        canvas.drawRect(Rect.fromLTWH(wx + 1, wy, 2, 5), p);
+      }
+    }
+
+    // 6. Wheeler District Santa Monica Ferris Wheel on the Oklahoma River
+    //    (Full double circular steel rims, 12 rotating radial spokes, glowing hub & gondolas!)
+    final double wheelCenterX = wrapX(350.0, 0.35);
+    final Offset wc = Offset(wheelCenterX, groundScreenY - 68);
     const double wr = 42.0;
-    // Support A-frame legs
-    _drawPixelLine(
+
+    // Outer & inner circular pixel steel rims
+    _drawPixelCircle(
       canvas,
       wc,
-      Offset(wc.dx - 24, groundScreenY),
-      pixelSize: 3.0,
-      color: const Color(0xFF475569),
+      wr,
+      pixelSize: 2.5,
+      color: const Color(0xFF38BDF8),
     );
-    _drawPixelLine(
+    _drawPixelCircle(
       canvas,
       wc,
-      Offset(wc.dx + 24, groundScreenY),
-      pixelSize: 3.0,
-      color: const Color(0xFF475569),
+      wr - 9.0,
+      pixelSize: 2.0,
+      color: const Color(0xFFB878F8),
     );
-    // 12 Pixel Gondola Cars around the Ferris wheel
+
+    // 12 Rotating Radial Spokes & Swinging Gondola Cars
     for (int i = 0; i < 12; i++) {
       final double a = worldTime * 0.35 + (i * pi / 6);
       final double gx = (wc.dx + cos(a) * wr).floorToDouble();
       final double gy = (wc.dy + sin(a) * wr).floorToDouble();
-      canvas.drawRect(
-        Rect.fromCenter(center: Offset(gx, gy), width: 6, height: 6),
-        Paint()
-          ..color = i.isEven ? map.neonAccent : const Color(0xFFF8B800)
-          ..isAntiAlias = false,
+      // Radial steel spoke from center hub to outer rim
+      _drawPixelLine(
+        canvas,
+        wc,
+        Offset(gx, gy),
+        pixelSize: 1.5,
+        color: const Color(0xFF64748B),
       );
+      // Gondola bucket hanging below its rim pin
+      final Color carColor = i.isEven
+          ? map.neonAccent
+          : (i % 3 == 0 ? const Color(0xFFF83870) : const Color(0xFFF8B800));
+      p.color = Colors.black;
+      canvas.drawRect(Rect.fromLTWH(gx - 4, gy - 2, 8, 9), p);
+      p.color = carColor;
+      canvas.drawRect(Rect.fromLTWH(gx - 3, gy - 1, 6, 3), p); // Canopy top
+      p.color = const Color(0xFFFDE68A);
+      canvas.drawRect(Rect.fromLTWH(gx - 2, gy + 2, 4, 4), p); // Lit cabin
     }
+
+    // Support A-frame legs & glowing center star hub
+    _drawPixelLine(
+      canvas,
+      wc,
+      Offset(wc.dx - 26, groundScreenY),
+      pixelSize: 3.0,
+      color: const Color(0xFF475569),
+    );
+    _drawPixelLine(
+      canvas,
+      wc,
+      Offset(wc.dx + 26, groundScreenY),
+      pixelSize: 3.0,
+      color: const Color(0xFF475569),
+    );
+    p.color = Colors.black;
+    canvas.drawRect(Rect.fromCenter(center: wc, width: 12, height: 12), p);
+    p.color = const Color(0xFFF8B800);
+    canvas.drawRect(Rect.fromCenter(center: wc, width: 8, height: 8), p);
   }
 
   void _drawDistrictBuildings(
@@ -2896,12 +3221,139 @@ class _OkcRetroGamePainter extends CustomPainter {
     final double midScroll = (cameraX * 0.65).floorToDouble();
     final Paint p = Paint()..isAntiAlias = false;
 
-    for (final b in map.buildings) {
+    for (int bIdx = 0; bIdx < map.buildings.length; bIdx++) {
+      final OkcBuilding b = map.buildings[bIdx];
       final double bx = (b.x - midScroll).floorToDouble();
-      if (bx + b.width < -60 || bx > size.width + 60) continue;
+      if (bx + b.width < -90 || bx > size.width + 90) continue;
       final double topY = (groundScreenY - b.height).floorToDouble();
+      final int archStyle = bIdx % 6;
 
-      // Main 8-bit building block with 3px black NES outline
+      if (archStyle == 2) {
+        // --- STYLE 2: MYRIAD BOTANICAL GARDENS CRYSTAL BRIDGE CONSERVATORY ---
+        // Translucent cylindrical glass barrel-vault conservatory with white space-frame ribs
+        // and lush pixel palm trees & tropical foliage inside!
+        final double domeH = min(b.height, 148.0);
+        final double domeTopY = groundScreenY - domeH;
+
+        // Stepped cylindrical glass arch profile
+        for (int s = 0; s < 6; s++) {
+          final double inset = (5 - s) * 4.0;
+          final double sy = domeTopY + (5 - s) * 5.0;
+          final double sh = domeH - (5 - s) * 5.0;
+          p.color = Colors.black;
+          canvas.drawRect(
+            Rect.fromLTWH(bx + inset - 2, sy - 2, b.width - inset * 2 + 4, sh + 2),
+            p,
+          );
+          p.color = const Color(0xFF0D3B4C);
+          canvas.drawRect(
+            Rect.fromLTWH(bx + inset, sy, b.width - inset * 2, sh),
+            p,
+          );
+        }
+
+        // Glowing emerald/cyan conservatory interior + pixel palm trees & ferns
+        p.color = const Color(0xFF0F766E);
+        canvas.drawRect(
+          Rect.fromLTWH(bx + 10, domeTopY + 26, b.width - 20, domeH - 30),
+          p,
+        );
+        for (double tx = bx + 28; tx < bx + b.width - 24; tx += 36) {
+          // Palm trunk
+          p.color = const Color(0xFF78350F);
+          canvas.drawRect(Rect.fromLTWH(tx - 2, groundScreenY - 62, 5, 58), p);
+          // Lush green palm fronds
+          p.color = const Color(0xFF22C55E);
+          canvas.drawRect(Rect.fromLTWH(tx - 16, groundScreenY - 70, 32, 8), p);
+          canvas.drawRect(Rect.fromLTWH(tx - 12, groundScreenY - 78, 24, 8), p);
+          p.color = const Color(0xFF4ADE80);
+          canvas.drawRect(Rect.fromLTWH(tx - 8, groundScreenY - 74, 16, 4), p);
+        }
+
+        // White tubular steel space-frame ribs & diagonal X-trusses
+        p.color = const Color(0xFFE2E8F0);
+        for (double rx = bx + 8; rx <= bx + b.width - 8; rx += 22) {
+          canvas.drawRect(Rect.fromLTWH(rx, domeTopY + 12, 3, domeH - 12), p);
+        }
+        for (double ry = domeTopY + 26; ry < groundScreenY - 12; ry += 24) {
+          canvas.drawRect(Rect.fromLTWH(bx + 6, ry, b.width - 12, 3), p);
+        }
+        continue;
+      }
+
+      if (archStyle == 3) {
+        // --- STYLE 3: ICONIC OKC SONIC DRIVE-IN CANOPY & RETRO BOOMERANG PYLON ---
+        final double canopyH = 92.0;
+        final double canopyTopY = groundScreenY - canopyH;
+
+        // Background brick drive-in kitchen building
+        p.color = Colors.black;
+        canvas.drawRect(
+          Rect.fromLTWH(bx + 8, canopyTopY - 26, b.width - 16, canopyH + 26),
+          p,
+        );
+        p.color = const Color(0xFF7F1D1D);
+        canvas.drawRect(
+          Rect.fromLTWH(bx + 11, canopyTopY - 23, b.width - 22, canopyH + 23),
+          p,
+        );
+
+        // Tall Retro Mid-Century Atomic Boomerang Pylon Sign rising above the drive-in
+        final double pylonX = bx + b.width * 0.5;
+        p.color = const Color(0xFFE2E8F0);
+        canvas.drawRect(Rect.fromLTWH(pylonX - 3, canopyTopY - 86, 6, 86), p);
+        // Red & yellow retro boomerang arrow fin
+        p.color = Colors.black;
+        canvas.drawRect(Rect.fromLTWH(pylonX - 28, canopyTopY - 78, 56, 24), p);
+        p.color = const Color(0xFFEF4444);
+        canvas.drawRect(Rect.fromLTWH(pylonX - 25, canopyTopY - 75, 50, 18), p);
+        p.color = const Color(0xFFFACC15);
+        canvas.drawRect(Rect.fromLTWH(pylonX - 19, canopyTopY - 70, 38, 8), p);
+
+        // Zig-Zag Googie Folded-Plate Cantilevered Canopy Roof (cream, red & cyan)
+        p.color = Colors.black;
+        canvas.drawRect(Rect.fromLTWH(bx - 4, canopyTopY - 4, b.width + 8, 18), p);
+        p.color = const Color(0xFFF8FAFC);
+        canvas.drawRect(Rect.fromLTWH(bx - 1, canopyTopY - 1, b.width + 2, 6), p);
+        p.color = const Color(0xFFEF4444);
+        canvas.drawRect(Rect.fromLTWH(bx - 1, canopyTopY + 5, b.width + 2, 4), p);
+        p.color = const Color(0xFF38BDF8);
+        canvas.drawRect(Rect.fromLTWH(bx - 1, canopyTopY + 9, b.width + 2, 3), p);
+
+        // Glowing Carhop Menu Stalls & Speaker Posts
+        for (double sx = bx + 18; sx < bx + b.width - 24; sx += 34) {
+          p.color = const Color(0xFFCBD5E1);
+          canvas.drawRect(
+            Rect.fromLTWH(sx, canopyTopY + 14, 3, canopyH - 14),
+            p,
+          );
+          // Lit turquoise/amber menu board
+          p.color = Colors.black;
+          canvas.drawRect(Rect.fromLTWH(sx + 5, groundScreenY - 44, 18, 22), p);
+          p.color = const Color(0xFF38BDF8);
+          canvas.drawRect(Rect.fromLTWH(sx + 7, groundScreenY - 42, 14, 18), p);
+          p.color = const Color(0xFFFDE68A);
+          canvas.drawRect(Rect.fromLTWH(sx + 9, groundScreenY - 39, 10, 6), p);
+        }
+
+        // Classic 1950s Cherry-Red Tailfin Muscle Cruiser parked under the canopy
+        final double carX = bx + b.width - 58;
+        final double carY = groundScreenY - 22;
+        p.color = Colors.black;
+        canvas.drawRect(Rect.fromLTWH(carX - 2, carY - 2, 48, 20), p);
+        p.color = const Color(0xFFDC2626); // Cherry red body
+        canvas.drawRect(Rect.fromLTWH(carX, carY + 4, 44, 10), p);
+        p.color = const Color(0xFFBAE6FD); // Wrap-around windshield cabin
+        canvas.drawRect(Rect.fromLTWH(carX + 10, carY - 2, 20, 6), p);
+        p.color = const Color(0xFFF8FAFC); // Whitewall side-trim & tailfin
+        canvas.drawRect(Rect.fromLTWH(carX + 2, carY + 8, 40, 2), p);
+        p.color = Colors.black; // Tires
+        canvas.drawRect(Rect.fromLTWH(carX + 6, carY + 12, 9, 9), p);
+        canvas.drawRect(Rect.fromLTWH(carX + 30, carY + 12, 9, 9), p);
+        continue;
+      }
+
+      // --- STANDARD / LANDMARK TALL FACADE BASE (Styles 0, 1, 4, 5) ---
       p.color = Colors.black;
       canvas.drawRect(
         Rect.fromLTWH(bx - 3, topY - 3, b.width + 6, b.height + 3),
@@ -2913,60 +3365,194 @@ class _OkcRetroGamePainter extends CustomPainter {
       // Stepped cornice roof trim
       p.color = b.trimColor;
       canvas.drawRect(Rect.fromLTWH(bx - 3, topY - 3, b.width + 6, 9), p);
+      // Corbeled dentil blocks along roofline
+      p.color = Colors.black;
+      for (double dx = bx + 4; dx < bx + b.width - 4; dx += 10) {
+        canvas.drawRect(Rect.fromLTWH(dx, topY + 6, 4, 4), p);
+      }
 
-      // 8-Bit Brick mortar pixel rows on Bricktown buildings
+      // 8-Bit Brick mortar pixel rows on brick buildings
       if (b.isBrick) {
         p.color = const Color(0xFF480C0C);
-        for (double by = topY + 12; by < groundScreenY; by += 12) {
+        for (double by = topY + 14; by < groundScreenY; by += 12) {
           canvas.drawRect(Rect.fromLTWH(bx, by, b.width, 2), p);
         }
       }
 
-      // 8-Bit Pixel Windows with sills
+      // Architectural Windows (Arched Romanesque in Bricktown Style 0, Loft Muntins otherwise)
       final double padX = 12.0;
-      final double padY = 28.0;
+      final double padY = 26.0;
+      final double availH = b.height - padY - 46.0;
       final double cellW = (b.width - padX * 2) / max(1, b.windowCols);
-      final double cellH = (b.height - padY * 2) / max(1, b.windowRows);
+      final double cellH = max(22.0, availH / max(1, b.windowRows));
       for (int r = 0; r < b.windowRows; r++) {
+        final double wy = (topY + padY + r * cellH).floorToDouble();
+        if (wy + 16 > groundScreenY - 42) break;
         for (int c = 0; c < b.windowCols; c++) {
           final bool lit = ((r * 7 + c * 13 + b.windowRows) % 3) != 0;
           final double wx = (bx + padX + c * cellW + 3).floorToDouble();
-          final double wy = (topY + padY + r * cellH + 3).floorToDouble();
-          final double ww = max(8.0, (cellW - 8).floorToDouble());
-          final double wh = max(10.0, (cellH - 10).floorToDouble());
+          final double ww = max(10.0, (cellW - 8).floorToDouble());
+          final double wh = max(12.0, (cellH - 8).floorToDouble());
 
+          // Window frame & limestone keystone arch
+          p.color = b.trimColor;
+          canvas.drawRect(Rect.fromLTWH(wx - 2, wy - 4, ww + 4, 3), p);
           p.color = Colors.black;
           canvas.drawRect(Rect.fromLTWH(wx - 2, wy - 2, ww + 4, wh + 4), p);
           p.color = lit ? const Color(0xFFF8D870) : const Color(0xFF0C1020);
           canvas.drawRect(Rect.fromLTWH(wx, wy, ww, wh), p);
+          // Window pane muntin crossbars
+          p.color = Colors.black;
+          canvas.drawRect(Rect.fromLTWH(wx + ww / 2 - 1, wy, 2, wh), p);
+          canvas.drawRect(Rect.fromLTWH(wx, wy + wh / 2 - 1, ww, 2), p);
         }
       }
 
-      // 8-Bit Pixel Neon District Sign
-      if (b.neonSign != null) {
-        final Rect signRect = Rect.fromLTWH(
-          bx + 6,
-          topY + 10,
-          b.width - 12,
-          20,
-        );
+      if (archStyle == 0) {
+        // --- STYLE 0: BRICKTOWN WAREHOUSE WATER TOWER, FIRE ESCAPE & CANAL ARCH ---
+        // 1. Rooftop Wooden Stave Water Tank on Steel Trestle Legs
+        final double wtX = bx + 16.0;
+        p.color = const Color(0xFF334155);
+        canvas.drawRect(Rect.fromLTWH(wtX + 3, topY - 20, 3, 18), p);
+        canvas.drawRect(Rect.fromLTWH(wtX + 20, topY - 20, 3, 18), p);
         p.color = Colors.black;
-        canvas.drawRect(signRect, p);
+        canvas.drawRect(Rect.fromLTWH(wtX - 2, topY - 44, 30, 26), p);
+        p.color = const Color(0xFF92400E); // Cedar wood barrel staves
+        canvas.drawRect(Rect.fromLTWH(wtX, topY - 42, 26, 22), p);
+        p.color = const Color(0xFF451A03); // Iron barrel hoops
+        canvas.drawRect(Rect.fromLTWH(wtX, topY - 36, 26, 2), p);
+        canvas.drawRect(Rect.fromLTWH(wtX, topY - 27, 26, 2), p);
+        // Conical roof cap on water tower
+        p.color = const Color(0xFF78350F);
+        canvas.drawRect(Rect.fromLTWH(wtX + 3, topY - 48, 20, 4), p);
+        canvas.drawRect(Rect.fromLTWH(wtX + 8, topY - 52, 10, 4), p);
+
+        // 2. Ground-level Bricktown Canal Stone Archway & Shimmering Water Taxi Tunnel
+        final double archW = min(56.0, b.width - 28.0);
+        final double archX = bx + (b.width - archW) / 2;
+        final double archTopY = groundScreenY - 36.0;
+        p.color = const Color(0xFF94A3B8); // Limestone arch voussoirs
+        canvas.drawRect(Rect.fromLTWH(archX - 4, archTopY - 4, archW + 8, 40), p);
+        p.color = const Color(0xFF082F49); // Deep canal tunnel
+        canvas.drawRect(Rect.fromLTWH(archX, archTopY, archW, 36), p);
+        p.color = const Color(0xFF38BDF8); // Shimmering Bricktown Canal water at base
+        canvas.drawRect(Rect.fromLTWH(archX, groundScreenY - 10, archW, 10), p);
+        p.color = const Color(0xFF7DD3FC);
+        canvas.drawRect(Rect.fromLTWH(archX + 6, groundScreenY - 7, archW - 12, 3), p);
+        // Warm Edison festoon string bulbs across the canal arch
+        p.color = const Color(0xFFFDE68A);
+        for (double lx = archX + 6; lx < archX + archW - 4; lx += 10) {
+          canvas.drawRect(Rect.fromLTWH(lx, archTopY + 4, 3, 3), p);
+        }
+      } else if (archStyle == 1) {
+        // --- STYLE 1: HISTORIC TOWER THEATRE (UPTOWN 23RD) ---
+        // Tall stepped Art Deco vertical neon fin tower rising above the roof
+        // + 3D cantilevered neon street marquee & ticket booth!
+        final double cx = bx + b.width * 0.5;
+
+        // Vertical Art Deco turquoise/magenta neon pilasters along facade edges
+        p.color = const Color(0xFF2DD4BF);
+        canvas.drawRect(Rect.fromLTWH(bx + 4, topY + 10, 4, b.height - 48), p);
         canvas.drawRect(
-          signRect,
-          Paint()
-            ..color = b.neonColor
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = 2.0,
+          Rect.fromLTWH(bx + b.width - 8, topY + 10, 4, b.height - 48),
+          p,
         );
-        _drawLabel(
-          canvas,
-          b.neonSign!,
-          signRect.center,
-          b.neonColor,
-          fontSize: 10,
-          bold: true,
-        );
+
+        // Iconic Towering Vertical Fin Sign above roofline
+        p.color = Colors.black;
+        canvas.drawRect(Rect.fromLTWH(cx - 12, topY - 62, 24, 62), p);
+        p.color = const Color(0xFFBE123C); // Deep crimson Art Deco fin
+        canvas.drawRect(Rect.fromLTWH(cx - 9, topY - 59, 18, 56), p);
+        p.color = const Color(0xFF2DD4BF); // Neon turquoise border & vertical tubes
+        canvas.drawRect(Rect.fromLTWH(cx - 9, topY - 59, 3, 56), p);
+        canvas.drawRect(Rect.fromLTWH(cx + 6, topY - 59, 3, 56), p);
+        p.color = const Color(0xFFFDE047); // Chaser chevrons down the tower fin
+        for (double fy = topY - 52; fy < topY - 8; fy += 9) {
+          canvas.drawRect(Rect.fromLTWH(cx - 3, fy, 6, 5), p);
+        }
+        // Glowing neon sunburst crest at top of Tower fin
+        p.color = const Color(0xFFF83870);
+        canvas.drawRect(Rect.fromLTWH(cx - 8, topY - 72, 16, 10), p);
+        p.color = const Color(0xFFFDE047);
+        canvas.drawRect(Rect.fromLTWH(cx - 4, topY - 70, 8, 6), p);
+
+        // Cantilevered Trapezoidal Street Marquee & Glass Ticket Booth
+        final double mqY = groundScreenY - 42.0;
+        p.color = Colors.black;
+        canvas.drawRect(Rect.fromLTWH(bx + 6, mqY, b.width - 12, 18), p);
+        p.color = const Color(0xFFFDE68A); // Illuminated white/gold letter board
+        canvas.drawRect(Rect.fromLTWH(bx + 10, mqY + 3, b.width - 20, 12), p);
+        p.color = const Color(0xFFF83870); // Neon pink marquee trim
+        canvas.drawRect(Rect.fromLTWH(bx + 8, mqY + 1, b.width - 16, 2), p);
+        canvas.drawRect(Rect.fromLTWH(bx + 8, mqY + 15, b.width - 16, 2), p);
+        // Box-office ticket booth below marquee
+        p.color = const Color(0xFFF59E0B);
+        canvas.drawRect(Rect.fromLTWH(cx - 8, groundScreenY - 24, 16, 24), p);
+        p.color = const Color(0xFFBAE6FD);
+        canvas.drawRect(Rect.fromLTWH(cx - 5, groundScreenY - 21, 10, 11), p);
+      } else if (archStyle == 4) {
+        // --- STYLE 4: CLASSEN TRIANGLE MILK BOTTLE BUILDING & ROUTE 66 GIANT SODA BOTTLE ---
+        // OKC's famous giant rooftop Braum's/Townley's Milk Bottle + Pops 66 LED Soda Bottle!
+        final double mbX = bx + b.width * 0.32;
+        // Stepped brick roof pediment
+        p.color = const Color(0xFFFDE68A);
+        canvas.drawRect(Rect.fromLTWH(mbX - 16, topY - 12, 32, 10), p);
+        // Giant 3D Rooftop White & Cream Milk Bottle
+        p.color = Colors.black;
+        canvas.drawRect(Rect.fromLTWH(mbX - 11, topY - 46, 22, 34), p);
+        canvas.drawRect(Rect.fromLTWH(mbX - 7, topY - 62, 14, 18), p);
+        canvas.drawRect(Rect.fromLTWH(mbX - 9, topY - 66, 18, 5), p);
+        p.color = const Color(0xFFF8FAFC); // Crisp white milk bottle body
+        canvas.drawRect(Rect.fromLTWH(mbX - 8, topY - 44, 16, 30), p);
+        p.color = const Color(0xFFFEF3C7); // Rich cream top & neck
+        canvas.drawRect(Rect.fromLTWH(mbX - 5, topY - 60, 10, 16), p);
+        canvas.drawRect(Rect.fromLTWH(mbX - 7, topY - 64, 14, 3), p);
+        // Red vintage band around the bottle belly
+        p.color = const Color(0xFFEF4444);
+        canvas.drawRect(Rect.fromLTWH(mbX - 8, topY - 32, 16, 6), p);
+
+        // Glowing Pops 66 LED Neon Soda Bottle on the right side of the roof
+        final double sbX = bx + b.width * 0.74;
+        p.color = Colors.black;
+        canvas.drawRect(Rect.fromLTWH(sbX - 8, topY - 42, 16, 40), p);
+        canvas.drawRect(Rect.fromLTWH(sbX - 4, topY - 58, 8, 16), p);
+        final List<Color> ledCols = const [
+          Color(0xFFF83870),
+          Color(0xFF3CBCFC),
+          Color(0xFF58F898),
+          Color(0xFFF8B800),
+          Color(0xFFB878F8),
+        ];
+        for (int s = 0; s < 5; s++) {
+          p.color = ledCols[(s + (worldTime * 3).floor()) % ledCols.length];
+          canvas.drawRect(Rect.fromLTWH(sbX - 6, topY - 10 - s * 6.0, 12, 5), p);
+        }
+      } else {
+        // --- STYLE 5: MIDTOWN ART DECO ZIGGURAT & OKC ROCK HALL ---
+        // Stepped Art Deco ziggurat crown + winged electric guitar neon facade crest!
+        final double cx = bx + b.width * 0.5;
+        p.color = Colors.black;
+        canvas.drawRect(Rect.fromLTWH(cx - 28, topY - 16, 56, 14), p);
+        canvas.drawRect(Rect.fromLTWH(cx - 16, topY - 28, 32, 12), p);
+        p.color = b.trimColor;
+        canvas.drawRect(Rect.fromLTWH(cx - 25, topY - 14, 50, 11), p);
+        canvas.drawRect(Rect.fromLTWH(cx - 13, topY - 25, 26, 11), p);
+        p.color = b.neonColor;
+        canvas.drawRect(Rect.fromLTWH(cx - 8, topY - 21, 16, 4), p);
+
+        // Ground-floor striped storefront awning & warm lit shopfront
+        final double sfY = groundScreenY - 34.0;
+        p.color = Colors.black;
+        canvas.drawRect(Rect.fromLTWH(bx + 8, sfY, b.width - 16, 34), p);
+        p.color = const Color(0xFF1E293B);
+        canvas.drawRect(Rect.fromLTWH(bx + 11, sfY + 10, b.width - 22, 24), p);
+        p.color = const Color(0xFFFDE68A);
+        canvas.drawRect(Rect.fromLTWH(bx + 15, sfY + 14, b.width - 30, 14), p);
+        // Striped purple/gold awning
+        for (double ax = bx + 8; ax < bx + b.width - 12; ax += 8) {
+          p.color = ((ax ~/ 8).isEven) ? b.neonColor : const Color(0xFFF8FAFC);
+          canvas.drawRect(Rect.fromLTWH(ax, sfY, 8, 9), p);
+        }
       }
     }
   }
@@ -3075,50 +3661,79 @@ class _OkcRetroGamePainter extends CustomPainter {
     }
   }
 
-  // --- Detailed 8-Bit Tortie Cat Sprite (Start of Level) ---
-  static const List<String> _tortieCatMatrix = [
-    '..KK......KK....',
-    '.KOO.KKKK.AAK...',
-    '.KOOKOOOOAAAAK..',
-    '.KOOOGGOOAAGGK..',
-    '.KKKKOOOOAAAAK..',
-    '..KOOAAAACCKKK..',
-    '..KKKKKKKKKK....',
-    '.KOOAAKKOOOO.KK.',
-    'KKOOAAKKOOOOAAAK',
-    'KOOOAAKKOOOOAAAK',
-    'K.KKKKKKKKKKKK..',
-    '..KOOAAKKOOOO...',
-    '..KOOAAKKOOOO...',
-    '..KKKKK..KKKKK..',
+  // --- High-Detail Pixel-Art Sprite for Duchess (Tortoiseshell Cat, Start of Level) ---
+  // Matches the main character's px=1.05 high-density pixel art style:
+  // 1px black outline ('K'), multi-tone mottled tortoiseshell coat (dark espresso 'b',
+  // burnt sienna 'o', ginger orange 'O', amber gold 'A', soft cream 'C'),
+  // pink inner ears & nose ('P'), and emerald green eyes ('G'/'g') with white catchlights ('W')!
+  static const Map<String, Color> duchessCatPalette = {
+    'K': Color(0xFF020103), // Crisp 1px black outline & obsidian tortie fur
+    'b': Color(0xFF2A1810), // Dark espresso tortie fur shadow
+    'o': Color(0xFFB45309), // Shaded burnt sienna fur
+    'O': Color(0xFFEA580C), // Fiery ginger orange tortie patch
+    'A': Color(0xFFF59E0B), // Golden amber tortie blaze
+    'C': Color(0xFFFDE68A), // Soft cream chin/paw/chest patch
+    'P': Color(0xFFF472B6), // Pink inner ear & nose
+    'G': Color(0xFF58F898), // Bright emerald cat iris
+    'g': Color(0xFF15803D), // Shaded green iris contour
+    'W': Color(0xFFEEEDEC), // Crisp white eye catchlight & whiskers
+  };
+
+  static const List<String> duchessCatMatrix = [
+    '........KK..........KK......', // 00: Pointed cat ear tips
+    '.......KbbK........KAAK.....', // 01: Upper ears (left dark, right amber)
+    '......KbPPbK......KAPPK.....', // 02: Pink inner ears
+    '.....KbbPPbbKKKKKKoAPPAk....', // 03: Ear bases + crown
+    '.....KbOObbbKbbbbOOAAAAK....', // 04: Forehead with ginger/amber blaze
+    '....KbbOOObbKbbbOOAAOObbK...', // 05: Upper head mottled tortie pattern
+    '....KbOOOObbACAAOOAAOObbK...', // 06: Split tortie nose blaze (amber/cream)
+    '....KbOWGKbbACAAbbKWGKbbK...', // 07: Emerald eyes with white catchlights!
+    '....KbOgGKbbACCAbbKgGKbbK...', // 08: Lower emerald eyes + black pupils
+    '....KbbOObbbACCCbbbOObbbK...', // 09: Cheeks
+    '.....KbbObbCCPPPCCbbObbK....', // 10: Muzzle + pink cat nose ('PPP')
+    '....WWKbbbbCCCKCCCbbbbKWW...', // 11: Whiskers ('WW') + mouth
+    '......KKbbbbCCCCCbbbbKK.....', // 12: Cream chin tuft
+    '.......KKKbbbbCbbbbKKK......', // 13: Neckline
+    '......KbbbOOOCCCAAObbbK.....', // 14: Upper chest ruff
+    '.....KbOOOObbCCCCAAOObbK....', // 15: Chest + cream bib
+    '....KbbOOObbbCCCCAAAOObbK...', // 16: Seated shoulders
+    '...KbbOObbbbbCCCCAAOOObbK.KK', // 17: Back + tail tip starting on right
+    '...KbOObbbbbbCCCbAAOOObbKKAK', // 18: Tortie back + curled tail tip
+    '..KbbObbbbbbbKbbKAAOOOObbKAK', // 19: Seated body + raised tail
+    '..KbbObbbbbbKbCCKAAOOOObbKOK', // 20: Begging/seated front chest + tail
+    '..KbbbbOObbbKbCCKbbOOObbbKOK', // 21: Mottled tortie flank + tail
+    '..KbbbbOOObbKKKKKbbOObbbbKbK', // 22: Lower flank + tail curve
+    '..KbbAAOOObbKbbbbbAAObbbbKbK', // 23: Haunches + tail
+    '..KbbAAOOObbKbbbbbAAAbbbKbbK', // 24: Hind leg contour + tail base
+    '...KbbAAOObbKbbbbbAAAbbKKbK.', // 25: Lower haunches
+    '...KbbbOOObbKbbKbboAAbbKbbK.', // 26: Front legs & hind paws
+    '....KbbbOObbKbbKbbKAAbbKbK..', // 27: Ankle shading
+    '....KbbbbbbbKbbKbbKbbbbKK...', // 28: Lower legs
+    '....KCCCbbbbKCCKCCKCCCbK....', // 29: Cream & amber tortie paws
+    '....KCCCbKKK.KKKKK.KCCCK....', // 30: Paw toes
+    '....KKKKK..........KKKKK....', // 31: Crisp 1px black paw base outline
   ];
 
   void _drawTortieCat(Canvas canvas, double sx, double groundY) {
-    final double bob = ((worldTime * 5.0).floor() % 2) * 3.0;
-    const double px = 3.0;
-    final double w = 16 * px;
-    final double h = 14 * px;
+    final double bob = ((worldTime * 4.5).floor() % 2) * 1.5;
+    const double px = 1.05; // Matches archBTW character pixel density!
+    final double w = 28 * px;
+    final double h = 32 * px;
 
     _drawPixelMatrix(
       canvas,
-      _tortieCatMatrix,
-      const {
-        'K': Color(0xFF141210), // Black outline & dark tortie fur
-        'O': Color(0xFFEA580C), // Tortie fiery orange patch
-        'A': Color(0xFFF8B800), // Tortie amber gold patch
-        'C': Color(0xFFFDE68A), // Cream chin patch
-        'G': Color(0xFF58F898), // Bright green cat eyes
-      },
+      duchessCatMatrix,
+      duchessCatPalette,
       pixelSize: px,
       origin: Offset(sx - w / 2, groundY - h - bob),
     );
 
     _drawNesBannerLabel(
       canvas,
-      'TORTIE CAT: "MEOW! FEED ME!"',
-      Offset(sx + 10, groundY - h - 20),
+      'DUCHESS: "MEOW! FEED ME!"',
+      Offset(sx + 8, groundY - h - 14),
       const Color(0xFFF8B800),
-      fontSize: 11,
+      fontSize: 10,
     );
   }
 
@@ -3174,23 +3789,43 @@ class _OkcRetroGamePainter extends CustomPainter {
     );
   }
 
-  // --- Detailed 8-Bit Goose Sprite (White Pitbull/Corgi Mix — Yoshi Mount) ---
-  static const List<String> _gooseMatrix = [
-    '..............KKK...KKK.',
-    '.............KTTTK.KWWWK',
-    '.............KTWWKKWWWWK',
-    '............KWWWWWWWWWWK',
-    '..KKK.......KWWWWWWKWKWWK',
-    '.KWWWK......KWWWWWWWWWWKK',
-    '.KWWWWKKKKKKCPWWWWWWWWWWNN',
-    '..KWWWWWWWWCPYWWWWWWWWWWWK',
-    '..KWWTTTTWWCPWWWWWWWWKKKK.',
-    '..KWWTTTTWWWWWWWWWWWWRRR..',
-    '..KWWWWWWWWWWWWWWWWWWKKK..',
-    '...KKKKKKKKKKKKKKKKKK.....',
-    '...KWWWK.KWWWK..KWWWK.KWWK',
-    '...KWWWK.KWWWK..KWWWK.KWWK',
-    '...KKKKK.KKKKK..KKKKK.KKKK',
+  // --- High-Detail Pixel-Art Sprite for Goose (White Pitbull/Corgi Mix — Mount) ---
+  // Matches the main character's px=1.05 high-density pixel art style:
+  // Multi-tone white coat ('W' snow highlight, 'w' alabaster, 's' cool slate shade, 'g' shadow),
+  // biscuit-tan corgi ears & saddle patch ('T' light tan, 't' warm biscuit, 'd' brown-tan shade),
+  // pink inner ears & happy tongue ('R'/'r'), purple studded collar ('P'/'C') with gold tag ('Y'),
+  // blocky pitbull head with expressive eye catchlight, and sturdy short corgi legs!
+  static const List<String> gooseDogMatrix = [
+    '...........................KKKK.......KKKK......', // 00: Pointed corgi/pitbull ear tips
+    '..........................KTTttK.....KWWWWK.....', // 01: Left biscuit-tan ear, right white ear
+    '.........................KTtRRttK...KWWRRWWK....', // 02: Pink inner ears
+    '.........................KTtRRRttKKKWWRRRWWK....', // 03: Ear bases
+    '........................KTTttRRRttKWWRRRWWWWK...', // 04: Crown of blocky pitbull head
+    '.......................KTTTtttKKKKWWWWWWWWWWK...', // 05: Forehead with biscuit ear patch
+    '......................KTTttWWWwwwwWWWWWWWWWWWK..', // 06: Broad pitbull brow
+    '....KKKK..............KTtWWWWwwwwwwWWWWWWWWWWK..', // 07: Tail tip (left) + upper head
+    '...KWWWWK.............KWWWWwwwwwwwwwKWKWWWWWWK..', // 08: Fluffy tail + eye brow
+    '..KWWwwwwK............KWWWWwwwwwwwwKWWKWWWWWWK..', // 09: Expressive dog eye with white catchlight
+    '..KWwwwwsK............KWWWwwwwwwwwwwKKKWWWWWWKK.', // 10: Lower eye + snout bridge
+    '..KWwwwssK............KCPWWWWwwwwwwwwWWWWWWWWNNK', // 11: Collar top + blocky snout + dark nose ('NN')
+    '...KWwssgKKKKKKKKKKKKKKCPWWWWwwwwwwwwWWWWWWWWNNK', // 12: Long corgi back + pitbull muzzle
+    '...KWWwwwwWWWWWWWWttTTTtCPWWWWwwwwwwwwWWWWWWWWK.', // 13: Back + tan saddle + purple studded collar
+    '....KWWWWWWWWWWWttttTTTTtCPYWWWWwwwwwwwwKKKKKK..', // 14: Biscuit-tan corgi saddle + gold collar tag ('Y')
+    '....KWWWWWWWWWWttttTTTTTTtCPWWWWWwwwwwwKRRRRK...', // 15: Saddle + happy open mouth & pink tongue ('RRRR')
+    '....KWWWWwwwwwwttttTTTTTTttCWWWWWWwwwwwKRRrK....', // 16: Mid torso + pink tongue tip
+    '....KWWWwwwwwwwtttttTTTTTttWWWWWWWWwwwwKKKK.....', // 17: Ribcage + strong pitbull jaw
+    '....KWWWwwwwwwwwttttTTTTttWWWWWWWWWWwwwK........', // 18: Muscular chest
+    '.....KWWWwwwwwwwwddddddddwwwwWWWWWWWWwwK........', // 19: Shaded under-saddle & chest
+    '.....KWWWwwwwwwwwwwwwwwwwwwwwWWWWWWWWWwK........', // 20: Lower torso
+    '......KsssswwwwwwwwwwwwwwwwwwwwWWWWsssK.........', // 21: Shaded belly contour
+    '......KggggssssssssssssssssssssssggggK..........', // 22: Underbelly shadow
+    '.......KKKKWWwwKKKKggggggggKKKKWWwwKKK..........', // 23: Upper short corgi legs
+    '.......KssKWWwwKssK........KssKWWwwKssK.........', // 24: Front & back leg pairs
+    '.......KssKWWwwKssK........KssKWWwwKssK.........', // 25: Short sturdy corgi legs
+    '.......KggKWWWWKggK........KggKWWWWKggK.........', // 26: Ankle shading
+    '.......KWWKWWWWKWWK........KWWKWWWWKWWK.........', // 27: White paws
+    '.......KWWKWWWWKWWK........KWWKWWWWKWWK.........', // 28: Paw toes
+    '.......KKKKKKKKKKKK........KKKKKKKKKKKK.........', // 29: Crisp 1px black paw outline
   ];
 
   void _drawGoose(
@@ -3202,10 +3837,10 @@ class _OkcRetroGamePainter extends CustomPainter {
     bool chomping, {
     required bool showRidePrompt,
   }) {
-    const double px = 3.0;
-    final double w = 26 * px;
-    final double h = 15 * px;
-    final double stepBob = ((cycle * 1.5).floor() % 2) * 3.0;
+    const double px = 1.05; // Matches archBTW character pixel density!
+    final double w = 48 * px;
+    final double h = 30 * px;
+    final double stepBob = ((cycle * 2.0).floor() % 2) * 1.5;
 
     canvas.save();
     canvas.translate(sx, sy - stepBob);
@@ -3215,18 +3850,24 @@ class _OkcRetroGamePainter extends CustomPainter {
 
     _drawPixelMatrix(
       canvas,
-      _gooseMatrix,
+      gooseDogMatrix,
       {
-        'K': Colors.black,
-        'W': const Color(0xFFF8FAFC), // Crisp white pitbull/corgi coat
-        'T': const Color(0xFFE5C07B), // Biscuit/tan corgi ear & saddle patch
-        'C': const Color(0xFFB878F8), // Purple studded collar
-        'P': const Color(0xFF9333EA),
-        'Y': const Color(0xFFF8B800), // Gold "GOOSE" collar tag
-        'N': const Color(0xFF0F172A), // Nose
+        'K': const Color(0xFF020103), // Crisp 1px black outline
+        'W': const Color(0xFFFFFFFF), // Pure snow white coat highlight
+        'w': const Color(0xFFF1F5F9), // Soft alabaster white coat
+        's': const Color(0xFFCBD5E1), // Cool slate muscle/belly shading
+        'g': const Color(0xFF94A3B8), // Deeper shadow under belly/back legs
+        'T': const Color(0xFFE5C07B), // Light biscuit/tan corgi ear & saddle highlight
+        't': const Color(0xFFC08B3E), // Warm mid-biscuit corgi saddle
+        'd': const Color(0xFF8C5E24), // Shaded tan saddle contour
+        'C': const Color(0xFFD8B4FE), // Lavender collar studs
+        'P': const Color(0xFF7E22CE), // Royal purple collar strap
+        'Y': const Color(0xFFF8B800), // Gleaming gold "GOOSE" collar tag
+        'N': const Color(0xFF0F172A), // Dark nose
         'R': chomping
             ? const Color(0xFFF8B800)
-            : const Color(0xFFF83870), // Pink tongue / chomp spark
+            : const Color(0xFFFB7185), // Pink inner ear / tongue / chomp spark
+        'r': const Color(0xFFE11D48), // Shaded tongue contour
       },
       pixelSize: px,
       origin: Offset(-w / 2, -h),
@@ -3238,48 +3879,584 @@ class _OkcRetroGamePainter extends CustomPainter {
       _drawNesBannerLabel(
         canvas,
         '▼ GOOSE [RIDE] ▼',
-        Offset(sx, sy - h - 18),
+        Offset(sx, sy - h - 14),
         const Color(0xFFF8B800),
-        fontSize: 11,
+        fontSize: 10,
       );
     }
   }
 
-  // --- Detailed 8-Bit NES Sprite for archBTW (Modeled after User Photo!) ---
-  // Dark swept hair + beard, black ear gauge, purple & black buffalo plaid flannel,
-  // dark band tee with white gothic emblem & silver cross necklace, dark blue jeans,
-  // and black & white Converse Chuck Taylor high-tops!
-  static const List<String> _archBtwHeadAndTorsoMatrix = [
-    '....KKKKKKKK....', // 0: Hair top outline
-    '...KHHHHHHHHK...', // 1: Dark swept hair
-    '..KHHHHHHHHHHK..', // 2: Swept bangs
-    '..KHHSSSSSSHHK..', // 3: Forehead
-    '..KHSKSSSSKSHK..', // 4: Eyes
-    '..EGSSSSSSSSSK..', // 5: Black ear gauge (E/G) + cheeks
-    '..KSSBBBBBBSSK..', // 6: Mustache
-    '..KBBBBSSBBBBK..', // 7: Full dark beard
-    '...KBBBBBBBBK...', // 8: Beard chin
-    '....KKKKKKKK....', // 9: Neckline
-    '..KKPKTTTTNPKK..', // 10: Flannel collar + silver cross necklace (N)
-    '.KPKPKTWWWTKPkK.', // 11: Purple/black buffalo plaid + white band tee logo
-    '.KPKPKTWWTWKPkK.', // 12: Plaid + band logo
-    '.KPKPKTWWWTKPkK.', // 13: Plaid + band logo
-    '.KSSPKTTTTTKPSSK', // 14: Rolled sleeves + forearms (S)
-    '..KKPKTTTTTKPKK.', // 15: Lower flannel & tee
+  // --- Identical 28x80 Pixel-Art Sprite for archBTW (Extracted 1:1 from Reference!) ---
+  // Exact 28x80 pixel grid & palette: tousled black hair, peach/tan shaded face & beard,
+  // purple & black buffalo plaid flannel with rolled sleeves & lavender buttons,
+  // charcoal band tee with white/silver skull-cross emblem, teal-blue/navy shaded jeans,
+  // and black & white sneakers with white laces, toe caps, and soles!
+  static const Map<String, Color> archBtwCharacterPalette = {
+    'K': Color(0xFF020103), // Crisp black outline, hair, beard & plaid black
+    'S': Color(0xFFF2BBA7), // Light peach skin highlight
+    's': Color(0xFFDF8870), // Mid warm skin tone
+    'c': Color(0xFFBC644C), // Shaded skin contour (nose/brow/ear/fingers)
+    'e': Color(0xFF6B3C28), // Deep eye/brow crease
+    'W': Color(0xFFEEEDEC), // Crisp white (eye sclera, tee emblem, shoe toe/sole)
+    'L': Color(0xFFB8B5BD), // Cool silver-gray (tee emblem shading, shoe laces/trim)
+    'T': Color(0xFF444444), // Charcoal grey inner shirt
+    'P': Color(0xFF8B3DD6), // Bright amethyst-lavender purple plaid
+    'p': Color(0xFF5E117C), // Medium royal purple plaid
+    'd': Color(0xFF33134F), // Deep dark violet plaid shadow
+    'j': Color(0xFF093F65), // Teal-blue denim jeans
+    'n': Color(0xFF15154D), // Dark navy denim shadow
+  };
+
+  // Rows 00..57: Head, hair, beard, open purple/black plaid flannel, charcoal tee, and arms/hands
+  static const List<String> archBtwUpperBodyMatrix = [
+    '................KKKK........', // 00
+    '.............KKKKKKKKKKK....', // 01
+    '........KK.KKKKKKKKKKKK.K...', // 02
+    '.........KKKKKKKKKKKKKKK....', // 03
+    '.......KKKKKKKKKKKKKKKKKKKK.', // 04
+    '........KKKKKKKKKKKKKKKKKK..', // 05
+    '.......KKKKKKKKKKKKKKKKKKK..', // 06
+    '.......KKKKKKKKKKKKKKscKKKK.', // 07
+    '.......KKKKKKKKKKKKKsSssKKK.', // 08
+    '......KKKKKKKKKKKsKsSSSsKKKK', // 09
+    '......KKKKKKKKKKsKSSSSSSKKKK', // 10
+    '......KKKKKKKKKsSSSSSSSSKK.K', // 11
+    '......KKKKKKKKsKKKKSSSKKKK..', // 12
+    '.......KKKKKKsKsKKesSKKsK.K.', // 13
+    '.......KKSKKKSSKWKKSSKWKK...', // 14
+    '.......KKSSKKSSSSssSSKssK...', // 15
+    '.......KKsKsKSSSSSSSScSSK...', // 16
+    '........KKKKKsSSSSSSSScSK...', // 17
+    '........KKKKKKsSSSSsKKssK...', // 18
+    '.........KKKKKKsSKKKKKKsK...', // 19
+    '...........KKKKKKKSSSSKKK...', // 20
+    '..........KKKKKKKKsKKsKKK...', // 21
+    '........KKpKKsKKKKKKKKKK....', // 22
+    '.......KKPpKKSsKKKKKKKK.....', // 23
+    '......KKKPppKsSsKKKKKK......', // 24
+    '....KKPPdKppPKSSSsKKPKK.....', // 25
+    '...KKpPPpKPPPdKSSssKPPKK....', // 26
+    '...KpKKpKKKPKKKKSSKKKpKKK...', // 27
+    '..KKKKdpKKKKKKKTKKTKKKKpK...', // 28
+    '..KPdPpPPpPppPKTTTTKppdPd...', // 29
+    '..KPpPPdKKppKpKTTTTKpKKKKK..', // 30
+    '.KpKKppdKKppKpKWTTLKpKKKKK..', // 31
+    '.KpKKppKKpPPpPKTWTTKPpKdPK..', // 32
+    '.KPppPpdKdppdPKWWLWKPdKdpK..', // 33
+    '.KpKKppKKKppKpKLTWLKpKKKKK..', // 34
+    '.KpKKpKKddPPdpKLWWWKPdKKdK..', // 35
+    '.KPpPPKKdpPPpLKWLLLKPpKdPK..', // 36
+    '.KKKPPpKKKppKpKWTTWKpKKdKK..', // 37
+    'KKKKKKKKKKppKpKLTTWKpKKdKKK.', // 38
+    'KdpPPKKKdpPPppKTTLTKPpKKKPK.', // 39
+    'KppPPPpKdpPPpPKTTTTKPpKdPpK.', // 40
+    'KPpKKPpKKKppKpKTTTTKpKKdPpK.', // 41
+    'KdKKKKKKKKppKpKTTTTKpKKKKK..', // 42
+    '.KssScKpdpPPpPKTTTTKPpKccK..', // 43
+    '.KSSSsKdKKppKTKTTTTKpKKsSK..', // 44
+    '.KSSSsKdKKppKpKTTTTKdKKsSKK.', // 45
+    '.KSSScKdppPPppKTTTTTKpKcSKK.', // 46
+    '.KSSScKdppPPpdKTTTTTKpKcSKK.', // 47
+    '..KSSsKdKKppdKTTTTTTKpKKSK..', // 48
+    '..KsSSKdKKppdKTTTTTTKpKKSK..', // 49
+    '..KcSSKKdpPPdKKKKKKKKPpKSK..', // 50
+    '..KcSSSKKKppKKnnnnnnKpKKSSK.', // 51
+    '..KsSSSSKKddKnjjjnjjKdKSSSK.', // 52
+    '..KSSSSSsKKKKjjjnKjjnKKScSK.', // 53
+    '..KSSSSKSKnnnjjjKKnjjnKScSK.', // 54
+    '..KSSSSKsKjjjjjnKnjjjjKccsK.', // 55
+    '..KcscSKKKjjjjnKnnjjjjKcSK..', // 56
+    '....KcccKjjjjjnKnjjjjjKKK...', // 57
   ];
 
-  void _drawArchBtwPlayer(Canvas canvas, double sx, double sy) {
-    const double px = 3.2; // Chunky, detailed 8-bit pixels!
-    final double spriteW = 16 * px;
-    final double torsoH = 16 * px;
-    final double legH = 8 * px;
-    final double totalH = torsoH + legH;
+  // Rows 00..57 when punching (40 cols wide):
+  // - Regular hanging arms (cols 0..7 and 22..27 in rows 36..57) lift up off his sides
+  // - Rolled purple/black buffalo plaid sleeve (cols 21..27), shaded bare forearm (cols 28..34),
+  //   and clenched human fist with knuckles & thumb (cols 35..39) extend straight forward at shoulder level!
+  static const List<String> archBtwPunchingUpperBodyMatrix = [
+    '................KKKK....................', // 00
+    '.............KKKKKKKKKKK................', // 01
+    '........KK.KKKKKKKKKKKK.K...............', // 02
+    '.........KKKKKKKKKKKKKKK................', // 03
+    '.......KKKKKKKKKKKKKKKKKKKK.............', // 04
+    '........KKKKKKKKKKKKKKKKKK..............', // 05
+    '.......KKKKKKKKKKKKKKKKKKK..............', // 06
+    '.......KKKKKKKKKKKKKKscKKKK.............', // 07
+    '.......KKKKKKKKKKKKKsSssKKK.............', // 08
+    '......KKKKKKKKKKKsKsSSSsKKKK............', // 09
+    '......KKKKKKKKKKsKSSSSSSKKKK............', // 10
+    '......KKKKKKKKKsSSSSSSSSKK.K............', // 11
+    '......KKKKKKKKsKKKKSSSKKKK..............', // 12
+    '.......KKKKKKsKsKKesSKKsK.K.............', // 13
+    '.......KKSKKKSSKWKKSSKWKK...............', // 14
+    '.......KKSSKKSSSSssSSKssK...............', // 15
+    '.......KKsKsKSSSSSSSScSSK...............', // 16
+    '........KKKKKsSSSSSSSScSK...............', // 17
+    '........KKKKKKsSSSSsKKssK...............', // 18
+    '.........KKKKKKsSKKKKKKsK...............', // 19
+    '...........KKKKKKKSSSSKKK...............', // 20
+    '..........KKKKKKKKsKKsKKK...............', // 21
+    '........KKpKKsKKKKKKKKKK................', // 22
+    '.......KKPpKKSsKKKKKKKK.................', // 23
+    '......KKKPppKsSsKKKKKK..................', // 24
+    '....KKPPdKppPKSSSsKKPKK.................', // 25
+    '...KKpPPpKPPPdKSSssKPPKK................', // 26
+    '...KpKKpKKKPKKKKSSKKKpKKK...............', // 27
+    '......KKKKKKsKKTKKTKKKKpKKK.............', // 28
+    '.....KKpPPpPppPKTTTTKppdPPpKKKKKKKKKKK...', // 29
+    '.....KdpPPppKpKTTTTKpKPpPPdKSSSSSSSSsK..', // 30
+    '......KKppdpKpKWTTLKpKppPPpKSSSSSSSSsSK.', // 31
+    '......KdpPPppPKTWTTKPpKKppdKsssssssScsK.', // 32
+    '......KKdppdPKWWLWKPdKdpPPKssssssscsSK.', // 33
+    '.......KKKppKpKLTWLKpKKKppdKccccccccsK..', // 34
+    '.......KddPPdpKLWWWKPdKKKKKKKKKKKKKKK...', // 35
+    '.......KdpPPpLKWLLLKPpKdPK..............', // 36
+    '.......KKKppKpKWTTWKpKKdKK..............', // 37
+    '.......KKKppKpKLTTWKpKKdKK..............', // 38
+    '.......KdpPPppKTTLTKPpKKPK..............', // 39
+    '.......KdpPPpPKTTTTKPpKdPK..............', // 40
+    '.......KKKppKpKTTTTKpKKdPK..............', // 41
+    '.......KKKppKpKTTTTKpKKKK...............', // 42
+    '.......KdpPPpPKTTTTKPpK.................', // 43
+    '.......KKKppKTKTTTTKpKK.................', // 44
+    '.......KKKppKpKTTTTKdKK.................', // 45
+    '.......KdpPPppKTTTTTKpK.................', // 46
+    '.......KdpPPpdKTTTTTKpK.................', // 47
+    '.......KKKppdKTTTTTTKpK.................', // 48
+    '.......KKKppdKTTTTTTKpK.................', // 49
+    '.......KdpPPdKKKKKKKKPpK................', // 50
+    '.......KKKppKKnnnnnnKpKK................', // 51
+    '........KKddKnjjjnjjKdK.................', // 52
+    '........KKKKKjjjnKjjnKK.................', // 53
+    '.........KnnnjjjKKnjjnK.................', // 54
+    '.........KjjjjjnKnjjjjK.................', // 55
+    '.........KjjjjnKnnjjjjK.................', // 56
+    '.........KjjjjjnKnjjjjjK................', // 57
+  ];
 
-    final int walkFrame = (walkCycle * 1.6).floor() % 4;
+  // Rows 58..79 split into Left Leg (cols 0..14) and Right Leg (cols 15..27)
+  // so standing idle is 100% pixel-identical to the reference and walking animates smoothly!
+  static const List<String> archBtwLeftLegMatrix = [
+    '.....KKKKjjjjjK.............', // 58
+    '......KnnjjjjnK.............', // 59
+    '......KnnjjjjnK.............', // 60
+    '......KnnjjjjK..............', // 61
+    '......KnnjjjjK..............', // 62
+    '......KnnjjjjK..............', // 63
+    '......KnnjjjnK..............', // 64
+    '......KnjjjnK...............', // 65
+    '.....KnnjnnnK...............', // 66
+    '.....KnjjjjnK...............', // 67
+    '.....KnnjjjnK...............', // 68
+    '.....KnnjjjK................', // 69
+    '.....KnjjjjK................', // 70
+    '.....KnjjjnK................', // 71
+    '....KjnnnnjK................', // 72
+    '....KnnjjjjK................', // 73
+    '....KnjKKKKK................', // 74
+    '....KKKKLWLK................', // 75
+    '....KKKLKKKKK...............', // 76
+    '....KKKKWWWWKK..............', // 77
+    '....KLLWWWWWWK..............', // 78
+    '.....KKKKKKKKK..............', // 79
+  ];
+
+  static const List<String> archBtwRightLegMatrix = [
+    '...............KnjjjjjK.....', // 58
+    '...............KnjjjjjK.....', // 59
+    '...............KnjjjjjK.....', // 60
+    '...............KnjjjjjK.....', // 61
+    '...............KnnjjjjK.....', // 62
+    '...............KnnjjjjK.....', // 63
+    '...............KnnjjjK......', // 64
+    '...............KnjnjjK......', // 65
+    '...............KnjjnnK......', // 66
+    '...............KnjjjjK......', // 67
+    '...............KnjjjjK......', // 68
+    '...............KnjjjjK......', // 69
+    '...............KnjjjnK......', // 70
+    '...............KnnnnjK......', // 71
+    '...............KnnjjjK......', // 72
+    '...............KnjjKKK......', // 73
+    '...............KKKKKWLK.....', // 74
+    '...............KKLKKKLWKK...', // 75
+    '...............KKKKKKKKWWK..', // 76
+    '...............KLLLLWWWWWK..', // 77
+    '...............KKKKKKKKKKK..', // 78
+    '............................', // 79
+  ];
+
+  // Extended kicking right leg & black-and-white sneaker (25x7 pixel matrix)
+  // Uses the exact pixel-for-pixel sneaker from rows 74..78 of archBtwRightLegMatrix
+  // at the end of the extended horizontal jeans leg!
+  static const List<String> archBtwKickingRightLegMatrix = [
+    '............KKKKKWLK.....', // 00: Sneaker ankle collar + tongue + top lace
+    '..KKKKKKKKKKKKLKKKLWKK...', // 01: Top of extended jeans leg + black sneaker upper + white laces
+    '.KnnnnnnnnnnnnKKKKKKWWK..', // 02: Navy top shadow of jeans + black canvas upper + white rubber toe-cap
+    'KnjjjjjjjjjjjjnKLLLLWWWWK', // 03: Teal-blue denim jeans + silver-white midsole + white rubber toe-cap
+    'KnjjjjjjjjjjjjnKKKKKKKKKK', // 04: Jeans + black rubber outsole
+    '.KnnnnnnnnnnnnK..........', // 05: Bottom shadow of extended jeans leg
+    '..KKKKKKKKKKKK...........', // 06: Bottom black outline of extended jeans leg
+  ];
+
+  // Renders a high-detail Purple PRS Custom 24 Electric Guitar:
+  // - Sculpted hourglass body with wide lower bout, pinched waist, deep cutaways,
+  //   long pointed PRS upper horn, and shorter scooped lower horn
+  // - Natural maple cream binding, deep violet burst edge, royal purple body,
+  //   and bright lavender chevron flame-maple tiger stripes
+  // - Dual humbucker pickups (cream rings, black bobbins, 12 silver pole pieces),
+  //   chrome PRS tremolo bridge, and gold volume/tone knobs
+  // - Long slender rosewood fretboard with silver frets, white PRS bird inlays,
+  //   6 silver strings, and pointed 3x3 PRS winged headstock with 6 silver tuners!
+  static void drawPurplePrsGuitar(
+    Canvas canvas,
+    Offset center, {
+    required double scale,
+    double angle = -0.30,
+  }) {
+    canvas.save();
+    canvas.translate(center.dx, center.dy);
+    canvas.rotate(angle);
+    canvas.scale(scale, scale);
+
+    // Local coordinates (in virtual guitar units, centered near the bridge/pickups):
+    // Body spans x: -20..+8, y: -13..+13
+    // Neck spans x: +4..+32, y: -2.3..+2.3
+    // Headstock spans x: +32..+43, y: -4.2..+4.2
+
+    // 1. Iconic PRS Custom 24 Double-Cutaway Body Silhouette Path
+    Path buildBodyPath(double inflate) {
+      final double d = inflate;
+      final Path path = Path();
+      // Start at rear strap button (leftmost center of lower bout)
+      path.moveTo(-21.0 - d, 0.0);
+      // Upper-left lower bout curve (wide, rounded)
+      path.cubicTo(
+        -21.0 - d,
+        -9.5 - d,
+        -13.5 - d * 0.5,
+        -13.5 - d,
+        -7.5,
+        -12.0 - d,
+      );
+      // Pinched waist (top edge curves inward around x = -3)
+      path.cubicTo(
+        -4.5,
+        -11.0 - d * 0.6,
+        -3.5,
+        -7.8 - d * 0.5,
+        -0.5,
+        -8.2 - d * 0.6,
+      );
+      // Sweeping long PRS upper horn (extends forward to x = +9.5, y = -11.5)
+      path.cubicTo(
+        2.5,
+        -9.0 - d,
+        6.8,
+        -12.2 - d,
+        9.6 + d,
+        -10.6 - d * 0.5,
+      );
+      // Inner scoop of upper cutaway down to neck joint (x = +3.5, y = -2.4)
+      path.cubicTo(
+        10.2 + d,
+        -8.6,
+        5.5 + d * 0.4,
+        -5.8 + d * 0.4,
+        3.5,
+        -5.8 + d * 0.4,
+      );
+      path.cubicTo(
+        1.5,
+        -5.8 + d * 0.4,
+        1.5,
+        -2.4,
+        4.5,
+        -2.2,
+      );
+      // Across neck pocket to lower cutaway
+      path.lineTo(4.5, 2.2);
+      // Inner scoop of lower cutaway out to shorter PRS lower horn (x = +7.8, y = +9.8)
+      path.cubicTo(
+        1.2,
+        2.5,
+        0.8,
+        6.2 - d * 0.4,
+        3.2,
+        6.8 - d * 0.4,
+      );
+      path.cubicTo(
+        5.4,
+        7.3 - d * 0.4,
+        8.2 + d,
+        7.2,
+        7.8 + d,
+        9.5 + d * 0.5,
+      );
+      // Outer curve of lower horn into pinched lower waist (x = -3, y = +7.8)
+      path.cubicTo(
+        6.8,
+        11.4 + d,
+        2.2,
+        9.8 + d,
+        -0.5,
+        8.2 + d * 0.6,
+      );
+      path.cubicTo(
+        -3.5,
+        7.5 + d * 0.5,
+        -4.5,
+        11.2 + d * 0.6,
+        -7.5,
+        12.2 + d,
+      );
+      // Lower-left lower bout curve back to rear strap button
+      path.cubicTo(
+        -13.5 - d * 0.5,
+        13.8 + d,
+        -21.0 - d,
+        9.5 + d,
+        -21.0 - d,
+        0.0,
+      );
+      path.close();
+      return path;
+    }
+
+    final Path outerBlackBody = buildBodyPath(1.8);
+    final Path mapleBindingBody = buildBodyPath(0.6);
+    final Path purpleBurstBody = buildBodyPath(-0.4);
+    final Path carvedTopBody = buildBodyPath(-2.2);
+
+    // Draw Black Outer Outline
+    canvas.drawPath(
+      outerBlackBody,
+      Paint()
+        ..color = const Color(0xFF05020A)
+        ..style = PaintingStyle.fill,
+    );
+    // Draw Cream / Natural Maple Scrape Binding Edge
+    canvas.drawPath(
+      mapleBindingBody,
+      Paint()
+        ..color = const Color(0xFFFDE68A)
+        ..style = PaintingStyle.fill,
+    );
+    // Draw Deep Violet Charcoal Burst Outer Body
+    canvas.drawPath(
+      purpleBurstBody,
+      Paint()
+        ..color = const Color(0xFF3B0764)
+        ..style = PaintingStyle.fill,
+    );
+    // Draw Royal Amethyst Carved Maple Top
+    canvas.drawPath(
+      carvedTopBody,
+      Paint()
+        ..color = const Color(0xFF7E22CE)
+        ..style = PaintingStyle.fill,
+    );
+
+    // Clip to carved top to draw chevron flame maple stripes & center glow
+    canvas.save();
+    canvas.clipPath(carvedTopBody);
+    canvas.drawOval(
+      Rect.fromCenter(center: const Offset(-8.0, 0.0), width: 20.0, height: 15.0),
+      Paint()..color = const Color(0xFF9333EA),
+    );
+    final Paint flamePaint = Paint()
+      ..color = const Color(0xFFD8B4FE).withValues(alpha: 0.65)
+      ..strokeWidth = 1.15
+      ..style = PaintingStyle.stroke;
+    for (double fx = -18.0; fx <= 6.0; fx += 2.8) {
+      final Path chevron = Path()
+        ..moveTo(fx - 2.2, -13.0)
+        ..lineTo(fx + 1.4, 0.0)
+        ..lineTo(fx - 2.2, 13.0);
+      canvas.drawPath(chevron, flamePaint);
+    }
+    canvas.restore();
+
+    // 2. Long Slender Rosewood Neck & Fretboard (x: +2.0..+32.0, y: -2.2..+2.2)
+    final RRect neckOutline = RRect.fromRectAndRadius(
+      const Rect.fromLTWH(1.5, -3.1, 31.5, 6.2),
+      const Radius.circular(1.0),
+    );
+    canvas.drawRRect(neckOutline, Paint()..color = const Color(0xFF05020A));
+    canvas.drawRect(
+      const Rect.fromLTWH(2.0, -2.1, 30.5, 4.2),
+      Paint()..color = const Color(0xFF3E2723), // Rosewood fretboard
+    );
+
+    // Silver frets & White Mother-of-Pearl PRS Bird Inlays along the neck
+    final Paint fretPaint = Paint()
+      ..color = const Color(0xFF94A3B8)
+      ..strokeWidth = 0.6;
+    final Paint birdPaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+    for (double nx = 5.5; nx <= 29.5; nx += 3.4) {
+      canvas.drawLine(Offset(nx, -2.0), Offset(nx, 2.0), fretPaint);
+      // Tiny winged bird inlay between frets
+      final Path bird = Path()
+        ..moveTo(nx - 1.7, 0.0)
+        ..lineTo(nx - 1.1, -1.2)
+        ..lineTo(nx - 0.6, -0.2)
+        ..lineTo(nx - 1.1, 1.2)
+        ..close();
+      canvas.drawPath(bird, birdPaint);
+    }
+
+    // White Bone Nut at x = 32.0
+    canvas.drawRect(
+      const Rect.fromLTWH(31.8, -2.2, 1.0, 4.4),
+      Paint()..color = const Color(0xFFF8FAFC),
+    );
+
+    // 3. Signature Pointed 3x3 PRS Winged Headstock (x: 32.5..43.5)
+    final Path headstockPath = Path()
+      ..moveTo(32.2, -2.2)
+      ..lineTo(35.0, -4.2) // Treble/bass wing flare
+      ..lineTo(42.8, -2.8) // Pointed upper tip
+      ..lineTo(40.8, 0.0) // PRS V-notch carve at tip
+      ..lineTo(43.5, 2.4) // Pointed lower tip
+      ..lineTo(35.0, 4.2) // Lower wing flare
+      ..lineTo(32.2, 2.2)
+      ..close();
+
+    // 6 Silver Tuning Pegs & Buttons (3 on top, 3 on bottom of headstock)
+    final Paint tunerPaint = Paint()..color = const Color(0xFFCBD5E1);
+    final Paint tunerOutline = Paint()..color = const Color(0xFF05020A);
+    for (int t = 0; t < 3; t++) {
+      final double tx = 35.2 + t * 2.4;
+      // Top tuner
+      canvas.drawRect(Rect.fromLTWH(tx - 1.0, -6.4, 2.2, 2.4), tunerOutline);
+      canvas.drawRect(Rect.fromLTWH(tx - 0.6, -6.0, 1.4, 1.8), tunerPaint);
+      // Bottom tuner
+      canvas.drawRect(Rect.fromLTWH(tx - 1.0, 4.0, 2.2, 2.4), tunerOutline);
+      canvas.drawRect(Rect.fromLTWH(tx - 0.6, 4.2, 1.4, 1.8), tunerPaint);
+    }
+
+    canvas.drawPath(
+      headstockPath,
+      Paint()
+        ..color = const Color(0xFF05020A)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.2,
+    );
+    canvas.drawPath(
+      headstockPath,
+      Paint()
+        ..color = const Color(0xFF6B21A8)
+        ..style = PaintingStyle.fill,
+    );
+    // Gold PRS signature logo accent on headstock
+    canvas.drawLine(
+      const Offset(34.5, -0.8),
+      const Offset(39.5, -1.4),
+      Paint()
+        ..color = const Color(0xFFFDE68A)
+        ..strokeWidth = 0.9,
+    );
+
+    // 4. Dual Humbucker Pickups (Bridge @ x=-6.0, Neck @ x=-0.2)
+    for (final double pxCenter in const [-6.2, -0.4]) {
+      final Rect ringRect = Rect.fromCenter(
+        center: Offset(pxCenter, 0.0),
+        width: 4.4,
+        height: 7.4,
+      );
+      // Cream pickup mounting ring
+      canvas.drawRect(ringRect, Paint()..color = const Color(0xFFFDE68A));
+      // Black dual-coil humbucker bobbins
+      canvas.drawRect(
+        ringRect.deflate(0.7),
+        Paint()..color = const Color(0xFF0F172A),
+      );
+      // Silver pole pieces
+      for (double py = -2.2; py <= 2.2; py += 1.4) {
+        canvas.drawCircle(
+          Offset(pxCenter - 0.7, py),
+          0.45,
+          Paint()..color = const Color(0xFFE2E8F0),
+        );
+        canvas.drawCircle(
+          Offset(pxCenter + 0.7, py),
+          0.45,
+          Paint()..color = const Color(0xFFE2E8F0),
+        );
+      }
+    }
+
+    // 5. Chrome PRS Tremolo Bridge & Whammy Bar (x = -12.0)
+    final Rect bridgeRect = Rect.fromCenter(
+      center: const Offset(-12.0, 0.0),
+      width: 3.6,
+      height: 7.8,
+    );
+    canvas.drawRect(
+      bridgeRect.inflate(0.6),
+      Paint()..color = const Color(0xFF05020A),
+    );
+    canvas.drawRect(
+      bridgeRect,
+      Paint()..color = const Color(0xFFCBD5E1),
+    );
+    // Chrome tremolo arm (whammy bar)
+    canvas.drawLine(
+      const Offset(-11.5, 3.2),
+      const Offset(-4.5, 6.2),
+      Paint()
+        ..color = const Color(0xFFE2E8F0)
+        ..strokeWidth = 1.2,
+    );
+
+    // 6. Gold/Amber Speed Knobs (Volume & Tone) on lower bout
+    for (final Offset knobPos in const [
+      Offset(-9.5, 7.2),
+      Offset(-13.8, 8.2),
+    ]) {
+      canvas.drawCircle(
+        knobPos,
+        1.7,
+        Paint()..color = const Color(0xFF05020A),
+      );
+      canvas.drawCircle(
+        knobPos,
+        1.2,
+        Paint()..color = const Color(0xFFF8B800),
+      );
+    }
+
+    // 7. Silver Guitar Strings from Bridge to Headstock
+    final Paint stringPaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.78)
+      ..strokeWidth = 0.45;
+    for (double sy = -1.5; sy <= 1.5; sy += 1.0) {
+      canvas.drawLine(Offset(-11.5, sy), Offset(32.5, sy), stringPaint);
+    }
+
+    canvas.restore();
+  }
+
+  void _drawArchBtwPlayer(Canvas canvas, double sx, double sy) {
+    const double px = 1.05; // Crisp 28x80 high-detail pixel scale (~84 world units tall)
+    final double spriteW = 28 * px;
+    final double upperH = 58 * px;
+    final double legH = 22 * px;
+    final double totalH = upperH + legH;
+
+    final bool isMoving = walkCycle > 0 &&
+        ((walkCycle * 3.0).floor() % 4 == 1 ||
+            (walkCycle * 3.0).floor() % 4 == 3);
+    final int walkFrame = (walkCycle * 2.2).floor() % 4;
     final bool isKicking =
         currentAttack == OkcAttackKind.kick && attackTimer > 0;
     final bool isPunching =
         currentAttack == OkcAttackKind.punch && attackTimer > 0;
+
+    final double walkBob =
+        (isGrounded && isMoving) ? -px * 1.2 : 0.0;
 
     canvas.save();
     canvas.translate(sx, sy);
@@ -3287,125 +4464,76 @@ class _OkcRetroGamePainter extends CustomPainter {
       canvas.scale(-1.0, 1.0);
     }
 
-    // 1. Draw Head & Plaid Flannel Torso Matrix
-    _drawPixelMatrix(
-      canvas,
-      _archBtwHeadAndTorsoMatrix,
-      const {
-        'K': Colors.black,
-        'H': Color(0xFF141210), // Dark swept hair
-        'B': Color(0xFF1C1917), // Full dark beard & mustache
-        'S': Color(0xFFF3C6A5), // Skin tone
-        'E': Colors.black, // Ear gauge rim
-        'G': Color(0xFF38BDF8), // Ear gauge highlight
-        'P': Color(0xFF9333EA), // Purple buffalo plaid squares
-        'k': Color(0xFF1E1B4B), // Dark plaid squares
-        'T': Color(0xFF1F242D), // Charcoal graphic band tee
-        'W': Colors.white, // White gothic band logo on tee
-        'N': Color(0xFFE2E8F0), // Silver cross necklace
-      },
-      pixelSize: px,
-      origin: Offset(-spriteW / 2, -totalH),
-    );
-
     final Paint p = Paint()..isAntiAlias = false;
 
-    // 2. Draw 8-Bit Dark Blue Jeans & Black/White Converse Chuck Taylors
-    final double hipY = -legH;
-    final double leftLegOffset = isGrounded
-        ? (walkFrame == 1 ? -px * 2 : (walkFrame == 3 ? px * 2 : 0.0))
-        : -px * 2;
-    final double rightLegOffset = isGrounded ? -leftLegOffset : px * 2;
+    // 1. Draw Left & Right Legs (Rows 58..79 of the 28x80 character matrix)
+    final double leftLegDx = !isGrounded
+        ? -px * 2.0
+        : (walkFrame == 1 ? -px * 2.5 : (walkFrame == 3 ? px * 2.5 : 0.0));
+    final double leftLegDy = !isGrounded
+        ? -px * 2.0
+        : (walkFrame == 1 ? -px * 1.5 : 0.0);
+    final double rightLegDx = !isGrounded
+        ? px * 2.0
+        : (walkFrame == 1 ? px * 2.5 : (walkFrame == 3 ? -px * 2.5 : 0.0));
+    final double rightLegDy = !isGrounded
+        ? -px * 1.0
+        : (walkFrame == 3 ? -px * 1.5 : 0.0);
 
-    // Back Leg (Blue jeans + Converse shoe)
-    _drawNesLegAndConverse(
+    _drawPixelMatrix(
       canvas,
-      x: -px * 4 + leftLegOffset,
-      y: hipY,
-      px: px,
-      denimColor: const Color(0xFF1D3557),
+      archBtwLeftLegMatrix,
+      archBtwCharacterPalette,
+      pixelSize: px,
+      origin: Offset(-spriteW / 2 + leftLegDx, -legH + leftLegDy),
     );
 
-    // Front Leg (or Extended 8-Bit Roundhouse Kick!)
     if (isKicking) {
-      // Horizontal extended kicking leg in dark blue jeans + Converse high-top!
-      p.color = Colors.black;
-      canvas.drawRect(
-        Rect.fromLTWH(px * 1, hipY - px * 3, px * 9, px * 4),
-        p,
-      );
-      p.color = const Color(0xFF254B7C);
-      canvas.drawRect(
-        Rect.fromLTWH(px * 1, hipY - px * 2, px * 7, px * 2.5),
-        p,
-      );
-      // Black & White Converse shoe at tip of kick
-      p.color = const Color(0xFF0F172A);
-      canvas.drawRect(
-        Rect.fromLTWH(px * 7, hipY - px * 3, px * 3, px * 3),
-        p,
-      );
-      p.color = Colors.white;
-      canvas.drawRect(
-        Rect.fromLTWH(px * 9, hipY - px * 2, px * 2, px * 2),
-        p,
-      );
-      // 8-Bit Gold Kick Spark Burst
-      p.color = const Color(0xFFF8B800);
-      canvas.drawRect(
-        Rect.fromLTWH(px * 11, hipY - px * 5, px * 2, px * 2),
-        p,
-      );
-      canvas.drawRect(
-        Rect.fromLTWH(px * 12, hipY - px * 2, px * 3, px * 2),
-        p,
-      );
-      canvas.drawRect(
-        Rect.fromLTWH(px * 11, hipY + px * 1, px * 2, px * 2),
-        p,
+      // Extended Roundhouse Kick using crisp pixel-art jeans + black/white sneaker matrix
+      _drawPixelMatrix(
+        canvas,
+        archBtwKickingRightLegMatrix,
+        archBtwCharacterPalette,
+        pixelSize: px,
+        origin: Offset(px * 1, -legH + px * 1),
       );
     } else {
-      _drawNesLegAndConverse(
+      _drawPixelMatrix(
         canvas,
-        x: px * 1 + rightLegOffset,
-        y: hipY,
-        px: px,
-        denimColor: const Color(0xFF254B7C),
+        archBtwRightLegMatrix,
+        archBtwCharacterPalette,
+        pixelSize: px,
+        origin: Offset(-spriteW / 2 + rightLegDx, -legH + rightLegDy),
       );
     }
 
-    // 3. Draw 8-Bit Punching Arm & Hit Spark
-    if (isPunching) {
-      final double armY = -totalH + px * 11;
-      p.color = Colors.black;
-      canvas.drawRect(Rect.fromLTWH(px * 3, armY - px, px * 10, px * 4), p);
-      // Rolled purple flannel cuff
-      p.color = const Color(0xFF9333EA);
-      canvas.drawRect(Rect.fromLTWH(px * 3, armY, px * 3, px * 2.5), p);
-      // Forearm & Fist
-      p.color = const Color(0xFFF3C6A5);
-      canvas.drawRect(Rect.fromLTWH(px * 6, armY, px * 6, px * 2.5), p);
-      // 8-Bit Hit Star
-      p.color = const Color(0xFFF8B800);
-      canvas.drawRect(Rect.fromLTWH(px * 13, armY - px * 2, px * 2, px * 6), p);
-      canvas.drawRect(Rect.fromLTWH(px * 11, armY, px * 6, px * 2), p);
-    }
+    // 2. Draw Upper Body (Rows 00..57: switches to raised-arm punching pose when punching!)
+    _drawPixelMatrix(
+      canvas,
+      isPunching ? archBtwPunchingUpperBodyMatrix : archBtwUpperBodyMatrix,
+      archBtwCharacterPalette,
+      pixelSize: px,
+      origin: Offset(-spriteW / 2, -totalH + walkBob),
+    );
 
-    // 4. Draw Equipped 8-Bit Modded Purple PRS Electric Guitar ("Fireflower" mode!)
+    // 4. Draw Equipped Detailed Purple PRS Custom 24 Electric Guitar ("Fireflower" mode!)
     if (hasGuitar) {
-      final double gy = -totalH + px * 11;
-      // Guitar body in metallic purple with white pixel outline
-      p.color = Colors.white;
-      canvas.drawRect(Rect.fromLTWH(-px * 2, gy - px, px * 7, px * 5), p);
-      p.color = const Color(0xFF9333EA);
-      canvas.drawRect(Rect.fromLTWH(-px * 1, gy, px * 5, px * 3.5), p);
-      // Guitar neck & headstock extending forward
-      p.color = const Color(0xFFF8B800);
-      canvas.drawRect(Rect.fromLTWH(px * 4, gy - px * 1, px * 6, px * 1.8), p);
-      p.color = const Color(0xFF9333EA);
-      canvas.drawRect(
-        Rect.fromLTWH(px * 9, gy - px * 1.5, px * 2.5, px * 2.5),
-        p,
+      final bool isStrumming =
+          currentAttack == OkcAttackKind.chord && attackTimer > 0;
+      final double gy = -totalH + px * 44 + walkBob;
+      // Guitar strap across shoulder
+      _drawPixelLine(
+        canvas,
+        Offset(-px * 3, -totalH + px * 27 + walkBob),
+        Offset(px * 4, gy),
+        pixelSize: px * 1.6,
+        color: Colors.black,
+      );
+      drawPurplePrsGuitar(
+        canvas,
+        Offset(px * 3, gy),
+        scale: px * 0.72,
+        angle: isStrumming ? -0.34 : -0.22,
       );
     }
 
@@ -3413,41 +4541,12 @@ class _OkcRetroGamePainter extends CustomPainter {
     if (hasSpiderPower) {
       p.color = const Color(0xFF3CBCFC);
       canvas.drawRect(
-        Rect.fromLTWH(px * 4, -totalH + px * 13, px * 2, px * 2),
+        Rect.fromLTWH(px * 9, -totalH + px * 48 + walkBob, px * 3, px * 3),
         p,
       );
     }
 
     canvas.restore();
-  }
-
-  void _drawNesLegAndConverse(
-    Canvas canvas, {
-    required double x,
-    required double y,
-    required double px,
-    required Color denimColor,
-  }) {
-    final Paint p = Paint()..isAntiAlias = false;
-    // Black pixel outline
-    p.color = Colors.black;
-    canvas.drawRect(Rect.fromLTWH(x - px * 0.5, y, px * 4, px * 8), p);
-    // Dark blue denim jeans
-    p.color = denimColor;
-    canvas.drawRect(Rect.fromLTWH(x, y, px * 3, px * 5.5), p);
-    // Black Converse Chuck Taylor upper
-    p.color = const Color(0xFF0F172A);
-    canvas.drawRect(Rect.fromLTWH(x, y + px * 5.5, px * 3.2, px * 2), p);
-    // White Converse rubber toe-cap & white sole stripe
-    p.color = Colors.white;
-    canvas.drawRect(
-      Rect.fromLTWH(x + px * 2.2, y + px * 5.8, px * 2.0, px * 1.8),
-      p,
-    );
-    canvas.drawRect(
-      Rect.fromLTWH(x, y + px * 7.0, px * 4.2, px * 1.0),
-      p,
-    );
   }
 
   // --- Detailed 8-Bit Zombie Sprite ---
@@ -3528,18 +4627,6 @@ class _OkcRetroGamePainter extends CustomPainter {
     '..KKKKKKKKKK..',
   ];
 
-  static const List<String> _guitarMatrix = [
-    '.........KKKK.',
-    '........KYYYYK',
-    '.......KYYYYK.',
-    '..KKKKKYYYYK..',
-    '.KPPPPPKYYK...',
-    'KPPWWPPPKK....',
-    'KPPWWPPPK.....',
-    '.KPPPPPK......',
-    '..KKKKK.......',
-  ];
-
   static const List<String> _spiderMatrix = [
     'K..K..KKKK..K..K',
     '.K.K.KRRRRK.K.K.',
@@ -3593,22 +4680,16 @@ class _OkcRetroGamePainter extends CustomPainter {
         break;
 
       case OkcPowerupType.guitar:
-        _drawPixelMatrix(
+        drawPurplePrsGuitar(
           canvas,
-          _guitarMatrix,
-          const {
-            'K': Colors.black,
-            'P': Color(0xFFB878F8),
-            'W': Colors.white,
-            'Y': Color(0xFFF8B800),
-          },
-          pixelSize: px,
-          origin: Offset(sx - 7 * px, sy - 4.5 * px),
+          Offset(sx - 4, sy + 2),
+          scale: 0.90,
+          angle: -0.58,
         );
         _drawLabel(
           canvas,
-          'GUITAR [CHORDS]',
-          Offset(sx, sy - 22),
+          'PURPLE PRS [CHORDS]',
+          Offset(sx, sy - 28),
           const Color(0xFFB878F8),
           fontSize: 10,
           bold: true,
@@ -3670,26 +4751,100 @@ class _OkcRetroGamePainter extends CustomPainter {
     double sy,
   ) {
     final Paint p = Paint()..isAntiAlias = false;
-    final Rect box = Rect.fromCenter(
-      center: Offset(sx, sy),
-      width: 38,
-      height: 20,
-    );
-    p.color = Colors.black;
-    canvas.drawRect(box.inflate(2), p);
-    p.color = chord.color;
-    canvas.drawRect(box, p);
-    p.color = Colors.black;
-    canvas.drawRect(box.deflate(2), p);
+    const double px = 1.5;
+    final double phase = worldTime * 24.0 + chord.x * 0.08;
 
-    _drawLabel(
-      canvas,
-      '♪${chord.chordName}',
-      Offset(sx, sy),
-      Colors.white,
-      fontSize: 11,
-      bold: true,
-    );
+    canvas.save();
+    canvas.translate(sx, sy);
+    if (chord.vx < 0) {
+      canvas.scale(-1.0, 1.0);
+    }
+
+    // 1. Oscillating Audio Waveform / Equalizer Bars in the Wake (x: -22..+2)
+    const int barCount = 9;
+    for (int i = 0; i < barCount; i++) {
+      final double t = (i + 1) / barCount; // 0..1 from tail to front
+      final double bx = -22.0 + i * 3.0;
+      final double wave = (0.45 + 0.55 * sin(phase - i * 0.85).abs()) * t;
+      final double halfH = (2.0 + wave * 11.0).floorToDouble();
+
+      // 1px black pixel outline around each waveform bar
+      p.color = const Color(0xFF020103);
+      canvas.drawRect(
+        Rect.fromLTWH(bx - 1, -halfH - 1, 4.0, halfH * 2 + 2.0),
+        p,
+      );
+      // Colored harmonic bar body
+      p.color = chord.color;
+      canvas.drawRect(
+        Rect.fromLTWH(bx, -halfH, 2.0, halfH * 2),
+        p,
+      );
+      // Bright white center audio axis core
+      p.color = Colors.white;
+      canvas.drawRect(
+        Rect.fromLTWH(bx, -halfH * 0.35, 2.0, max(2.0, halfH * 0.7)),
+        p,
+      );
+    }
+
+    // 2. Three Concentric Propagating Sonic Wavefront Arcs ")))" (x: +3..+20)
+    // Drawn as stepped pixel-art crescent arcs curving forward in the direction of travel
+    for (int arcIdx = 0; arcIdx < 3; arcIdx++) {
+      final double baseX = 3.0 + arcIdx * 6.0;
+      final int halfSteps = 4 + arcIdx * 2; // 4, 6, 8 pixel steps above & below y=0
+      final bool isLeadingArc = arcIdx == 2;
+
+      // Pass 1: Black pixel outline behind the sonic arc
+      p.color = const Color(0xFF020103);
+      for (int s = -halfSteps; s <= halfSteps; s++) {
+        final double norm = s.abs() / halfSteps;
+        final double curveOffset =
+            ((1.0 - norm * norm) * (3.5 + arcIdx * 1.2)).floorToDouble();
+        final double ax = baseX + curveOffset;
+        final double ay = s * px * 1.35;
+        canvas.drawRect(
+          Rect.fromCenter(
+            center: Offset(ax, ay),
+            width: px * 2.8,
+            height: px * 2.4,
+          ),
+          p,
+        );
+      }
+
+      // Pass 2: Vibrant neon soundwave arc body + white leading-edge highlight
+      for (int s = -halfSteps; s <= halfSteps; s++) {
+        final double norm = s.abs() / halfSteps;
+        final double curveOffset =
+            ((1.0 - norm * norm) * (3.5 + arcIdx * 1.2)).floorToDouble();
+        final double ax = baseX + curveOffset;
+        final double ay = s * px * 1.35;
+
+        p.color = chord.color;
+        canvas.drawRect(
+          Rect.fromCenter(
+            center: Offset(ax, ay),
+            width: px * 1.7,
+            height: px * 1.5,
+          ),
+          p,
+        );
+        if (s.abs() <= halfSteps - 2 || isLeadingArc) {
+          p.color = Colors.white;
+          canvas.drawRect(
+            Rect.fromCenter(
+              center: Offset(ax + px * 0.35, ay),
+              width: px * 0.8,
+              height: px * 1.1,
+            ),
+            p,
+          );
+        }
+      }
+    }
+
+    canvas.restore();
   }
 
   void _drawNesBannerLabel(
@@ -3697,37 +4852,16 @@ class _OkcRetroGamePainter extends CustomPainter {
     String text,
     Offset center,
     Color color, {
-    double fontSize = 11,
+    double fontSize = 10,
   }) {
-    final TextPainter tp = TextPainter(
-      text: TextSpan(
-        text: text,
-        style: TextStyle(
-          color: color,
-          fontFamily: 'JetBrainsMono',
-          fontSize: fontSize,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-
-    final Rect bgRect = Rect.fromCenter(
-      center: center,
-      width: tp.width + 10,
-      height: tp.height + 6,
+    _drawLabel(
+      canvas,
+      text,
+      center,
+      color,
+      fontSize: fontSize,
+      bold: true,
     );
-    final Paint p = Paint()..isAntiAlias = false;
-    p.color = Colors.black.withValues(alpha: 0.88);
-    canvas.drawRect(bgRect, p);
-    canvas.drawRect(
-      bgRect,
-      Paint()
-        ..color = color
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.5,
-    );
-    tp.paint(canvas, center - Offset(tp.width / 2, tp.height / 2));
   }
 
   void _drawLabel(
@@ -3758,4 +4892,104 @@ class _OkcRetroGamePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _OkcRetroGamePainter oldDelegate) => true;
+}
+
+// --- Title Screen Hero Showcase Painter (archBTW + Purple PRS Custom 24) ---
+class _SuperArchBtwTitleHeroPainter extends CustomPainter {
+  final double worldTime;
+
+  _SuperArchBtwTitleHeroPainter({required this.worldTime});
+
+  void _drawMatrix(
+    Canvas canvas,
+    List<String> rows,
+    Map<String, Color> palette, {
+    required double pixelSize,
+    required Offset origin,
+  }) {
+    final Paint p = Paint()..isAntiAlias = false;
+    for (int r = 0; r < rows.length; r++) {
+      final String row = rows[r];
+      int c = 0;
+      while (c < row.length) {
+        final String ch = row[c];
+        final Color? color = palette[ch];
+        if (color == null) {
+          c++;
+          continue;
+        }
+        int run = 1;
+        while (c + run < row.length && row[c + run] == ch) {
+          run++;
+        }
+        p.color = color;
+        canvas.drawRect(
+          Rect.fromLTWH(
+            origin.dx + c * pixelSize,
+            origin.dy + r * pixelSize,
+            run * pixelSize,
+            pixelSize,
+          ),
+          p,
+        );
+        c += run;
+      }
+    }
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final Paint p = Paint()..isAntiAlias = false;
+
+    // Retro stage floor pedestal
+    final double floorY = size.height - 10;
+    p.color = const Color(0xFF33134F);
+    canvas.drawRect(Rect.fromLTWH(16, floorY, size.width - 32, 6), p);
+    p.color = const Color(0xFFB878F8);
+    canvas.drawRect(Rect.fromLTWH(24, floorY, size.width - 48, 2), p);
+
+    // 1. Draw the identical 28x80 archBTW character sprite on the left-center of the stage
+    final double charPx = (size.height - 16) / 80.0;
+    final double charW = 28 * charPx;
+    final double charX = size.width * 0.34 - charW / 2;
+    final double charTopY = floorY - 80 * charPx;
+
+    _drawMatrix(
+      canvas,
+      _OkcRetroGamePainter.archBtwLeftLegMatrix,
+      _OkcRetroGamePainter.archBtwCharacterPalette,
+      pixelSize: charPx,
+      origin: Offset(charX, charTopY + 58 * charPx),
+    );
+    _drawMatrix(
+      canvas,
+      _OkcRetroGamePainter.archBtwRightLegMatrix,
+      _OkcRetroGamePainter.archBtwCharacterPalette,
+      pixelSize: charPx,
+      origin: Offset(charX, charTopY + 58 * charPx),
+    );
+    _drawMatrix(
+      canvas,
+      _OkcRetroGamePainter.archBtwUpperBodyMatrix,
+      _OkcRetroGamePainter.archBtwCharacterPalette,
+      pixelSize: charPx,
+      origin: Offset(charX, charTopY),
+    );
+
+    // 2. Draw the detailed Purple PRS Custom 24 showcase on the right side of the stage
+    final double bob = sin(worldTime * 3.5) * 3.5;
+    final double gx = size.width * 0.64;
+    final double gy = size.height * 0.54 + bob;
+
+    _OkcRetroGamePainter.drawPurplePrsGuitar(
+      canvas,
+      Offset(gx, gy),
+      scale: charPx * 1.25,
+      angle: -0.62,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _SuperArchBtwTitleHeroPainter oldDelegate) =>
+      oldDelegate.worldTime != worldTime;
 }
