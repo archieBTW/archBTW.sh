@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:archbtw_sh/games/okc_beat_em_up_game.dart';
 import 'package:archbtw_sh/global/colors.dart';
 import 'package:archbtw_sh/pages/about/about.dart';
 import 'package:archbtw_sh/pages/error/kernel_panic_page.dart';
@@ -68,6 +69,13 @@ class ArchWebsite extends StatelessWidget {
           return PageRouteBuilder(
             pageBuilder: (context, animation, secondaryAnimation) =>
                 const OverheatPage(),
+            transitionDuration: Duration.zero,
+            reverseTransitionDuration: Duration.zero,
+          );
+        } else if (settings.name == '/game' || settings.name == '/okc') {
+          return PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                const OkcBeatEmUpGame(),
             transitionDuration: Duration.zero,
             reverseTransitionDuration: Duration.zero,
           );

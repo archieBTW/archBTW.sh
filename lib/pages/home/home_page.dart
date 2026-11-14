@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:archbtw_sh/games/okc_beat_em_up_game.dart';
 import 'package:archbtw_sh/global/colors.dart';
 import 'package:archbtw_sh/global/site_music_controller.dart';
 import 'package:archbtw_sh/pages/overheat/overheat_page.dart';
@@ -89,7 +90,7 @@ class _HomePageState extends State<HomePage>
 
     final double titleFontSize = isDesktop ? 36 : 24;
     final double iconSize = isDesktop ? 24 : 18;
-    final double socialSpacing = isDesktop ? 24 : (screenWidth < 360 ? 10 : 16);
+    final double socialSpacing = isDesktop ? 24 : (screenWidth < 360 ? 6 : 14);
     final double bottomPadding = isDesktop ? 16 : 10;
     final Color activeCursorColor = _cursorColors[_cursorColorIndex];
 
@@ -241,6 +242,22 @@ class _HomePageState extends State<HomePage>
                                   child: child,
                                 );
                               },
+                        ),
+                      );
+                    },
+                  ),
+                  SizedBox(width: socialSpacing),
+                  SocialIcon(
+                    key: const Key('okc_game_button'),
+                    icon: FontAwesomeIcons.gamepad,
+                    iconSize: iconSize,
+                    tooltip: 'play okc_dead_chord.sh',
+                    hoverColor: kAccentColor,
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const OkcBeatEmUpGame(),
                         ),
                       );
                     },
