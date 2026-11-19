@@ -1,4 +1,5 @@
 import 'package:archbtw_sh/games/blubber_game.dart';
+import 'package:archbtw_sh/pages/music/annotated_lyrics_section.dart';
 import 'package:archbtw_sh/pages/music/music_player.dart';
 import 'package:archbtw_sh/games/lemon_game.dart';
 import 'package:archbtw_sh/games/santa_game.dart';
@@ -244,19 +245,9 @@ class _AlbumDetailsState extends State<AlbumDetails> {
             widget.item.lyrics.isNotEmpty)
           Padding(
             padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text.rich(
-                  TextSpan(
-                    children: _buildLyricSpans(
-                      widget.item.lyrics,
-                      isDesktop: widget.isDesktop,
-                    ),
-                  ),
-                  textAlign: TextAlign.start,
-                ),
-              ],
+            child: AnnotatedLyricsSection(
+              item: widget.item,
+              isDesktop: widget.isDesktop,
             ),
           ),
       ],
@@ -276,57 +267,4 @@ String _getGameLabelForAlbum(String title) {
   if (t == 'blubber') return "PLAY: floppy_whale.sh";
   if (t == 'santa\'s cookies') return "PLAY: rudolph_spoke.sh";
   return "PLAY: lifes_lemons.sh";
-}
-
-List<TextSpan> _buildLyricSpans(String lyrics, {required bool isDesktop}) {
-  final double defaultFontSize = isDesktop ? 16 : 14;
-  final double titleFontSize = isDesktop ? 21 : 17;
-  final double descriptionFontSize = isDesktop ? 14 : 12;
-
-  final defaultStyle = TextStyle(
-    color: kTextColor,
-    fontSize: defaultFontSize,
-    height: 1.5,
-    fontFamily: 'JetBrainsMono',
-  );
-
-  final titleStyle = TextStyle(
-    color: kAccentColor,
-    fontSize: titleFontSize,
-    fontWeight: FontWeight.bold,
-    letterSpacing: 0.6,
-    height: 1.8,
-    fontFamily: 'JetBrainsMono',
-  );
-
-  final descriptionStyle = TextStyle(
-    color: kTextColor,
-    fontSize: descriptionFontSize,
-    fontStyle: FontStyle.italic,
-    height: 1.5,
-    fontFamily: 'JetBrainsMono',
-  );
-
-  final List<TextSpan> spans = [];
-  final lines = lyrics.split('\n');
-
-  bool inDescriptionBlock = false;
-
-  for (final line in lines) {
-    final trimmedLine = line.trim();
-    if (trimmedLine == '**') {
-      inDescriptionBlock = !inDescriptionBlock;
-      continue;
-    }
-
-    if (inDescriptionBlock) {
-      spans.add(TextSpan(text: '$line\n', style: descriptionStyle));
-    } else if (trimmedLine.startsWith('[') && trimmedLine.endsWith(']')) {
-      final content = trimmedLine.substring(1, trimmedLine.length - 1);
-      spans.add(TextSpan(text: '// $content\n', style: titleStyle));
-    } else {
-      spans.add(TextSpan(text: '$line\n', style: defaultStyle));
-    }
-  }
-  return spans;
 }

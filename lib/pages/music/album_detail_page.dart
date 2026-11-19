@@ -2,6 +2,7 @@ import 'package:archbtw_sh/global/colors.dart';
 import 'package:archbtw_sh/pages/music/album_art.dart';
 import 'package:archbtw_sh/pages/music/album_details.dart';
 import 'package:archbtw_sh/pages/music/album_item.dart';
+import 'package:archbtw_sh/pages/music/annotated_lyrics_section.dart';
 import 'package:archbtw_sh/widgets/holiday_snow_overlay.dart';
 import 'package:flutter/material.dart';
 
@@ -78,13 +79,27 @@ class _AlbumDetailPageState extends State<AlbumDetailPage> {
                                         showTitle: false,
                                         showPlayer: true,
                                         showLyricsButton: true,
-                                        showLyricsContent: true,
+                                        showLyricsContent: false,
                                         isLyricsExpanded: _isLyricsExpanded,
                                         onToggleLyrics: _toggleLyrics,
                                       ),
                                     ),
                                   ],
                                 ),
+                                if (_isLyricsExpanded &&
+                                    !widget.item.isLocked &&
+                                    widget.item.lyrics.isNotEmpty) ...[
+                                  const SizedBox(height: 24),
+                                  Divider(
+                                    color: kAccentColor.withValues(alpha: 0.2),
+                                    height: 1,
+                                  ),
+                                  const SizedBox(height: 24),
+                                  AnnotatedLyricsSection(
+                                    item: widget.item,
+                                    isDesktop: true,
+                                  ),
+                                ],
                               ],
                             ),
                           );
@@ -100,6 +115,8 @@ class _AlbumDetailPageState extends State<AlbumDetailPage> {
                                 showPlayer: true,
                                 showLyricsButton: true,
                                 showLyricsContent: true,
+                                isLyricsExpanded: _isLyricsExpanded,
+                                onToggleLyrics: _toggleLyrics,
                               ),
                             ],
                           );
