@@ -94,7 +94,9 @@ void main() {
         await tester.tap(find.text('lyrics.expand();'));
         await tester.pump(const Duration(milliseconds: 300));
 
-        // Initially shows the desktop guide card
+        // Header bar with track skip chips is removed; guide card is still shown
+        expect(find.text('// LYRIC_ANNOTATIONS'), findsNothing);
+        expect(find.byKey(const Key('jump_track_chip_0')), findsNothing);
         expect(find.byKey(const Key('annotation_guide_card')), findsOneWidget);
         expect(find.byKey(const Key('annotation_card')), findsNothing);
 

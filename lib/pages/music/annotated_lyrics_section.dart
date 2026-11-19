@@ -163,219 +163,33 @@ class _AnnotatedLyricsSectionState extends State<AnnotatedLyricsSection> {
     _selectItem(next, scrollIntoView: true);
   }
 
-  void _jumpToTrack(int trackIndex) {
-    if (trackIndex < 0 || trackIndex >= _parsed.tracks.length) return;
-    final track = _parsed.tracks[trackIndex];
-    _selectItem(track.headerItem.index, scrollIntoView: true);
-  }
-
-  int get _totalLineCount {
-    return _parsed.tracks.fold<int>(0, (sum, t) => sum + t.lineCount);
-  }
-
   @override
   Widget build(BuildContext context) {
     if (_parsed.tracks.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _buildInspectorHeader(),
-        const SizedBox(height: 18),
-        if (widget.isDesktop)
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                flex: 3,
-                child: KeyedSubtree(
-                  key: _lyricsColumnKey,
-                  child: _buildLyricsList(),
-                ),
-              ),
-              const SizedBox(width: 28),
-              Expanded(
-                flex: 2,
-                child: _buildDesktopAnnotationRail(),
-              ),
-            ],
-          )
-        else
-          _buildLyricsList(),
-      ],
-    );
-  }
-
-  Widget _buildInspectorHeader() {
-    final int? playingIdx = _playingTrackIndex;
-    final int? activeTrackIdx = _selectedItemIndex != null
-        ? _parsed.allItems[_selectedItemIndex!].trackIndex
-        : null;
-
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.03),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white12),
-      ),
-      child: Column(
+    if (widget.isDesktop) {
+      return Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Wrap(
-            alignment: WrapAlignment.spaceBetween,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 12,
-            runSpacing: 8,
-            children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.auto_stories_outlined,
-                    size: 16,
-                    color: kAccentColor,
-                  ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    '// LYRIC_ANNOTATIONS',
-                    style: TextStyle(
-                      color: kAccentColor,
-                      fontFamily: 'JetBrainsMono',
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                      letterSpacing: 1.0,
-                    ),
-                  ),
-                ],
-              ),
-              Wrap(
-                spacing: 8,
-                runSpacing: 6,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  if (playingIdx != null)
-                    InkWell(
-                      onTap: () => _jumpToTrack(playingIdx),
-                      borderRadius: BorderRadius.circular(4),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: kAccentColor.withValues(alpha: 0.16),
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(
-                            color: kAccentColor.withValues(alpha: 0.6),
-                          ),
-                        ),
-                        child: Text(
-                          '♪ jump to: ${_parsed.tracks[playingIdx].title}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontFamily: 'JetBrainsMono',
-                            fontSize: 11,
-                          ),
-                        ),
-                      ),
-                    ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.05),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      '${_parsed.tracks.length} tracks • $_totalLineCount bars annotated',
-                      style: const TextStyle(
-                        color: Colors.white60,
-                        fontFamily: 'JetBrainsMono',
-                        fontSize: 11,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          const Text(
-            'click any track title for a song breakdown, or any highlighted lyric line for wordplay & meaning.',
-            style: TextStyle(
-              color: Colors.white54,
-              fontFamily: 'JetBrainsMono',
-              fontSize: 11.5,
-              height: 1.4,
+          Expanded(
+            flex: 3,
+            child: KeyedSubtree(
+              key: _lyricsColumnKey,
+              child: _buildLyricsList(),
             ),
           ),
-          const SizedBox(height: 12),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: _parsed.tracks.map((track) {
-                final bool isSelectedTrack = activeTrackIdx == track.trackIndex;
-                final bool isPlayingTrack = playingIdx == track.trackIndex;
-                final String numLabel =
-                    (track.trackIndex + 1).toString().padLeft(2, '0');
-
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: MouseRegion(
-                    cursor: SystemMouseCursors.click,
-                    child: InkWell(
-                      key: Key('jump_track_chip_${track.trackIndex}'),
-                      onTap: () => _jumpToTrack(track.trackIndex),
-                      borderRadius: BorderRadius.circular(5),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 140),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isSelectedTrack
-                              ? kAccentColor.withValues(alpha: 0.22)
-                              : Colors.white.withValues(alpha: 0.04),
-                          borderRadius: BorderRadius.circular(5),
-                          border: Border.all(
-                            color: isSelectedTrack
-                                ? kAccentColor
-                                : isPlayingTrack
-                                    ? kAccentColor.withValues(alpha: 0.5)
-                                    : Colors.white12,
-                          ),
-                        ),
-                        child: Text(
-                          '${isPlayingTrack ? '♪ ' : ''}$numLabel ${track.title.toLowerCase()}',
-                          style: TextStyle(
-                            color: isSelectedTrack
-                                ? Colors.white
-                                : isPlayingTrack
-                                    ? kAccentColor
-                                    : Colors.white70,
-                            fontFamily: 'JetBrainsMono',
-                            fontSize: 11.5,
-                            fontWeight: isSelectedTrack
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
+          const SizedBox(width: 28),
+          Expanded(
+            flex: 2,
+            child: _buildDesktopAnnotationRail(),
           ),
         ],
-      ),
-    );
+      );
+    }
+
+    return _buildLyricsList();
   }
 
   Widget _buildLyricsList() {
